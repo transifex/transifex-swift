@@ -1,55 +1,47 @@
 //
 //  Rendering.swift
-//  
+//  TransifexNative
 //
 //  Created by Dimitrios Bendilas on 2/10/20.
+//  Copyright © 2020 Transifex. All rights reserved.
 //
 
 import Foundation
 
-/**
- A protocol for classes that determine what translation is returned
- when the requested translation is not available.
-
- Can be used in multiple cases, such as when the translation is not found.
- */
+/// A protocol for classes that determine what translation is returned when the requested translation is not
+/// available.
+///
+/// Can be used in multiple cases, such as when the translation is not found.
+@objc
 public protocol MissingPolicy {
 
-    /**
-    Return a string as a translation based on the given source string.
-
-    Implementors may choose to return anything, relevant to the given
-    source string or not, based on their custom policy.
-
-      - sourceString: the source string
-      - return: a new string
-    */
+    /// Return a string as a translation based on the given source string.
+    ///
+    /// Classes that conform to this protocol may choose to return anything relevant to the given source
+    /// string or not, based on their custom policy.
+    ///
+    /// - Parameter sourceString: the source string
     func get(sourceString: String) -> String
 }
 
-/**
- Returns the source string when the translation string is missing.
- */
-public class SourceStringPolicy : MissingPolicy {
+/// Returns the source string when the translation string is missing.
+public final class SourceStringPolicy : NSObject, MissingPolicy {
     
-    public init() {}
-    
-    /**
-     Return the source string as the translation string.
-     */
+    /// Return the source string as the translation string.
+    /// - Parameter sourceString: the source string
+    /// - Returns: the source string
     public func get(sourceString: String) -> String {
         return sourceString
     }
 }
 
-/**
- Returns a string that looks like the source string but contains accented characters.
-
- Example:
- >>> PseudoTranslationPolicy().get("The quick brown fox")
- //  returns "Ťȟê ʠüıċǩ ƀȓøẁñ ƒøẋ"
- */
-public class PseudoTranslationPolicy : MissingPolicy {
+/// Returns a string that looks like the source string but contains accented characters.
+///
+/// Example:
+/// `PseudoTranslationPolicy().get("The quick brown fox")`
+/// Returns:
+/// `Ťȟê ʠüıċǩ ƀȓøẁñ ƒøẋ`
+public final class PseudoTranslationPolicy : NSObject, MissingPolicy {
     
     let TABLE = [
         "A": "Å", "B": "Ɓ", "C": "Ċ", "D": "Đ",
@@ -68,11 +60,10 @@ public class PseudoTranslationPolicy : MissingPolicy {
         "y": "ÿ", "z": "ź",
     ]
     
-    public init() {}
-
-    /**
-     Return a string that looks somewhat like the source string.
-     */
+    /// Return a string that looks somewhat like the source string.
+    ///
+    /// - Parameter sourceString: the source string
+    /// - Returns: a string that looks like the source string
     public func get(sourceString: String) -> String {
         var str = sourceString
         for (ascii, accented) in self.TABLE {
@@ -82,14 +73,13 @@ public class PseudoTranslationPolicy : MissingPolicy {
     }
 }
 
-/**
- Wraps the returned string with a custom format.
-
- Usage:
- >>> WrappedStringPolicy(">>", "<<").get("Click here")
- # returns ">>Click here<<"
- */
-public class WrappedStringPolicy : MissingPolicy {
+/// Wraps the returned string with a custom format.
+///
+/// Example:
+/// `WrappedStringPolicy(">>", "<<").get("Click here")`
+/// Returns:
+/// `>>Click here<<`
+public final class WrappedStringPolicy : NSObject, MissingPolicy {
 
     var start: String?
     var end: String?
@@ -100,6 +90,7 @@ public class WrappedStringPolicy : MissingPolicy {
      - start: an optional string to prepend to the source string
      - end: an optional string to append to the source string
      */
+    @objc
     public init(start: String? = nil, end: String? = nil) {
         self.start = start
         self.end = end
@@ -113,7 +104,6 @@ public class WrappedStringPolicy : MissingPolicy {
         let end = self.end ?? "]"
         return "\(start)\(sourceString)\(end)"
     }
-
 }
 
 /**
@@ -121,7 +111,7 @@ public class WrappedStringPolicy : MissingPolicy {
  
  The result of each policy if fed to the next as source.
  */
-public class CompositePolicy : MissingPolicy {
+public final class CompositePolicy : NSObject, MissingPolicy {
     
     var policies: [MissingPolicy] = []
     
@@ -134,6 +124,11 @@ public class CompositePolicy : MissingPolicy {
         self.policies = policies
     }
     
+    @objc
+    public init(_ policies: [MissingPolicy]) {
+        self.policies = policies
+    }
+    
     public func get(sourceString: String) -> String {
         var str: String = sourceString
         for policy in policies {
@@ -141,7 +136,6 @@ public class CompositePolicy : MissingPolicy {
         }
         return str
      }
-    
 }
 
 /**
@@ -150,10 +144,13 @@ public class CompositePolicy : MissingPolicy {
  Error policies define what happens when rendering faces an error.
  They are useful to protect the user from pages failing to load.
  */
+@objc
 public protocol ErrorPolicy {
 
-    func get(sourceString: String, translation: String, localeCode: String, params: [String]...) -> String
-
+    func get(sourceString: String,
+             translation: String,
+             localeCode: String,
+             params: [String]) -> String
 }
 
 /**
@@ -161,8 +158,10 @@ public protocol ErrorPolicy {
  */
 public class RenderedSourceErrorPolicy : ErrorPolicy {
     
-    public func get(sourceString: String, translation: String, localeCode: String, params: [String]...) -> String {
+    public func get(sourceString: String,
+                    translation: String,
+                    localeCode: String,
+                    params: [String]) -> String {
         return sourceString
     }
-    
 }

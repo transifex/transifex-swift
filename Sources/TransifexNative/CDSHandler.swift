@@ -1,133 +1,254 @@
 //
 //  CDSHandler.swift
-//  
+//  TransifexNative
 //
 //  Created by Dimitrios Bendilas on 3/8/20.
+//  Copyright © 2020 Transifex. All rights reserved.
 //
 
 import Foundation
 
-//let CDS_HOST = "https://rest.api.transifex.com"
-let CDS_HOST = "http://tx.loc:10300"
+/// Handles the logic of a pull HTTP request to CDS for a certain locale code
+class CDSPullRequest {
 
-/**
- Handles communication with the Content Delivery Service.
- */
+    private static let MAX_RETRIES = 20;
+
+    let code : String
+    let request : URLRequest
+    let session : URLSession
+    
+    private var retryCount = 0
+    
+    enum RequestError: Error {
+        case requestFailed(error : Error)
+        case invalidHTTPResponse
+        case serverError(statusCode : Int)
+        case maxRetriesReached
+        case nonParsableResponse
+    }
+
+    struct RequestData : Codable {
+        var data : LocaleStrings
+    }
+
+    init(with request : URLRequest, code : String, session : URLSession) {
+        self.code = code
+        self.request = request
+        self.session = session
+    }
+    
+    /// Performs the request to CDS and offers a completion handler when the request succeeds or fails.
+    ///
+    /// - Parameter completionHandler: The completion handler that includes the locale code,
+    /// the extracted LocaleStrings structure from the server response and the error object when the
+    /// request fails
+    func perform(with completionHandler: @escaping (String,
+                                                    LocaleStrings?,
+                                                    RequestError?) -> Void) {
+        session.dataTask(with: request) { (data, response, error) in
+            guard error == nil else {
+                completionHandler(self.code,
+                                  nil,
+                                  .requestFailed(error: error!))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completionHandler(self.code,
+                                  nil,
+                                  .invalidHTTPResponse)
+                return
+            }
+            
+            let statusCode = httpResponse.statusCode
+            
+            switch statusCode {
+            
+            case 200:
+                if let data = data {
+                    let decoder = JSONDecoder()
+                    
+                    do {
+                        let request = try decoder.decode(RequestData.self,
+                                                         from: data)
+                        completionHandler(self.code,
+                                          request.data,
+                                          nil)
+                    }
+                    catch {
+                        completionHandler(self.code,
+                                          nil,
+                                          .requestFailed(error: error))
+                    }
+                }
+                else {
+                    completionHandler(self.code,
+                                      nil,
+                                      .nonParsableResponse)
+                }
+                break
+            case 202:
+                if self.retryCount < CDSPullRequest.MAX_RETRIES {
+                    self.retryCount += 1
+                    self.perform(with: completionHandler)
+                }
+                else {
+                    completionHandler(self.code,
+                                      nil,
+                                      .maxRetriesReached)
+                }
+                break
+            default:
+                completionHandler(self.code,
+                                  nil,
+                                  .serverError(statusCode: statusCode))
+            }
+        }.resume()
+    }
+}
+
+/// Handles communication with the Content Delivery Service.
 class CDSHandler {
 
-    // a list of locale codes for the configured languages in the application
-    var localeCodes: [String] = []
+    private static let CDS_HOST = "https://cds.svc.transifex.net"
     
-    // the API token to use for connecting to the CDS
-    var token: String = ""
+    /// A list of locale codes for the configured languages in the application
+    let localeCodes: [String]
     
-    // the API secret to use for connecting to the CDS
-    var secret: String?
+    /// The API token to use for connecting to the CDS
+    let token: String
     
-    // the host of the Content Delivery Service
-    var cdsHost: String = ""
+    /// The API secret to use for connecting to the CDS
+    let secret: String?
     
-    // an etag per locale code, used for optimizing requests
+    /// The host of the Content Delivery Service
+    let cdsHost: String
+    
+    /// The url session to be used for the requests to the CDS, defaults to an ephemeral URLSession
+    let session: URLSession
+    
+    /// An etag per locale code, used for optimizing requests
     var etagByLocale: [String: String] = [:]
     
-    /**
-     Constructor.
-     - locales: a list of locale codes for the configured languages in the application
-     - token: the API token to use for connecting to the CDS
-     - secret: the API secret to use for connecting to the CDS
-     - cdsHost: the host of the Content Delivery Service
-     */
-    init(localeCodes: [String], token: String, secret: String? = nil, cdsHost: String? = CDS_HOST) {
+    /// Constructor
+    ///
+    /// - Parameters:
+    ///   - localeCodes: a list of locale codes for the configured languages in the application
+    ///   - token: the API token to use for connecting to the CDS
+    ///   - secret: the API secret to use for connecting to the CDS
+    ///   - cdsHost: the host of the Content Delivery Service
+    init(localeCodes: [String],
+         token: String,
+         secret: String? = nil,
+         cdsHost: String? = CDS_HOST,
+         session: URLSession? = nil) {
         self.localeCodes = localeCodes
         self.token = token
         self.secret = secret
-        self.cdsHost = cdsHost != nil ? cdsHost! : CDS_HOST
+        self.cdsHost = cdsHost ?? CDSHandler.CDS_HOST
+        self.session = session ?? URLSession(configuration: .ephemeral)
     }
     
-    /**
-     Fetch translations from CDS.
-     
-       - localeCode: an optional locale to fetch translations from; if none provided it will fetch translations for all locales defined in the configuration
-       - completionHandler: a function to call when the operation is complete
-     */
-    public func fetchTranslations(localeCode: String? = nil, completionHandler: @escaping ([String: LocaleStrings], Error?) -> Void) {
-        let urlString = "\(cdsHost)/content/{localeCode}"
+    /// Fetch translations from CDS.
+    ///
+    /// - Parameters:
+    ///   - localeCode: an optional locale to fetch translations from; if none provided it will fetch
+    ///   translations for all locales defined in the configuration
+    ///   - completionHandler: a callback function to call when the operation is complete
+    public func fetchTranslations(localeCode: String? = nil,
+                                  completionHandler: @escaping ([String: LocaleStrings]) -> Void) {
+        guard let cdsHostURL = URL(string: cdsHost) else {
+            print("Error: Invalid CDS host URL: \(cdsHost)")
+            completionHandler([:])
+            return
+        }
         
-        var localeCodes: [String]
-        if localeCode == nil {
-            localeCodes = TxNative.locales.appLocales
+        let baseURL = cdsHostURL.appendingPathComponent("content")
+        
+        var fetchLocaleCodes: [String]
+        
+        if let localeCode = localeCode {
+            fetchLocaleCodes = [ localeCode ]
         }
         else {
-            localeCodes = [localeCode!]
+            fetchLocaleCodes = localeCodes
         }
-        
-        var translations: [String: LocaleStrings] = [:]
-        var cnt = 1
-        for code in localeCodes {
-            let url = URL(string: urlString.replacingOccurrences(of: "{localeCode}", with: code))!
+            
+        var requestsByLocale : [String: URLRequest] = [:]
+
+        for code in fetchLocaleCodes {
+            let url = baseURL.appendingPathComponent(code)
             var request = URLRequest(url: url)
             request.allHTTPHeaderFields = getHeaders(withSecret: false)
+            requestsByLocale[code] = request
+        }
 
-            let session = URLSession(configuration: .default)
-            print("Making requst to \(url.absoluteString)")
-            // TODO: after the initial request that returns status=202, poll again until
-            // translations are returned, or an erroreous status is returned
-            let task = session.dataTask(with: request) { (data, response, error) in
-                print("Response arrived! \(String(describing: data))")
-                print("  response: \(String(describing: response))")
-                print("  error:\(String(describing: error))")
-                cnt += 1
-                if error == nil {
-                    translations[code] = [:]
+        var requestsFinished = 0
+        var translationsByLocale: [String: LocaleStrings] = [:]
+
+        for (code, requestByLocale) in requestsByLocale {
+            let cdsRequest = CDSPullRequest(with: requestByLocale,
+                                            code: code,
+                                            session: self.session)
+            cdsRequest.perform { (code, localeStrings, error) in
+                requestsFinished += 1
+                
+                if let error = error {
+                    print("Error fetching \(code): \(error)")
+                }
+                else {
+                    translationsByLocale[code] = localeStrings
+                }
+                
+                if requestsFinished == requestsByLocale.count {
+                    completionHandler(translationsByLocale)
                 }
             }
-            task.resume()
-            
-        }
-        if cnt == localeCodes.count {
-            completionHandler(translations, nil)
         }
     }
     
-    /**
-     Serialize the given source strings to a format suitable for the CDS.
-     - strings: a list of `SourceString` objects
-     - return: a dictionary
-     */
-    private func serializeSourceStrings(_ strings: [SourceString]) -> [String: [String: Any]] {
-        var sourceStrings: [String: [String: Any]] = [:]
+    /// Serialize the given source strings to a format suitable for the CDS.
+    ///
+    /// - Parameter strings: a list of `SourceString` objects
+    /// - Returns: a JSON-friendly dictionary
+    private func serializeSourceStrings(_ strings: [SourceString]) -> [String: String] {
+        var sourceStrings: [String:String] = [:]
         for string in strings {
-            sourceStrings[string.key] = [
-                "string": string.string,
-                "meta": [
-                    "context": string.context,
-                    "developer_comment": string.comment,
-                    "character_limit": string.characterLimit,
-                    "tags": string.tags,
-                ]
-            ]
+            do {
+                let jsonData = try JSONEncoder().encode(string)
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    sourceStrings[string.key] = jsonString
+                }
+            } catch {
+                print("Error encoding source string \(string): \(error.localizedDescription)")
+            }
         }
         return sourceStrings
     }
 
-    /**
-     Return the headers to use when making requests.
-     - withSecret: if true, the Bearer authorization header will also include the secret, otherwise it will only use the token
-     - etag: an optional etag to include for optimization
-     - return: a dictionary with all headers
-     */
-    private func getHeaders(withSecret: Bool = false, etag: String? = nil) -> [String: String] {
-        let secretPart = withSecret ? ":\(secret!)" : ""
+    /// Return the headers to use when making requests.
+    ///
+    /// - Parameters:
+    ///   - withSecret: if true, the Bearer authorization header will also include the secret, otherise it
+    ///   will only use the token
+    ///   - etag: an optional etag to include for optimization
+    /// - Returns: a dictionary with all headers
+    private func getHeaders(withSecret: Bool = false,
+                            etag: String? = nil) -> [String: String] {
         var headers = [
-            "Authorization": "Bearer \(token)\(secretPart)",
             "Accept-Encoding": "gzip",
             "Content-Type": "application/json",
         ]
-        if etag != nil {
-            headers["If-None-Match"] = etag!
+        if withSecret == true,
+           let secret = secret {
+            headers["Authorization"] = "Bearer \(token):\(secret)"
+        }
+        else {
+            headers["Authorization"] = "Bearer \(token)"
+        }
+        if let etag = etag {
+            headers["If-None-Match"] = etag
         }
         return headers
     }
-    
-    
 }

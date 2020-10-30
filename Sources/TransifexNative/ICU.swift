@@ -1,6 +1,6 @@
 //
-//  icu.swift
-//  toolkit
+//  ICU.swift
+//  TransifexNative
 //
 //  Created by Dimitrios Bendilas on 17/7/20.
 //  Copyright © 2020 Transifex. All rights reserved.

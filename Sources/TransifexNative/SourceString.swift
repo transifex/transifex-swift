@@ -1,73 +1,96 @@
 //
-//  File.swift
-//  
+//  SourceString.swift
+//  TransifexNative
 //
 //  Created by Dimitrios Bendilas on 2/8/20.
+//  Copyright © 2020 Transifex. All rights reserved.
 //
 
 import Foundation
 
-/**
- Represents a string in the source locale, along with all its properties.
- */
-class SourceString : CustomStringConvertible {
+/// Represents the metadata that accompany a SourceString
+struct SourceStringMeta : Codable {
+    var context : [String]?
+    var comment : String?
+    var characterLimit : Int?
+    var tags : [String]?
     
-    /// The string itself
-    var string: String = ""
+    enum CodingKeys : String, CodingKey {
+        case context
+        case comment = "developer_comment"
+        case characterLimit = "character_limit"
+        case tags
+    }
+}
+
+extension SourceStringMeta : CustomDebugStringConvertible {
+    var debugDescription: String {
+        """
+SourceStringMeta(tags: \(tags?.debugDescription ?? "Not set"), \
+context: \(context?.debugDescription ?? "Not set"), \
+comment: \(comment ?? "Not set"), \
+characterLimit: \(characterLimit?.description ?? "Not set"))
+"""
+    }
+}
+
+/// Represents a string in the source locale, along with all its properties.
+struct SourceString : Codable {
     
-    /// A unique identifier for the string
-    var key: String = ""
+    /// The string itself.
+    var string : String
     
+    /// A unique identifier for the string.
+    var key : String = ""
+    
+    /// A dictionary with metadata that accompany the string.
+    var meta : SourceStringMeta?
+
     /// An optional list of strings that give extra information about the string.
-    var context: [String] = []
-    
-    /// A dictionary with metadata that accompany the string
-    var meta: [String:Any] = [:]
-    
-    /// A list of strings that provide information about the places where this string
-    /// can be found, e.g. a list of `.swift` filenames of a project
-    var occurrences: [String] = []
-    
-    /**
-     An optional comment that gives extra context to the translators, in order to write
-     a better translation for this string.
-     */
-    var comment: String? {
-        get { return meta["_comment"] as? String }
+    var context : [String]? {
+        get { return meta?.context }
     }
     
-    /**
-     An optional integer that tells translators how long the translation can be for this string.
-     */
+    /// An optional comment that gives extra context to the translators, in order to write a better translation
+    /// for this string.
+    var comment : String? {
+        get { return meta?.comment }
+    }
+    
+    /// An optional integer that tells translators how long the translation can be for this string.
     var characterLimit: Int? {
-        get { return meta["_charlimit"] as? Int }
+        get { return meta?.characterLimit }
     }
     
-    /**
-     An optional list of strings that give extra information on this string, often used
-     for aiding the automation of the localization workflow.
-     */
-    var tags: [String] {
-        get { return meta["_tags", default: []] as! [String] }
+    /// An optional list of strings that give extra information on this string, often used for aiding the
+    /// automation of the localization workflow.
+    var tags: [String]? {
+        get { return meta?.tags }
     }
     
-    init(_ string: String, key: String, context: [String] = [], meta: [String: Any] = [:]) {
-        self.string = string
-        self.key = key
-        self.context = context
-        self.meta = meta
-    }
+    /// A list of strings that provide information about the places where this string can be found.
+    /// e.g. a list of `.swift` filenames of a project
+    var occurrences : [String] = []
     
-    /**
-     Add a new occurrence for the string.
-     - occurrence: a place where this string is found, e.g. a file name
-     */
-    func addOccurrence(_ occurrence: String) {
+    /// Adds a new occurence for the string.
+    ///
+    /// - Parameter occurrence: a place where this string is found, e.g. a file name
+    mutating func addOccurrence(_ occurrence : String) {
         occurrences.append(occurrence)
     }
     
-    public var description: String {
-        return "SourceString(\(string), key: \(key), context: \(context), meta: \(meta), occurrences: \(occurrences)"
+    enum CodingKeys : String, CodingKey {
+        case string, meta
     }
-    
+}
+
+extension SourceString : CustomDebugStringConvertible {
+    var debugDescription: String {
+        """
+SourceString(string: \(string), \
+key: \(key), \
+meta: \(meta?.debugDescription ?? "Not set"), \
+occurrences: \(occurrences))
+"""
+    }
 }
