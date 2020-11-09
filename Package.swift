@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "TransifexNative",
     platforms: [
-        .macOS(.v10_15), .iOS(.v13)
+        .iOS(.v10)
     ],
     products: [
         .library(
