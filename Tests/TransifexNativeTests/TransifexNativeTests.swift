@@ -27,6 +27,8 @@ class URLSessionMock: URLSession {
     var mockResponses : [MockResponse]?
     var mockResponseIndex = 0
     
+    override init() { }
+    
     override func dataTask(
         with request: URLRequest,
         completionHandler: @escaping CompletionHandler
