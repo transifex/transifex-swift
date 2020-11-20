@@ -8,17 +8,28 @@
 
 import Foundation
 
+/// Protocol used to pass NativeCore as depedency injection in the Swizzler class.
+internal protocol TranslationProvider {
+    func translate(sourceString: String,
+                   params: [String: Any]) -> String
+}
+
+/// The rendering strategy to be used when TransifexNative renders the final string.
+@objc
+public enum RenderingStategy : Int {
+    case icu
+    case platform
+}
+
 /// The main class of the framework, responsible for orchestrating all functionality.
-public class NativeCore {
+public class NativeCore : TranslationProvider {
     
     var cache: Cache
     var locales: LocaleState
     var cdsHandler: CDSHandler
     var missingPolicy: MissingPolicy
     var errorPolicy: ErrorPolicy
-
-    /// Serial dispatch queue that ensures that cache will only be updated by one thread
-    let cacheUpdateQueue = DispatchQueue(label: "com.transifex.native.cacheupdate")
+    var renderingStrategy : RenderingStategy
     
     /// Create an instance of the core framework class.
     ///
@@ -40,7 +51,8 @@ public class NativeCore {
         cdsHost: String?,
         cache: Cache?,
         missingPolicy: MissingPolicy? = nil,
-        errorPolicy: ErrorPolicy? = nil
+        errorPolicy: ErrorPolicy? = nil,
+        renderingStrategy : RenderingStategy
     ) {
         self.locales = locales
         self.cdsHandler = CDSHandler(
@@ -52,21 +64,35 @@ public class NativeCore {
         self.cache = cache ?? MemoryCache()
         self.missingPolicy = missingPolicy ?? SourceStringPolicy()
         self.errorPolicy = errorPolicy ?? RenderedSourceErrorPolicy()
+        self.renderingStrategy = renderingStrategy
+        
+        Swizzler.activate(translationProvider: self)
     }
     
     /// Fetch translations from CDS and store them in the cache.
     ///
-    /// - Parameter localeCode: an optional locale to fetch trasnslations from; if none provided, it
+    /// - Parameter localeCode: an optional locale to fetch translations from; if none provided, it
     /// will fetch translations for all locales defined in the configuration
-    public func fetchTranslations(_ localeCode: String? = nil) {
+    func fetchTranslations(_ localeCode: String? = nil) {
         cdsHandler.fetchTranslations(localeCode: localeCode) { (translations) in
-            self.cacheUpdateQueue.async {
-                for (localeCode, localeTranslations) in translations {
-                    self.cache.update(localeCode: localeCode,
-                                      translations: localeTranslations)
-                }
-            }
+            self.cache.update(translations: translations)
         }
+    }
+    
+    /// Used by the Swift localizedString(format:arguments:) methods found in the
+    /// TXExtensions.swift file.
+    func localizedString(format: String,
+                          arguments: [Any]) -> String {
+        return Swizzler.localizedString(format: format,
+                                        arguments: arguments)
+    }
+    
+    /// TranslationProvider protocol method used by Swizler class.
+    func translate(sourceString: String, params: [String : Any]) -> String {
+        return translate(sourceString: sourceString,
+                         localeCode: nil,
+                         params: params,
+                         context: nil)
     }
     
     /// Return the translation of the given source string on a certain locale.
@@ -85,8 +111,27 @@ public class NativeCore {
         var translationTemplate: String?
         let localeToRender = localeCode ?? self.locales.currentLocale
         let isSource = self.locales.isSource(localeToRender)
+        
+        // If the app uses its source locale or if the key is not found in cache
+        // and the Swizzled value in the params dictionary exists, then use this
+        // one. Otherwise fallback to the sourceString.
+        //
+        // This is done so that for the swizzled storyboard methods, the logic
+        // doesn't fallback to the key (which is typically a non-human readable
+        // id) but to the value, which is provided by the developer in the
+        // storyboard file.
+        //
+        // In the NSLocalizedString() call case those, we want to fallback to
+        // the first argument of that method which is the key, as there's no
+        // value provided.
+        var fallbackValue = sourceString
+        
+        if let paramValue = params[Swizzler.PARAM_VALUE_KEY] as? String {
+            fallbackValue = paramValue
+        }
+        
         if isSource {
-            translationTemplate = sourceString
+            translationTemplate = fallbackValue
         }
         else {
             let key = generateKey(sourceString: sourceString,
@@ -94,7 +139,7 @@ public class NativeCore {
             translationTemplate = cache.get(key: key,
                                             localeCode: localeToRender)
             if translationTemplate == nil {
-                return missingPolicy.get(sourceString: sourceString)
+                return missingPolicy.get(sourceString: fallbackValue)
             }
         }
         
@@ -120,10 +165,18 @@ public class NativeCore {
                 stringToRender: String?,
                 localeCode: String,
                 params: [String: Any]) -> String {
-        // TODO: Implement the platform strategy
-        return ICUMessageFormat.format(stringToRender: stringToRender ?? sourceString,
-                                       localeCode: localeCode,
-                                       params: params)
+        let stringToRender = stringToRender ?? sourceString
+        
+        switch renderingStrategy {
+        case .icu:
+            return ICUMessageFormat.format(stringToRender: stringToRender,
+                                           localeCode: localeCode,
+                                           params: params)
+        case .platform:
+            return PlatformFormat.format(stringToRender: stringToRender,
+                                           localeCode: localeCode,
+                                           params: params)
+        }
     }
 }
 
@@ -153,6 +206,8 @@ public final class TxNative : NSObject {
     ///   - missingPolicy: determines how to handle translations that are not available
     ///   - errorPolicy: determines how to handle exceptions when rendering a problematic
     ///   translation
+    ///   - renderingStrategy: determines which strategy to be used when rendering the final
+    ///   string.
     @objc
     public static func initialize(
         locales: LocaleState,
@@ -161,7 +216,8 @@ public final class TxNative : NSObject {
         cdsHost: String? = nil,
         cache: Cache? = nil,
         missingPolicy: MissingPolicy? = nil,
-        errorPolicy: ErrorPolicy? = nil
+        errorPolicy: ErrorPolicy? = nil,
+        renderingStrategy: RenderingStategy = .platform
     ) {
         guard tx == nil else {
             print("Transifex Native is already initialized")
@@ -174,7 +230,8 @@ public final class TxNative : NSObject {
                         cdsHost: cdsHost,
                         cache: cache,
                         missingPolicy: missingPolicy,
-                        errorPolicy: errorPolicy)
+                        errorPolicy: errorPolicy,
+                        renderingStrategy: renderingStrategy)
     }
     
     /// Return the translation of the given source string on a certain locale.
@@ -198,6 +255,14 @@ public final class TxNative : NSObject {
             params: params,
             context: context
         )
+    }
+    
+    /// Used by the Swift localizedString(format:arguments:) methods found in the
+    /// TXExtensions.swift file.
+    public static func localizedString(format: String,
+                                       arguments: [Any]) -> String? {
+        return tx?.localizedString(format: format,
+                                   arguments: arguments)
     }
     
     /// Fetches the translations from CDS.

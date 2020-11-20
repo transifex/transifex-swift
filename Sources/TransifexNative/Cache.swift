@@ -22,8 +22,8 @@ public protocol Cache {
     ///   - localeCode: the locale code
     func get(key: String, localeCode: String) -> String?
     
-    /// Update the cache entry of a given locale code with a dictionary of translations that is structured
-    /// like this:
+    /// Update the cache with a dictionary containing locale codes as keys and a list of translations as
+    /// values like this:
     ///
     /// ```
     /// {
@@ -34,19 +34,22 @@ public protocol Cache {
     ///     'de' : {
     ///          'key3' : { 'string' : '...' },
     ///     },
-    ///     'gr' : {},
+    ///     'gr' : {
+    ///          'key4' : { 'string' : '...' },
+    ///     },
     /// }
     /// ```
     ///
     /// - Parameters:
-    ///   - localeCode: The locale code that is going to be updated
-    ///   - translations: The updated dictionary structure of translations
-    func update(localeCode: String, translations: LocaleStrings)
-    
+    ///   - translations: The dictionary structure of translations
+    func update(translations: [String: LocaleStrings])
 }
 
 /// A cache that holds translations in memory
 public final class MemoryCache : NSObject {
+    
+    /// Serial dispatch queue that ensures that cache will only be updated / read by one thread
+    let cacheQueue = DispatchQueue(label: "com.transifex.native.memorycache")
     
     var translationsByLocale: [String: LocaleStrings]
     
@@ -57,11 +60,17 @@ public final class MemoryCache : NSObject {
 }
 
 extension MemoryCache : Cache {
-    public func get(key: String, localeCode: String) -> String? {
-        return translationsByLocale[localeCode]?[key]?["string"]
+    public func update(translations: [String: LocaleStrings]) {
+        cacheQueue.sync {
+            for (localeCode, localeTranslations) in translations {
+                translationsByLocale[localeCode] = localeTranslations
+            }
+        }
     }
     
-    public func update(localeCode: String, translations: LocaleStrings) {
-        translationsByLocale[localeCode] = translations
+    public func get(key: String, localeCode: String) -> String? {
+        cacheQueue.sync {
+            return translationsByLocale[localeCode]?[key]?["string"]
+        }
     }
 }
