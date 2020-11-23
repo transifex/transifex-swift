@@ -35,3 +35,52 @@ extension String {
         return hash.map { String(format: "%02hhx", $0) }.joined()
     }
 }
+
+extension String {
+    
+    func capturedGroups(withRegex pattern: String) -> [[String]] {
+        var results: [[String]] = []
+
+        var regex: NSRegularExpression
+        do {
+            regex = try NSRegularExpression(pattern: pattern, options: [])
+        } catch {
+            return results
+        }
+        
+        let matches = regex.matches(in: self, options: [], range: NSRange(location:0, length: self.count))
+        
+        matches.forEach { match in
+            var matchResults: [String] = []
+            let lastRangeIndex = match.numberOfRanges - 1
+            if lastRangeIndex >= 1 {
+                
+                for i in 1...lastRangeIndex {
+                    let capturedGroupIndex = match.range(at: i)
+                    let matchedString = (self as NSString).substring(with: capturedGroupIndex)
+                    matchResults.append(String(matchedString))
+                }
+                if matchResults.count > 0 {
+                    results.append(matchResults)
+                }
+            }
+        }
+        
+        return results
+    }
+    
+    /// Removes the first and last characters from a string, if the string has less than 3 characters, it
+    /// returns the same string
+    ///
+    /// - Returns: Returns a new string with the first and last characters of the original string removed
+    public func removeFirstAndLastCharacters() -> String {
+        guard self.count >= 3 else {
+            return self
+        }
+        
+        let indexStart = self.index(self.startIndex, offsetBy: 1)
+        let indexEnd = self.index(self.endIndex, offsetBy: -1)
+
+        return String(self[indexStart..<indexEnd])
+    }
+}

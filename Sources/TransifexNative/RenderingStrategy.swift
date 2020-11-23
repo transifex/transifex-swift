@@ -34,116 +34,81 @@ class ICUMessageFormat : RenderingStrategyFormatter {
 
 /// The platform rendering strategy
 class PlatformFormat : RenderingStrategyFormatter {
+    
+    /// Returns the proper plural rule to use based on the given locale and arguments.
+    ///
+    /// In order to find the correct rule, it takes advantage of Apple's localization framework
+    /// that is based on .stringsdict files. It uses a dummy .stringsdict that has all plurals
+    /// and returns the name of the plural as the localized value (e.g. one=one, few=few).
+    /// This way, this method finds the rule without implementing the complex CLDR
+    /// business logic from scratch.
+    static func extractPluralizationRule(locale: Locale,
+                                         arguments: [CVarArg]) -> PluralizationRule {
+        let key = NSLocalizedString("TransifexNative.StringsDict.TestKey.%d",
+                                    bundle: Bundle.module,
+                                    comment: "")
+        let pluralizationRule = String(format: key,
+                                       locale: locale,
+                                       arguments: arguments)
+        switch pluralizationRule {
+        case "zero":
+            return .zero
+        case "one":
+            return .one
+        case "two":
+            return .two
+        case "few":
+            return .few
+        case "many":
+            return .many
+        case "other":
+            return .other
+
+        default:
+            return .unspecified
+        }
+    }
+    
     static func format(stringToRender: String,
                        localeCode: String,
                        params: [String: Any]) -> String {
-        // If the provided parameters contain an argument array...
-        if let args = params[Swizzler.PARAM_ARGUMENTS_KEY] as? [Any],
-           // ... which has at least 1 item
-           args.count > 0,
-           // ... and can be converted to a [CVarArg] array
-           let cArgs = args as? [CVarArg] {
-            
-            // ... then perform a dummy ICU pluralization parsing
-            guard let plurals = extractICUPlurals(string: stringToRender) else {
-                return String.init(format: stringToRender, locale: Locale.current,
-                                   arguments: cArgs)
-            }
-            
-            // Extract the "one" and "other" rules
-            let pOne = plurals.0
-            let pOther = plurals.1
-            
-            // Fallback to the "one" rule if the type of the first argument
-            // can't be used.
-            var format = pOne
-            
-            // Check the first argument in the array if its type is an integer
-            // or a unsigned integer.
-            if let firstArgument = args[0] as? Int {
-                format = (firstArgument == 1 ? pOne : pOther)
-            }
-            else if let firstArgument = args[0] as? UInt {
-                format = (firstArgument == 1 ? pOne : pOther)
-            }
-                    
-            return String.init(format: format, locale: Locale.current,
-                               arguments: cArgs)
-        }
-        else {
+        // Check if the provided parameters contain an argument array
+        // and it can be converted to a [CVarArg] array.
+        guard let args = params[Swizzler.PARAM_ARGUMENTS_KEY] as? [Any],
+              let cArgs = args as? [CVarArg] else {
             return stringToRender
         }
+        
+        let locale = Locale(identifier: localeCode)
+
+        // Extract all plurals based on the ICU Message Format
+        guard let plurals = stringToRender.extractICUPlurals() else {
+            return String.init(format: stringToRender, locale: locale,
+                               arguments: cArgs)
+        }
+        
+        // Detect which rule to use
+        let rule = extractPluralizationRule(locale: locale,
+                                            arguments: cArgs)
+
+        var chosenFormat : String?
+        
+        // Use the proper format based on the extracted rule
+        if let formatRule = plurals[rule] {
+            chosenFormat = formatRule
+        }
+        // Otherwise fallback to the "other" rule
+        else {
+            chosenFormat = plurals[.other]
+        }
+        
+        guard let format = chosenFormat else {
+            return String.init(format: stringToRender, locale: locale,
+                               arguments: cArgs)
+        }
+        
+        return String.init(format: format, locale: locale,
+                           arguments: cArgs)
     }
     
-    typealias PluralOne = String
-    typealias PluralOther = String
-    typealias Plurals = ( PluralOne, PluralOther)
-    
-    /// Simple ICU parser for extracting "one" and "other" rules from a pluralized string as fetched from CDS
-    /// - Parameter string: The pluralized string
-    /// - Returns: A tuple containing the string formats for the "one" and "other" rules
-    static func extractICUPlurals(string: String) -> Plurals? {
-        let substring = string.removeFirstAndLastCharacters()
-
-        let pattern = #"\{.*?\}"#
-        let regex : NSRegularExpression
-        
-        do {
-            regex = try NSRegularExpression(pattern: pattern, options: [])
-        }
-        catch {
-            return nil
-        }
-        
-        var pluralOne : PluralOne? = nil
-        var pluralOther : PluralOther? = nil
-        
-        let range = NSRange(substring.startIndex..<substring.endIndex,
-                            in: substring)
-
-        regex.enumerateMatches(in: substring,
-                               options: [],
-                               range: range) { (match, _, stop) in
-            guard let match = match else { return }
-
-            guard let firstCaptureRange = Range(match.range,
-                                                in: substring) else {
-                return
-            }
-               
-            let string = String(substring[firstCaptureRange]).removeFirstAndLastCharacters()
-            
-            if pluralOne == nil {
-                pluralOne = string
-            }
-            else if pluralOther == nil {
-                pluralOther = string
-            }
-        }
-        
-        guard let pOne = pluralOne,
-              let pOther = pluralOther else {
-            return nil
-        }
-        
-        return (pOne, pOther)
-    }
-}
-
-extension String {
-    
-    /// Removes the first and last characters from a string, if the string has less than 3 characters, it
-    /// returns the same string
-    ///
-    /// - Returns: Returns a new string with the first and last characters of the original string removed
-    public func removeFirstAndLastCharacters() -> String {
-        guard self.count >= 3 else {
-            return self
-        }
-        
-        let indexStart = self.index(self.startIndex, offsetBy: 1)
-        let indexEnd = self.index(self.endIndex, offsetBy: -1)
-
-        return String(self[indexStart..<indexEnd])
-    }
 }
