@@ -46,7 +46,7 @@ class PlatformFormat : RenderingStrategyFormatter {
             
             // ... then extract all purals based on the ICU Message Format
             guard let plurals = stringToRender.extractICUPlurals() else {
-                return String.init(format: stringToRender, locale: Locale.current,
+                return String.init(format: stringToRender, locale: locale,
                                    arguments: cArgs)
             }
             
@@ -68,7 +68,7 @@ class PlatformFormat : RenderingStrategyFormatter {
                 format = (firstArgument == 1 ? pOne : pOther)
             }
                     
-            return String.init(format: format, locale: Locale.current,
+            return String.init(format: format, locale: localeCode,
                                arguments: cArgs)
         }
         else {
