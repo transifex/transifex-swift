@@ -137,6 +137,19 @@ final class TransifexNativeTests: XCTestCase {
         XCTAssertEqual(jsonString, expectedJsonString)
     }
     
+    func testExtractICUPlurals() {
+        XCTAssertEqual(
+            "{???, plural, one {One table} two {A couple of tables} other {%d tables}}".extractICUPlurals(),
+            ["one": "One table", "two": "A couple of tables", "other": "%d tables"]
+        )
+        XCTAssertEqual(
+            "{cnt, plural, other {%d tables}}".extractICUPlurals(),
+            ["other": "%d tables"]
+        )
+        XCTAssertEqual("{cnt, plural, }".extractICUPlurals(), [:])
+        XCTAssertEqual("{something}".extractICUPlurals(), nil)
+    }
+    
     func testFetchTranslations() {
         let expectation = self.expectation(description: "Waiting for translations to be fetched")
         var translationsResult : [String: LocaleStrings]? = nil
@@ -218,5 +231,6 @@ final class TransifexNativeTests: XCTestCase {
         ("testEncodingSourceStringWithMeta", testEncodingSourceStringWithMeta),
         ("testFetchTranslations", testFetchTranslations),
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
+        ("testExtractICUPlurals", testExtractICUPlurals),
     ]
 }

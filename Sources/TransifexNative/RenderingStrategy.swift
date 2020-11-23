@@ -44,15 +44,16 @@ class PlatformFormat : RenderingStrategyFormatter {
            // ... and can be converted to a [CVarArg] array
            let cArgs = args as? [CVarArg] {
             
-            // ... then perform a dummy ICU pluralization parsing
-            guard let plurals = extractICUPlurals(string: stringToRender) else {
+            // ... then extract all purals based on the ICU Message Format
+            guard let plurals = stringToRender.extractICUPlurals() else {
                 return String.init(format: stringToRender, locale: Locale.current,
                                    arguments: cArgs)
             }
             
             // Extract the "one" and "other" rules
-            let pOne = plurals.0
-            let pOther = plurals.1
+            // TODO: Use the proper rule accordingly
+            let pOne = plurals["one"]!
+            let pOther = plurals["other"]!
             
             // Fallback to the "one" rule if the type of the first argument
             // can't be used.
@@ -75,75 +76,4 @@ class PlatformFormat : RenderingStrategyFormatter {
         }
     }
     
-    typealias PluralOne = String
-    typealias PluralOther = String
-    typealias Plurals = ( PluralOne, PluralOther)
-    
-    /// Simple ICU parser for extracting "one" and "other" rules from a pluralized string as fetched from CDS
-    /// - Parameter string: The pluralized string
-    /// - Returns: A tuple containing the string formats for the "one" and "other" rules
-    static func extractICUPlurals(string: String) -> Plurals? {
-        let substring = string.removeFirstAndLastCharacters()
-
-        let pattern = #"\{.*?\}"#
-        let regex : NSRegularExpression
-        
-        do {
-            regex = try NSRegularExpression(pattern: pattern, options: [])
-        }
-        catch {
-            return nil
-        }
-        
-        var pluralOne : PluralOne? = nil
-        var pluralOther : PluralOther? = nil
-        
-        let range = NSRange(substring.startIndex..<substring.endIndex,
-                            in: substring)
-
-        regex.enumerateMatches(in: substring,
-                               options: [],
-                               range: range) { (match, _, stop) in
-            guard let match = match else { return }
-
-            guard let firstCaptureRange = Range(match.range,
-                                                in: substring) else {
-                return
-            }
-               
-            let string = String(substring[firstCaptureRange]).removeFirstAndLastCharacters()
-            
-            if pluralOne == nil {
-                pluralOne = string
-            }
-            else if pluralOther == nil {
-                pluralOther = string
-            }
-        }
-        
-        guard let pOne = pluralOne,
-              let pOther = pluralOther else {
-            return nil
-        }
-        
-        return (pOne, pOther)
-    }
-}
-
-extension String {
-    
-    /// Removes the first and last characters from a string, if the string has less than 3 characters, it
-    /// returns the same string
-    ///
-    /// - Returns: Returns a new string with the first and last characters of the original string removed
-    public func removeFirstAndLastCharacters() -> String {
-        guard self.count >= 3 else {
-            return self
-        }
-        
-        let indexStart = self.index(self.startIndex, offsetBy: 1)
-        let indexEnd = self.index(self.endIndex, offsetBy: -1)
-
-        return String(self[indexStart..<indexEnd])
-    }
 }
