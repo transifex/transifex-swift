@@ -46,7 +46,7 @@ class PlatformFormat : RenderingStrategyFormatter {
             
             // ... then extract all purals based on the ICU Message Format
             guard let plurals = stringToRender.extractICUPlurals() else {
-                return String.init(format: stringToRender, locale: locale,
+                return String.init(format: stringToRender, locale: Locale(identifier: localeCode),
                                    arguments: cArgs)
             }
             
@@ -55,9 +55,9 @@ class PlatformFormat : RenderingStrategyFormatter {
             let pOne = plurals["one"]!
             let pOther = plurals["other"]!
             
-            // Fallback to the "one" rule if the type of the first argument
+            // Fallback to the "other" rule if the type of the first argument
             // can't be used.
-            var format = pOne
+            var format = pOther
             
             // Check the first argument in the array if its type is an integer
             // or a unsigned integer.
@@ -68,7 +68,7 @@ class PlatformFormat : RenderingStrategyFormatter {
                 format = (firstArgument == 1 ? pOne : pOther)
             }
                     
-            return String.init(format: format, locale: localeCode,
+            return String.init(format: format, locale: Locale(identifier: localeCode),
                                arguments: cArgs)
         }
         else {
