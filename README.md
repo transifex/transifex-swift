@@ -4,6 +4,8 @@ Transifex Native iOS SDK is a collection of tools to easily localize your iOS ap
 
 The package is built using Swift 5.3, as it currently requires a bundled resource to be present in the package (which was introduced on version 5.3). An update that will require a lower Swift version is currently WIP.
 
+Learn more about [Transifex Native](https://docs.transifex.com/transifex-native-sdk-overview/introduction).
+
 ## Usage
 
 The SDK allows you to keep using the same localization hooks that the iOS framework provides, such as 
@@ -86,11 +88,6 @@ add this file to your project.
     return YES;
 }
 ```
-
-### Transifex Content Delivery Service (CDS)
-A [service](https://github.com/transifex/transifex-delivery) that caches and serves content for Transifex Native app localization.
-
-This is the where the SDK fetches translations from.
 
 ### Fetching translations
 As soon as `fetchTranslations` is called, the SDK will attempt to download the translations for all locales
