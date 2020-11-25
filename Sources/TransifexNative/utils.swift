@@ -18,7 +18,7 @@ import CommonCrypto
 ///   - sourceString: the actual string
 ///   - context: an optional context that accompanies the string
 /// - Returns: a hash that uniquely identifies the string
-func generateKey(sourceString: String, context: String?) -> String {
+public func generateKey(sourceString: String, context: String?) -> String {
     var context: String = context ?? ""
     context = context.replacingOccurrences(of: ",", with: ":")
     let finalString = sourceString + ":" + context
