@@ -16,12 +16,12 @@ let package = Package(
     dependencies: [],
     targets: [
         .target(
-            name: "TransifexNativeObjCRuntime",
-            dependencies: []
+            name: "TransifexNativeObjCRuntime"
         ),
         .target(
             name: "TransifexNative",
             dependencies: [ "TransifexNativeObjCRuntime" ],
+            exclude: [ "TXNativeExtensions.swift" ],
             resources: [
                 .copy("Localizable.stringsdict")
             ]
