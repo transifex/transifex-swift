@@ -75,8 +75,8 @@ add this file to your project.
     ]];
 
     [TxNative initializeWithLocales:localeState
-                              token:@"token"
-                             secret:@"secret"
+                              token:@"<transifex_token>"
+                             secret:@"<transifex_secret>"
                             cdsHost:@"https://cds.svc.transifex.net/"
                               cache:[MemoryCache new]
                       missingPolicy:compositePolicy
