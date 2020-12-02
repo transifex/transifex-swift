@@ -59,7 +59,6 @@ add this file to your project.
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-  
     LocaleState *localeState = [[LocaleState alloc] initWithSourceLocale:@"en"
                                                               appLocales:@[
                                                                   @"el" ,
@@ -98,9 +97,16 @@ In later versions of the SDK, the translations will also be stored on the device
 app sessions.
 
 ### Pushing source content
-Coming soon. 
+In order to push the source translations to CDS, you will first need to prepare an array of `TxSourceString` objects
+that will hold all the necessary information needed for CDS. You can refer to the `TxSourceString` class for more
+information, or you can look at the list below:
 
-For the moment, you will have to use the [push endpoint](https://github.com/transifex/transifex-delivery/#push-content) of CDS in order to push strings to your resource.
+* `key` (required): The key of the source string, generated via the public `generateKey()` method.
+* `sourceString` (required): The actual source string.
+* `developerComment` (optional): An optional comment provided by the developer to assist the translators.
+* `occurrencies` (required): A list of relative paths where the source string is located in the project.
+
+After building an array of `TxSourceString` objects, use the `pushTranslations` method to push them to CDS. You can optionally set the `purge` argument to `true` (defaults to `false`) to replace the entire resource content. The completion handler can be used to get notified asynchronously whether the request was successful or not.
 
 ### Invalidating CDS cache
 The cache of CDS has a TTL of 30 minutes. If you update some translations on Transifex and you need

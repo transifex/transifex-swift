@@ -18,7 +18,7 @@ class SwizzledBundle : Bundle {
         allBundles.forEach({ (bundle) in
             object_setClass(bundle, SwizzledBundle.self)
         })
-    }();
+    }()
     
     override func localizedString(forKey key: String,
                                   value: String?,

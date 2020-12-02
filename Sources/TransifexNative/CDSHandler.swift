@@ -11,7 +11,7 @@ import Foundation
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
 class CDSPullRequest {
 
-    private static let MAX_RETRIES = 20;
+    private static let MAX_RETRIES = 20
 
     let code : String
     let request : URLRequest
@@ -64,7 +64,7 @@ class CDSPullRequest {
             
             switch statusCode {
             
-            case 200:
+            case CDSHandler.HTTP_STATUS_CODE_OK:
                 if let data = data {
                     let decoder = JSONDecoder()
                     
@@ -86,8 +86,7 @@ class CDSPullRequest {
                                       nil,
                                       .nonParsableResponse)
                 }
-                break
-            case 202:
+            case CDSHandler.HTTP_STATUS_CODE_ACCEPTED:
                 if self.retryCount < CDSPullRequest.MAX_RETRIES {
                     self.retryCount += 1
                     self.perform(with: completionHandler)
@@ -97,7 +96,6 @@ class CDSPullRequest {
                                       nil,
                                       .maxRetriesReached)
                 }
-                break
             default:
                 completionHandler(self.code,
                                   nil,
@@ -112,6 +110,22 @@ class CDSHandler {
 
     private static let CDS_HOST = "https://cds.svc.transifex.net"
     
+    private static let CONTENT_ENDPOINT = "content"
+    
+    internal static let TAG_IOS = "ios"
+    
+    fileprivate static let HTTP_STATUS_CODE_OK = 200
+    fileprivate static let HTTP_STATUS_CODE_ACCEPTED = 202
+    
+    /// Internal structure that's used to prepare the SourceStrings for the CDS push
+    private struct PushData: Encodable {
+        var data: [String:SourceString]
+        struct Meta: Encodable {
+            var purge: Bool
+        }
+        var meta: Meta
+    }
+
     /// A list of locale codes for the configured languages in the application
     let localeCodes: [String]
     
@@ -163,7 +177,7 @@ class CDSHandler {
             return
         }
         
-        let baseURL = cdsHostURL.appendingPathComponent("content")
+        let baseURL = cdsHostURL.appendingPathComponent(CDSHandler.CONTENT_ENDPOINT)
         
         var fetchLocaleCodes: [String]
         
@@ -207,23 +221,83 @@ class CDSHandler {
         }
     }
     
-    /// Serialize the given source strings to a format suitable for the CDS.
+    /// Pushes translations to CDS.
     ///
-    /// - Parameter strings: a list of `SourceString` objects
-    /// - Returns: a JSON-friendly dictionary
-    private func serializeSourceStrings(_ strings: [SourceString]) -> [String: String] {
-        var sourceStrings: [String:String] = [:]
-        for string in strings {
-            do {
-                let jsonData = try JSONEncoder().encode(string)
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    sourceStrings[string.key] = jsonString
-                }
-            } catch {
-                print("Error encoding source string \(string): \(error.localizedDescription)")
-            }
+    /// - Parameters:
+    ///   - translations: A list of `TxSourceString` objects
+    ///   - purge: Whether the request will replace the entire resource content (true) or not (false)
+    ///   Defaults to false
+    ///   - completionHandler: a callback function to call when the operation is complete
+    public func pushTranslations(_ translations: [TxSourceString],
+                                 purge: Bool = false,
+                                 completionHandler: @escaping (Bool) -> Void) {
+        guard let cdsHostURL = URL(string: cdsHost) else {
+            print("Error: Invalid CDS host URL: \(cdsHost)")
+            completionHandler(false)
+            return
         }
-        return sourceStrings
+        
+        guard let jsonData = serializeTranslations(translations,
+                                                   purge: purge) else {
+            print("Error while serializing translations")
+            completionHandler(false)
+            return
+        }
+        
+        let baseURL = cdsHostURL.appendingPathComponent(CDSHandler.CONTENT_ENDPOINT)
+        var request = URLRequest(url: baseURL)
+        request.httpBody = jsonData
+        request.httpMethod = "POST"
+        request.allHTTPHeaderFields = getHeaders(withSecret: true)
+
+        session.dataTask(with: request) { (data, response, error) in
+            guard error == nil else {
+                print("Error pushing strings: \(error!)")
+                completionHandler(false)
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completionHandler(false)
+                return
+            }
+            
+            guard httpResponse.statusCode == CDSHandler.HTTP_STATUS_CODE_OK else {
+                print("HTTP Status error while pushing strings: \(httpResponse.statusCode)")
+                completionHandler(false)
+                return
+            }
+            
+            completionHandler(true)
+        }.resume()
+    }
+    
+    /// Serialize the given translation units to the final data that should be passed in the push CDS request.
+    ///
+    /// - Parameter translations: a list of `TxSourceString` objects
+    /// - Parameter purge: Whether the resulting data will replace the entire resource content or not
+    /// - Returns: a Data object ready to be used in the CDS request
+    private func serializeTranslations(_ translations: [TxSourceString],
+                                       purge: Bool = false) -> Data? {
+        var sourceStrings: [String:SourceString] = [:]
+        
+        for translation in translations {
+            sourceStrings[translation.key] = translation.sourceStringRepresentation()
+        }
+        
+        let data = PushData(data: sourceStrings,
+                            meta: PushData.Meta(purge: purge))
+        
+        var jsonData: Data?
+        
+        do {
+            jsonData = try JSONEncoder().encode(data)
+        }
+        catch {
+            print("Error encoding source strings: \(error)")
+        }
+        
+        return jsonData
     }
 
     /// Return the headers to use when making requests.

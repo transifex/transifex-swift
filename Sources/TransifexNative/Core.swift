@@ -79,6 +79,21 @@ public class NativeCore : TranslationProvider {
         }
     }
     
+    /// Pushes the base translations to CDS.
+    ///
+    /// - Parameters:
+    ///   - translations: A list of `TxSourceString` objects.
+    ///   - purge: Whether to replace the entire resource  content (true) or not (false). Defaults to false.
+    ///   - completionHandler: A callback to be called when the push operation is complete with a
+    /// boolean argument that informs the caller that the operation was successful (true) or not (false).
+    func pushTranslations(_ translations: [TxSourceString],
+                          purge: Bool = false,
+                          completionHandler: @escaping (Bool) -> Void) {
+        cdsHandler.pushTranslations(translations,
+                                    purge: purge,
+                                    completionHandler: completionHandler)
+    }
+    
     /// Used by the Swift localizedString(format:arguments:) methods found in the
     /// TXExtensions.swift file.
     func localizedString(format: String,
@@ -272,6 +287,22 @@ public final class TxNative : NSObject {
     @objc
     public static func fetchTranslations(_ localeCode: String? = nil) {
         tx?.fetchTranslations(localeCode)
+    }
+    
+    /// Pushes the base translations to CDS.
+    ///
+    /// - Parameters:
+    ///   - translations: A list of `TxSourceString` objects.
+    ///   - purge: Whether to replace the entire resource content (true) or not (false). Defaults to false.
+    ///   - completionHandler: A callback to be called when the push operation is complete with a
+    /// boolean argument that informs the caller that the operation was successful (true) or not (false).
+    @objc
+    public static func pushTranslations(_ translations: [TxSourceString],
+                                        purge: Bool = false,
+                                        completionHandler: @escaping (Bool) -> Void) {
+        tx?.pushTranslations(translations,
+                             purge: purge,
+                             completionHandler: completionHandler)
     }
 }
 

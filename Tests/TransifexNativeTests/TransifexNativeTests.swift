@@ -33,8 +33,31 @@ class URLSessionMock: URLSession {
         with request: URLRequest,
         completionHandler: @escaping CompletionHandler
     ) -> URLSessionDataTask {
-        if let mockResponse = mockResponses?[mockResponseIndex] {
+        // For POST requests, return 200 if the data included in the
+        // mock response is equal to the data of the HTTP body of the
+        // request.
+        if request.httpMethod == "POST",
+           let mockResponse = mockResponses?[mockResponseIndex] {
+            mockResponseIndex += 1
             
+            return URLSessionDataTaskMock {
+                if mockResponse.data == request.httpBody {
+                    let response = HTTPURLResponse(url: request.url!,
+                                                   statusCode: 200,
+                                                   httpVersion: nil,
+                                                   headerFields: nil)
+                    completionHandler(nil, response, nil)
+                }
+                else {
+                    let response = HTTPURLResponse(url: request.url!,
+                                                   statusCode: 403,
+                                                   httpVersion: nil,
+                                                   headerFields: nil)
+                    completionHandler(nil, response, nil)
+                }
+            }
+        }
+        else if let mockResponse = mockResponses?[mockResponseIndex] {
             mockResponseIndex += 1
             
             let data = mockResponse.data
@@ -226,6 +249,36 @@ final class TransifexNativeTests: XCTestCase {
             XCTAssertEqual(translationsResult!["en"]!["testkey2"]!["string"], "test string 2")
         }
     }
+    
+    func testPushTranslations() {
+        let expectation = self.expectation(description: "Waiting for translations to be pushed")
+        let translations = [
+            TxSourceString(key: "testkey",
+                           sourceString: "sourceString",
+                           occurrences: [],
+                           characterLimit: 0)
+        ]
+        
+        let expectedDataString = "{\"meta\":{\"purge\":false},\"data\":{\"testkey\":{\"string\":\"sourceString\",\"meta\":{\"character_limit\":0,\"tags\":[\"ios\"],\"occurrences\":[]}}}}"
+        
+        let mockResponse = MockResponse(data: expectedDataString.data(using: .utf8))
+        
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [ mockResponse ]
+        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
+                                    token: "test_token",
+                                    session: urlSession)
+        
+        var pushResult : Bool = false
+        cdsHandler.pushTranslations(translations) { (result) in
+            pushResult = result
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertTrue(pushResult)
+        }
+    }
 
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
@@ -236,5 +289,6 @@ final class TransifexNativeTests: XCTestCase {
         ("testFetchTranslations", testFetchTranslations),
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testExtractICUPlurals", testExtractICUPlurals),
+        ("testPushTranslations", testPushTranslations),
     ]
 }
