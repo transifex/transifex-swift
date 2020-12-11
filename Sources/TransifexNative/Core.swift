@@ -33,8 +33,6 @@ public class NativeCore : TranslationProvider {
     
     /// Create an instance of the core framework class.
     ///
-    /// Also warms up the cache by fetching the translations from the CDS.
-    ///
     /// - Parameters:
     ///   - locales: a list of locale codes for the languages configured in the application
     ///   - token: the API token to use for connecting to the CDS
@@ -56,7 +54,7 @@ public class NativeCore : TranslationProvider {
     ) {
         self.locales = locales
         self.cdsHandler = CDSHandler(
-            localeCodes: self.locales.appLocales,
+            localeCodes: self.locales.translatedLocales,
             token: token,
             secret: secret,
             cdsHost: cdsHost

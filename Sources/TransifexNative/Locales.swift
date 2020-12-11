@@ -9,30 +9,45 @@
 import Foundation
 
 /// Protocol that developers can use to create custom classes that return the current locale of the app.
-/// If no CurrentLocaleProvider is provided in LocaleState constructor, the UserDefaultsLocaleProvider
+/// If no CurrentLocaleProvider is provided in LocaleState constructor, the TXPreferredLocaleProvider
 /// is used.
 @objc
-public protocol CurrentLocaleProvider {
-
+public protocol TXCurrentLocaleProvider {
     func currentLocale() -> String
 }
 
-/// Class that returns the current locale found in the User Defaults dictionary of the app
-public final class UserDefaultsLocaleProvider : NSObject, CurrentLocaleProvider {
+/// Class that returns the language code of the current user's locale and falls back to "en" if the language
+/// code cannot be found.
+public final class TXPreferredLocaleProvider : NSObject {
+    private var _currentLocale : String
     
-    private static let APPLE_LANGUAGE_KEY = "AppleLanguages"
-    private static let FALLBACK_LANGUAGE = "en"
+    override init() {
+        // Fetch the current locale on initialization and return it when it's
+        // requested by the `currentLocale()` method.
+        _currentLocale = TXPreferredLocaleProvider.getCurrentLocale()
+
+        super.init()
+
+        // Detect whenever the current locale is changed and update that value.
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(currentLocaleDidChange),
+                                               name: NSLocale.currentLocaleDidChangeNotification,
+                                               object: nil)
+    }
     
+    @objc
+    private func currentLocaleDidChange() {
+        _currentLocale = TXPreferredLocaleProvider.getCurrentLocale()
+    }
+    
+    private static func getCurrentLocale() -> String {
+        return NSLocale.autoupdatingCurrent.languageCode ?? "en"
+    }
+}
+
+extension TXPreferredLocaleProvider : TXCurrentLocaleProvider {
     public func currentLocale() -> String {
-        let userDefaults = UserDefaults.standard
-        
-        guard let langArray = userDefaults.object(forKey: UserDefaultsLocaleProvider.APPLE_LANGUAGE_KEY) as? NSArray,
-              let current = langArray.firstObject as? String else {
-            print("Error: Language code couldn't be found, falling back to \(UserDefaultsLocaleProvider.FALLBACK_LANGUAGE).")
-            return UserDefaultsLocaleProvider.FALLBACK_LANGUAGE
-        }
-        
-        return current
+        return _currentLocale
     }
 }
 
@@ -46,43 +61,53 @@ public final class LocaleState : NSObject {
     
     /// The currently selected locale that is being displayed in the app
     @objc
-    public var currentLocale : String {
+    public var currentLocale: String {
         get {
             return currentLocaleProvider.currentLocale()
         }
     }
     
-    /// A list of all locales supported in the app
+    /// A list of all locales supported in the app, including the source locale.
     @objc
-    public private(set) var appLocales : [String]
+    public private(set) var appLocales: [String]
+    
+    /// An array containing the app's locales without the source locale.
+    @objc
+    public private(set) var translatedLocales: [String]
     
     /// The provider object that provides the current locale value
     /// whenever it is requested by the currentLocale property.
-    private var currentLocaleProvider : CurrentLocaleProvider
+    private var currentLocaleProvider: TXCurrentLocaleProvider
+    
+    private static let DEFAULT_SOURCE_LOCALE = "en"
     
     /// Constructor.
     ///
     /// - Parameters:
-    ///   - sourceLocale: the locale of the source language, defaults to "en"
-    ///   - appLocales: a list of all locales supported by the application, defaults to ["en"]
+    ///   - sourceLocale: the locale of the source language, defaults to "en" if no source locale is
+    ///   provided
+    ///   - appLocales: a list of all locales supported by the application, defaults to the source locale
+    ///   if the appLocales list is empty
     ///   - currentLocaleProvider: an object conforming to CurrentLocaleProvider protocol,
-    /// defaults to UserDefaultsLocaleProvider
+    /// defaults to TXPreferredLocaleProvider
     @objc
     public init(sourceLocale: String? = nil,
          appLocales: [String] = [],
-         currentLocaleProvider: CurrentLocaleProvider? = nil
+         currentLocaleProvider: TXCurrentLocaleProvider? = nil
     ) {
-        self.sourceLocale = sourceLocale ?? "en"
-        if appLocales.count == 0 {
-            self.appLocales = [ self.sourceLocale ]
-        }
-        else {
-            // Make sure we filter all duplicate values
-            // by converting the array to a Set and back
-            // to an array.
-            self.appLocales = Array(Set(appLocales))
-        }
-        self.currentLocaleProvider = currentLocaleProvider ?? UserDefaultsLocaleProvider()
+        let sourceLocale = sourceLocale ?? LocaleState.DEFAULT_SOURCE_LOCALE
+        self.sourceLocale = sourceLocale
+        
+        // Make sure we filter all duplicate values
+        // by converting the array to a Set.
+        var distinctAppLocales = Set(appLocales)
+        // Insert the source locale in case it hasn't been added.
+        distinctAppLocales.insert(sourceLocale)
+        self.appLocales = Array(distinctAppLocales)
+        
+        self.translatedLocales = self.appLocales.filter { $0 != sourceLocale }
+        
+        self.currentLocaleProvider = currentLocaleProvider ?? TXPreferredLocaleProvider()
     }
     
     /// Returns true if the given locale is the source locale, false otherwise.
