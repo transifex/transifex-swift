@@ -92,6 +92,18 @@ class MockLocaleProvider : TXCurrentLocaleProvider {
     }
 }
 
+class MockCacheProvider : TXCacheProvider {
+    let translations: TXTranslations?
+    
+    init(translations: TXTranslations) {
+        self.translations = translations
+    }
+    
+    func getTranslations() -> TXTranslations? {
+        return translations
+    }
+}
+
 final class TransifexNativeTests: XCTestCase {
     func testDuplicateLocaleFiltering() {
         let duplicateLocales = [ "en", "fr", "en" ]
@@ -179,7 +191,7 @@ final class TransifexNativeTests: XCTestCase {
     
     func testFetchTranslations() {
         let expectation = self.expectation(description: "Waiting for translations to be fetched")
-        var translationsResult : [String: LocaleStrings]? = nil
+        var translationsResult : TXTranslations? = nil
         
         let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
         
@@ -194,7 +206,7 @@ final class TransifexNativeTests: XCTestCase {
                                     token: "test_token",
                                     session: urlSession)
         
-        cdsHandler.fetchTranslations { (translations) in
+        cdsHandler.fetchTranslations { (translations, errors) in
             translationsResult = translations
             expectation.fulfill()
         }
@@ -212,7 +224,7 @@ final class TransifexNativeTests: XCTestCase {
     
     func testFetchTranslationsNotReady() {
         let expectation = self.expectation(description: "Waiting for translations to be fetched")
-        var translationsResult : [String: LocaleStrings]? = nil
+        var translationsResult : TXTranslations? = nil
         
         let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
         
@@ -234,7 +246,7 @@ final class TransifexNativeTests: XCTestCase {
                                     token: "test_token",
                                     session: urlSession)
         
-        cdsHandler.fetchTranslations { (translations) in
+        cdsHandler.fetchTranslations { (translations, errors) in
             translationsResult = translations
             expectation.fulfill()
         }
@@ -279,6 +291,58 @@ final class TransifexNativeTests: XCTestCase {
             XCTAssertTrue(pushResult)
         }
     }
+    
+    func testProviderBasedCacheDontReplace() {
+        let firstProviderTranslations: TXTranslations = [
+            "en": [
+                "key1": [ "string": "localized string1" ]
+            ]
+        ]
+        let secondProviderTranslations: TXTranslations = [
+            "en": [
+                "key2": [ "string": "localized string1" ]
+            ]
+        ]
+        
+        let firstProvider = MockCacheProvider(translations: firstProviderTranslations)
+        let secondProvider = MockCacheProvider(translations: secondProviderTranslations)
+        
+        let testProviderBasedCache = TXProviderBasedCache(providers: [
+            firstProvider,
+            secondProvider
+        ],
+        memoryCache: TXMemoryCache(),
+        replaceEntries: false)
+        
+        XCTAssertNotNil(testProviderBasedCache.get(key: "key1", localeCode: "en"))
+        XCTAssertNotNil(testProviderBasedCache.get(key: "key2", localeCode: "en"))
+    }
+    
+    func testProviderBasedCacheReplace() {
+        let firstProviderTranslations: TXTranslations = [
+            "en": [
+                "key1": [ "string": "localized string1" ]
+            ]
+        ]
+        let secondProviderTranslations: TXTranslations = [
+            "en": [
+                "key2": [ "string": "localized string1" ]
+            ]
+        ]
+        
+        let firstProvider = MockCacheProvider(translations: firstProviderTranslations)
+        let secondProvider = MockCacheProvider(translations: secondProviderTranslations)
+        
+        let testProviderBasedCache = TXProviderBasedCache(providers: [
+            firstProvider,
+            secondProvider
+        ],
+        memoryCache: TXMemoryCache(),
+        replaceEntries: true)
+        
+        XCTAssertNil(testProviderBasedCache.get(key: "key1", localeCode: "en"))
+        XCTAssertNotNil(testProviderBasedCache.get(key: "key2", localeCode: "en"))
+    }
 
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
@@ -290,5 +354,7 @@ final class TransifexNativeTests: XCTestCase {
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testExtractICUPlurals", testExtractICUPlurals),
         ("testPushTranslations", testPushTranslations),
+        ("testProviderBasedCacheDontReplace", testProviderBasedCacheDontReplace),
+        ("testProviderBasedCacheReplace", testProviderBasedCacheReplace),
     ]
 }

@@ -22,9 +22,8 @@ public enum RenderingStategy : Int {
 }
 
 /// The main class of the framework, responsible for orchestrating all functionality.
-public class NativeCore : TranslationProvider {
-    
-    var cache: Cache
+class NativeCore : TranslationProvider {
+    var cache: TXCache
     var locales: LocaleState
     var cdsHandler: CDSHandler
     var missingPolicy: MissingPolicy
@@ -42,12 +41,14 @@ public class NativeCore : TranslationProvider {
     ///   - cache: the translation cache that holds the translations from the CDS
     ///   - missingPolicy: an optional policy to use for returning strings when a translation is missing
     ///   - errorPolicy: an optional policy to determine how to handle rendering errors
+    ///   - renderingStrategy: determines which strategy to be used when rendering the final
+    ///   string.
     init(
         locales: LocaleState,
         token: String,
         secret: String?,
         cdsHost: String?,
-        cache: Cache?,
+        cache: TXCache?,
         missingPolicy: MissingPolicy? = nil,
         errorPolicy: ErrorPolicy? = nil,
         renderingStrategy : RenderingStategy
@@ -59,7 +60,7 @@ public class NativeCore : TranslationProvider {
             secret: secret,
             cdsHost: cdsHost
         )
-        self.cache = cache ?? MemoryCache()
+        self.cache = cache ?? TXDefaultCache()
         self.missingPolicy = missingPolicy ?? SourceStringPolicy()
         self.errorPolicy = errorPolicy ?? RenderedSourceErrorPolicy()
         self.renderingStrategy = renderingStrategy
@@ -71,9 +72,18 @@ public class NativeCore : TranslationProvider {
     ///
     /// - Parameter localeCode: an optional locale to fetch translations from; if none provided, it
     /// will fetch translations for all locales defined in the configuration
-    func fetchTranslations(_ localeCode: String? = nil) {
-        cdsHandler.fetchTranslations(localeCode: localeCode) { (translations) in
-            self.cache.update(translations: translations)
+    func fetchTranslations(_ localeCode: String? = nil,
+                           completionHandler: PullCompletionHandler? = nil) {
+        cdsHandler.fetchTranslations(localeCode: localeCode) { (translations, errors) in
+            if errors.count == 0 {
+                self.cache.update(translations: translations,
+                                  replaceEntries: true)
+            }
+            else {
+                print("\(#function) Errors: \(errors)")
+            }
+            
+            completionHandler?(translations, errors)
         }
     }
     
@@ -195,6 +205,8 @@ public class NativeCore : TranslationProvider {
 
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TxNative : NSObject {
+    /// The filename of the file that holds the translated strings and it's bundled inside the app.
+    public static let STRINGS_FILENAME = "txstrings.json"
     
     /// An instance of the core class that handles all the work
     private static var tx : NativeCore?
@@ -215,19 +227,20 @@ public final class TxNative : NSObject {
     ///   - secret: the Transifex secret that can be used for pushing source strings to CDS
     ///   - cdsHost: the host of the CDS service; defaults to a production CDS service hosted by
     ///   Transifex
-    ///   - cache: holds the available translations in various locales
+    ///   - cache: holds the available translations in various locales. If nil (default) the internal cache
+    ///   mechanism will be activated, otherwise the provided cache will be used.
     ///   - missingPolicy: determines how to handle translations that are not available
     ///   - errorPolicy: determines how to handle exceptions when rendering a problematic
     ///   translation
     ///   - renderingStrategy: determines which strategy to be used when rendering the final
-    ///   string.
+    ///   string; defaults to platform strategy
     @objc
     public static func initialize(
         locales: LocaleState,
         token: String,
         secret: String?,
         cdsHost: String? = nil,
-        cache: Cache? = nil,
+        cache: TXCache? = nil,
         missingPolicy: MissingPolicy? = nil,
         errorPolicy: ErrorPolicy? = nil,
         renderingStrategy: RenderingStategy = .platform
@@ -283,8 +296,10 @@ public final class TxNative : NSObject {
     /// - Parameter localeCode: if not provided, it will fetch translations for all locales defined in the
     /// app configuration.
     @objc
-    public static func fetchTranslations(_ localeCode: String? = nil) {
-        tx?.fetchTranslations(localeCode)
+    public static func fetchTranslations(_ localeCode: String? = nil,
+                                         completionHandler: PullCompletionHandler? = nil) {
+        tx?.fetchTranslations(localeCode,
+                              completionHandler: completionHandler)
     }
     
     /// Pushes the base translations to CDS.
