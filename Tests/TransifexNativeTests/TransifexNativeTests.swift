@@ -80,7 +80,7 @@ class URLSessionMock: URLSession {
     }
 }
 
-class MockLocaleProvider : CurrentLocaleProvider {
+class MockLocaleProvider : TXCurrentLocaleProvider {
     private var mockLocaleCode : String
     
     init(_ mockLocaleCode: String) {
