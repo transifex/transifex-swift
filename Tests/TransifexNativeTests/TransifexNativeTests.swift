@@ -292,56 +292,112 @@ final class TransifexNativeTests: XCTestCase {
         }
     }
     
-    func testProviderBasedCacheDontReplace() {
+    func testOverrideFilterCacheAll() {
         let firstProviderTranslations: TXTranslations = [
             "en": [
-                "key1": [ "string": "localized string1" ]
+                "key1": [ "string": "localized string 1" ]
             ]
         ]
         let secondProviderTranslations: TXTranslations = [
             "en": [
-                "key2": [ "string": "localized string1" ]
+                "key2": [ "string": "localized string 2" ]
             ]
         ]
         
         let firstProvider = MockCacheProvider(translations: firstProviderTranslations)
         let secondProvider = MockCacheProvider(translations: secondProviderTranslations)
         
-        let testProviderBasedCache = TXProviderBasedCache(providers: [
-            firstProvider,
-            secondProvider
-        ],
-        memoryCache: TXMemoryCache(),
-        replaceEntries: false)
+        let cache = TXProviderBasedCache(
+            providers: [
+                firstProvider,
+                secondProvider
+            ],
+            internalCache: TXStringOverrideFilterCache(
+                policy: .overrideAll,
+                internalCache: TXMemoryCache()
+            )
+        )
         
-        XCTAssertNotNil(testProviderBasedCache.get(key: "key1", localeCode: "en"))
-        XCTAssertNotNil(testProviderBasedCache.get(key: "key2", localeCode: "en"))
+        XCTAssertNil(cache.get(key: "key1", localeCode: "en"))
+        XCTAssertNotNil(cache.get(key: "key2", localeCode: "en"))
     }
     
-    func testProviderBasedCacheReplace() {
+    func testOverrideFilterCacheUntranslated() {
         let firstProviderTranslations: TXTranslations = [
             "en": [
-                "key1": [ "string": "localized string1" ]
+                "key1": [ "string": "localized string 1" ]
             ]
         ]
         let secondProviderTranslations: TXTranslations = [
             "en": [
-                "key2": [ "string": "localized string1" ]
+                "key2": [ "string": "localized string 2" ],
+                "key3": [ "string": "" ]
             ]
         ]
         
         let firstProvider = MockCacheProvider(translations: firstProviderTranslations)
         let secondProvider = MockCacheProvider(translations: secondProviderTranslations)
         
-        let testProviderBasedCache = TXProviderBasedCache(providers: [
-            firstProvider,
-            secondProvider
-        ],
-        memoryCache: TXMemoryCache(),
-        replaceEntries: true)
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: [
+            "en": [
+                "key1": [ "string": "old localized string 1"]
+            ]
+        ])
         
-        XCTAssertNil(testProviderBasedCache.get(key: "key1", localeCode: "en"))
-        XCTAssertNotNil(testProviderBasedCache.get(key: "key2", localeCode: "en"))
+        let cache = TXProviderBasedCache(
+            providers: [
+                firstProvider,
+                secondProvider
+            ],
+            internalCache: TXStringOverrideFilterCache(
+                policy: .overrideUntranslatedOnly,
+                internalCache: memoryCache
+            )
+        )
+        
+        XCTAssertNotNil(cache.get(key: "key1", localeCode: "en"))
+        XCTAssertTrue(cache.get(key: "key1", localeCode: "en") == "old localized string 1")
+        XCTAssertNotNil(cache.get(key: "key2", localeCode: "en"))
+        XCTAssertNil(cache.get(key: "key3", localeCode: "en"))
+    }
+    
+    func testOverrideFilterCacheTranslated() {
+        let firstProviderTranslations: TXTranslations = [
+            "en": [
+                "key1": [ "string": "localized string 1" ]
+            ]
+        ]
+        let secondProviderTranslations: TXTranslations = [
+            "en": [
+                "key2": [ "string": "localized string 2" ]
+            ]
+        ]
+        
+        let firstProvider = MockCacheProvider(translations: firstProviderTranslations)
+        let secondProvider = MockCacheProvider(translations: secondProviderTranslations)
+        
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: [
+            "en": [
+                "key1": [ "string": "old localized string 1"]
+            ]
+        ])
+        
+        let cache = TXProviderBasedCache(
+            providers: [
+                firstProvider,
+                secondProvider
+            ],
+            internalCache: TXStringOverrideFilterCache(
+                policy: .overrideUsingTranslatedOnly,
+                internalCache: memoryCache
+            )
+        )
+        
+        XCTAssertNotNil(cache.get(key: "key1", localeCode: "en"))
+        XCTAssertTrue(cache.get(key: "key1", localeCode: "en") == "localized string 1")
+        XCTAssertNil(cache.get(key: "key2", localeCode: "en"))
     }
 
     static var allTests = [
@@ -354,7 +410,8 @@ final class TransifexNativeTests: XCTestCase {
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testExtractICUPlurals", testExtractICUPlurals),
         ("testPushTranslations", testPushTranslations),
-        ("testProviderBasedCacheDontReplace", testProviderBasedCacheDontReplace),
-        ("testProviderBasedCacheReplace", testProviderBasedCacheReplace),
+        ("testOverrideFilterCacheAll", testOverrideFilterCacheAll),
+        ("testOverrideFilterCacheUntranslated", testOverrideFilterCacheUntranslated),
+        ("testOverrideFilterCacheTranslated", testOverrideFilterCacheTranslated),
     ]
 }

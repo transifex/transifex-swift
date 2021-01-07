@@ -60,7 +60,7 @@ class NativeCore : TranslationProvider {
             secret: secret,
             cdsHost: cdsHost
         )
-        self.cache = cache ?? TXDefaultCache()
+        self.cache = cache ?? TXStandardCache()
         self.missingPolicy = missingPolicy ?? SourceStringPolicy()
         self.errorPolicy = errorPolicy ?? RenderedSourceErrorPolicy()
         self.renderingStrategy = renderingStrategy
@@ -76,8 +76,7 @@ class NativeCore : TranslationProvider {
                            completionHandler: PullCompletionHandler? = nil) {
         cdsHandler.fetchTranslations(localeCode: localeCode) { (translations, errors) in
             if errors.count == 0 {
-                self.cache.update(translations: translations,
-                                  replaceEntries: true)
+                self.cache.update(translations: translations)
             }
             else {
                 print("\(#function) Errors: \(errors)")

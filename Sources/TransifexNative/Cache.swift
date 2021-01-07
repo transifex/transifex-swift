@@ -12,9 +12,28 @@ public typealias TXStringInfo = [String: String]
 public typealias TXLocaleStrings = [String: TXStringInfo]
 public typealias TXTranslations = [String: TXLocaleStrings]
 
+/// Overriding policy `TXStringOverrideFilterCache` decorator class so that any translations fed by
+/// the `update()` method of the `TXCache` protocol are updated using one of the following policies.
+@objc
+public enum TXCacheOverridePolicy : Int {
+    /// All of the cache entries are replaced with the new translations.
+    case overrideAll
+    /// Only the translations found both in the cache and in the new translations are updated.
+    /// If a translation is not found in cache but exists in the new translations, it's not added.
+    /// If a translation is found in cache but doesn't exist in the new translations, it's left untouched.
+    /// Empty cache entries from the new translations are filtered out.
+    case overrideUsingTranslatedOnly
+    /// Only the translations not existing in the cache are updated.
+    /// If a translation is found in the cache but not in the new translations, it's left untouched.
+    /// Empty cache entries from the new translations are filtered out.
+    case overrideUntranslatedOnly
+}
+
 /// A protocol for classes that act as cache for translations.
 @objc
 public protocol TXCache {
+    /// Gets all of the translations from the cache.
+    func get() -> TXTranslations
     
     /// Get the translation for a certain key and locale code pair.
     ///
@@ -43,10 +62,7 @@ public protocol TXCache {
     ///
     /// - Parameters:
     ///   - translations: The dictionary structure of translations
-    ///   - replaceEntries: whether the passed translations should replace all of the existing
-    ///   entries or leave the entries not included in the translations argument untouched.
-    func update(translations: TXTranslations,
-                replaceEntries: Bool)
+    func update(translations: TXTranslations)
 }
 
 /// A protocol for classes that act as providers of cached translations (e.g. extracting them from a file)
@@ -58,7 +74,7 @@ public protocol TXCacheProvider {
 
 /// Cache provider that loads translations from disk
 @objc
-public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
+public class TXDiskCacheProvider: NSObject, TXCacheProvider {
     /// The translations extracted from disk after initialization.
     public let translations: TXTranslations?
     
@@ -103,143 +119,87 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
     }
 }
 
-/// Composite class that accepts a number of cache providers, an internal cache and whether the providers
-/// should replace the entries of the cache or not. The providers are then used to update the internal class
-/// in the order they are added in the providers list.
+/// Decorator class managing an internal class and propagating the get() and update() protocol method calls
+/// to said cache.
 @objc
-public final class TXProviderBasedCache: NSObject {
-    let memoryCache: TXCache
+public class TXDecoratorCache: NSObject, TXCache {
+    public static let STRING_KEY = "string"
+
+    let internalCache: TXCache
     
+    /// Initializes the decorator class with a specific cache.
+    ///
+    /// - Parameter internalCache: The cache to be used
     @objc
-    public init(providers: [TXCacheProvider],
-                memoryCache: TXCache,
-                replaceEntries: Bool = false) {
-        self.memoryCache = memoryCache
-        for provider in providers {
-            if let providerTranslations = provider.getTranslations() {
-                self.memoryCache.update(translations: providerTranslations,
-                                        replaceEntries: replaceEntries)
-            }
-        }
-        super.init()
+    public init(internalCache: TXCache) {
+        self.internalCache = internalCache
     }
-}
 
-extension TXProviderBasedCache: TXCache {
+    public func get() -> TXTranslations {
+        return internalCache.get()
+    }
+    
     public func get(key: String, localeCode: String) -> String? {
-        return memoryCache.get(key: key, localeCode: localeCode)
+        internalCache.get(key: key, localeCode: localeCode)
     }
     
-    /// Provider based cache doesn't update its internal cache after being initialiazed, so the update
-    /// method of the TXCache protocol is a no-op.
-    
-    public func update(translations: TXTranslations,
-                       replaceEntries: Bool) {
-        /// No-op
+    public func update(translations: TXTranslations) {
+        internalCache.update(translations: translations)
     }
 }
 
+/// Decorator class responsible for storing any updates of the translations to a file url specified in the
+/// constructor.
 @objc
-public final class TXDefaultCache: NSObject {
-    private static let DOWNLOADED_FOLDER_NAME = "txnative"
+public final class TXFileOutputCacheDecorator: TXDecoratorCache {
+    let fileURL: URL?
     
     /// Dispatch queue that ensures that the downloaded strings are written to a file in a serial fashion.
-    let cacheQueue = DispatchQueue(label: "com.transifex.native.memorycache")
+    let cacheQueue = DispatchQueue(label: "com.transifex.native.fileoutput")
     
-    private let internalCache: TXCache
-    private let groupIdentifier: String?
-    
-    @objc
-    public init(groupIdentifier: String? = nil,
-                replaceEntries: Bool = false) {
-        var providers: [TXCacheProvider] = []
-        
-        if let bundledURL = TXDefaultCache.bundledTranslationsURL() {
-            providers.append(TXDiskCacheProvider(fileURL: bundledURL))
-        }
-        
-        if let downloadedURL = TXDefaultCache.downloadedTranslationsURL(groupIdentifier: groupIdentifier) {
-            providers.append(TXDiskCacheProvider(fileURL: downloadedURL))
-        }
-    
-        self.groupIdentifier = groupIdentifier
-        self.internalCache = TXProviderBasedCache(providers: providers,
-                                                  memoryCache: TXMemoryCache(),
-                                                  replaceEntries: replaceEntries)
-    }
-    
-    /// - Returns: The URL of the translations file in the main bundle of the app
-    private static func bundledTranslationsURL() -> URL? {
-        let resourceComps = TxNative.STRINGS_FILENAME.split(separator: ".")
-        
-        guard resourceComps.count == 2 else {
-            return nil
-        }
-        
-        let resourceName = String(resourceComps[0])
-        let resourceExtension = String(resourceComps[1])
-        
-        guard let url = Bundle.main.url(forResource: resourceName,
-                                        withExtension: resourceExtension) else {
-            return nil
-        }
-
-        return url
-    }
-    
-    /// - Parameters:
-    ///   - groupIdentifier: The group identifier of the app group of the app (if available)
-    ///   - includeFilename: Whether the final url will include the translations filename or just its folder
-    /// - Returns: The URL of the translations file (or its folder if includeFilename=false) in the caches
-    /// or the app group directory of the app.
+    /// Initializes the decorator with a specific file url for storing the translations to the disk and an internal
+    /// cache.
     ///
-    /// Pattern:
-    /// `[caches or app group directory]/DOWNLOADED_FOLDER_NAME/{STRINGS_FILENAME}`
-    private static func downloadedTranslationsURL(groupIdentifier: String?,
-                                                  includeFilename: Bool = true) -> URL? {
-        let fileManager = FileManager.default
-
-        var baseURL: URL? = nil
+    /// - Parameters:
+    ///   - fileURL: The file url
+    ///   - internalCache: The internal cache
+    @objc
+    public init(fileURL: URL?,
+                internalCache: TXCache) {
+        self.fileURL = fileURL
+        super.init(internalCache: internalCache)
+    }
+    
+    public override func update(translations: TXTranslations) {
+        super.update(translations: translations)
         
-        if let groupIdentifier = groupIdentifier,
-           let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) {
-            baseURL = groupURL
-        }
-        else {
-            let cacheURLs = fileManager.urls(for: .cachesDirectory,
-                                             in: .userDomainMask)
+        cacheQueue.async {
+            guard let fileURL = self.fileURL else {
+                return
+            }
             
-            if cacheURLs.count > 0 {
-                baseURL = cacheURLs[0]
+            do {
+                try self.storeTranslations(translations: translations,
+                                           fileURL: fileURL)
+            }
+            catch {
+                print("\(#function) Error: \(error)")
             }
         }
-        
-        guard let folderURL = baseURL?.appendingPathComponent(TXDefaultCache.DOWNLOADED_FOLDER_NAME) else {
-            return nil
-        }
-        
-        if !includeFilename {
-            return folderURL
-        }
-        
-        return folderURL.appendingPathComponent(TxNative.STRINGS_FILENAME)
     }
     
     enum StoringErrors: Error {
-        case urlNotFound
         case encodingFailed
     }
     
-    /// Serializes passed translations and stores them in the `TxNative.STRINGS_FILENAME` file
-    /// in the caches directory of the app.
+    /// Serializes passed translations and stores them in the fileURL specified in the constructor. If the
+    /// directory of the file doesn't exist, the method tries to create it with all of its intermediate directories.
     ///
     /// - Parameter translations: The passed translations
     /// - Throws: The error that may occur during serialization, directory creation or file writing.
-    private func storeTranslations(translations: TXTranslations) throws {
-        guard let folderURL = TXDefaultCache.downloadedTranslationsURL(groupIdentifier: groupIdentifier,
-                                                                       includeFilename: false) else {
-            throw StoringErrors.urlNotFound
-        }
+    private func storeTranslations(translations: TXTranslations,
+                                   fileURL: URL) throws {
+        let folderURL = fileURL.deletingLastPathComponent()
         
         do {
             try FileManager.default.createDirectory(at: folderURL,
@@ -259,35 +219,213 @@ public final class TXDefaultCache: NSObject {
             throw StoringErrors.encodingFailed
         }
         
-        let outputFileURL = folderURL.appendingPathComponent(TxNative.STRINGS_FILENAME)
-        
         do {
-            try serializedTranslations.write(to: outputFileURL,
+            try serializedTranslations.write(to: fileURL,
                                              atomically: true,
                                              encoding: .utf8)
         }
     }
 }
 
-extension TXDefaultCache: TXCache {
-    public func get(key: String, localeCode: String) -> String? {
-        /// The get() method here will call TXProviderBasedCache.get() which in turn is going to call
-        /// TXMemoryCache.get().
-        return internalCache.get(key: key, localeCode: localeCode)
+/// Class that makes the internal cache read-only so that no update operations are allowed.
+@objc
+public final class TXReadonlyCacheDecorator: TXDecoratorCache {
+    override public func update(translations: TXTranslations) {
+        // No-op
     }
-    
-    public func update(translations: TXTranslations,
-                       replaceEntries: Bool) {
-        /// When update is called in the default cache, we ignore the replaceEntries flag as we always
-        /// want to store the passed translations in a file in the downloaded translations url.
-        cacheQueue.async {
-            do {
-                try self.storeTranslations(translations: translations)
-            }
-            catch {
-                print("\(#function) Error: \(error)")
+}
+
+/// Composite class that accepts a number of cache providers and an internal cache.
+/// The providers are then used to update the internal class in the order they are added in the providers list.
+///
+/// Example usage:
+/// ```
+/// let cache = TXProviderBasedCache(
+///     providers: [
+///         TXDiskCacheProvider(fileURL: firstFileURL),
+///         TXDiskCacheProvider(fileURL: secondFileURL
+///     ],
+///     internalCache: TXMemoryCache()
+/// )
+/// ```
+@objc
+public final class TXProviderBasedCache: TXDecoratorCache {
+    @objc
+    public init(providers: [TXCacheProvider],
+                internalCache: TXCache) {
+        super.init(internalCache: internalCache)
+        for provider in providers {
+            if let providerTranslations = provider.getTranslations() {
+                self.internalCache.update(translations: providerTranslations)
             }
         }
+    }
+}
+
+/// Decorator class responsible for updating the passed internalCache using a certain override policy defined
+/// in the `TXCacheOverridePolicy` enum.
+@objc
+public final class TXStringOverrideFilterCache: TXDecoratorCache {
+    let policy: TXCacheOverridePolicy
+    
+    @objc
+    public init(policy: TXCacheOverridePolicy,
+                internalCache: TXCache) {
+        self.policy = policy
+        super.init(internalCache: internalCache)
+    }
+    
+    override public func update(translations: TXTranslations) {
+        if policy == .overrideAll {
+            super.update(translations: translations)
+            return
+        }
+        
+        var updatedTranslations = self.get()
+    
+        for (localeCode, localeTranslations) in translations {
+            for (stringKey, translation) in localeTranslations {
+                // Make sure that the new translation has a value and it's not
+                // an empty string.
+                guard let translatedString = translation[TXDecoratorCache.STRING_KEY],
+                      translatedString.count > 0 else {
+                    continue
+                }
+                
+                    // If the policy set set to override untranslated only, then
+                    // update the cache only if there's no existing translation
+                    // for that stringKey.
+                if (policy == .overrideUntranslatedOnly
+                        && self.get(key: stringKey,
+                                localeCode: localeCode) == nil)
+                   ||
+                    // If the policy is set to override using translated only,
+                    // then update the cache only if there's an existing
+                    // translation for that stringKey.
+                    (policy == .overrideUsingTranslatedOnly
+                        && self.get(key: stringKey,
+                                    localeCode: localeCode) != nil) {
+                    if updatedTranslations[localeCode] == nil {
+                        updatedTranslations[localeCode] = [:]
+                    }
+
+                    updatedTranslations[localeCode]?[stringKey] = translation
+                }
+            }
+        }
+
+        super.update(translations: updatedTranslations)
+    }
+}
+
+/// The standard wrapper cache that the TxNative SDK is initialized with, if no other cache is provided.
+///
+/// The cache gets initialized using the decorators implemented in the Caches.swift file of the SDK so that it
+/// reads from any existing translation files either from the app bundle or the app sandbox. The cache is also
+/// responsible for creating or updating the sandbox file with new translations when they will become available
+/// and it offers  a memory cache for retrieving such translations so that they can be displayed in the UI.
+@objc
+public final class TXStandardCache: TXDecoratorCache {
+    /// Initializes the cache using a specific override policy and an optional group identifier based on the
+    /// architecture of the application using the SDK.
+    ///
+    /// - Parameters:
+    ///   - overridePolicy: The specific override policy to be used when updating the internal
+    ///   memory cache with the stored contents from disk. Defaults to .overrideAll.
+    ///   - groupIdentifier: The group identifier of the app, if the app makes use of the app groups
+    /// entitlement. Defaults to nil.
+    @objc
+    public init(overridePolicy: TXCacheOverridePolicy = .overrideAll,
+                groupIdentifier: String? = nil) {
+        var providers: [TXCacheProvider] = []
+        
+        if let bundledURL = TXStandardCache.bundleURL() {
+            providers.append(TXDiskCacheProvider(fileURL: bundledURL))
+        }
+        
+        let downloadURL = TXStandardCache.downloadURL(groupIdentifier: groupIdentifier)
+        
+        if let downloadURL = downloadURL {
+            providers.append(TXDiskCacheProvider(fileURL: downloadURL))
+        }
+ 
+        let cache = TXFileOutputCacheDecorator(
+            fileURL: downloadURL,
+            internalCache: TXReadonlyCacheDecorator(
+                internalCache: TXProviderBasedCache(
+                    providers: providers,
+                    internalCache: TXStringOverrideFilterCache(
+                        policy: overridePolicy,
+                        internalCache: TXMemoryCache()
+                    )
+                )
+            )
+        )
+        
+        super.init(internalCache: cache)
+    }
+    
+    /// Constructs the file URL of the translations file found in the main bundle of the app. The method
+    /// can return nil if the file is not found.
+    ///
+    /// - Returns: The URL of the translations file in the main bundle of the app
+    private static func bundleURL() -> URL? {
+        let resourceComps = TxNative.STRINGS_FILENAME.split(separator: ".")
+        
+        guard resourceComps.count == 2 else {
+            return nil
+        }
+        
+        let resourceName = String(resourceComps[0])
+        let resourceExtension = String(resourceComps[1])
+        
+        guard let url = Bundle.main.url(forResource: resourceName,
+                                        withExtension: resourceExtension) else {
+            return nil
+        }
+
+        return url
+    }
+    
+    private static let DOWNLOADED_FOLDER_NAME = "txnative"
+    
+    /// Constructs the file URL of the translations file found in the sandbox directory of the app that can be
+    /// found either in the caches subdirectory of the sandbox directory of the main app, or in the app
+    /// groups directory based on whether the `groupIdentifier` argument has been provided or not.
+    ///
+    /// The method expects to find the translations file on a separate directory
+    /// (`DOWNLOADED_FOLDER_NAME`) but it doesn't look up whether the directory exists and doesn't
+    /// create it.
+    ///
+    /// Pattern:
+    /// `[caches or app group directory]/DOWNLOADED_FOLDER_NAME/STRINGS_FILENAME`
+    ///
+    /// - Parameters:
+    ///   - groupIdentifier: The group identifier of the app group of the app (if available)
+    /// - Returns: The URL of the translations file in the caches or the app group directory of the app.
+    private static func downloadURL(groupIdentifier: String?) -> URL? {
+        let fileManager = FileManager.default
+
+        var baseURL: URL? = nil
+        
+        if let groupIdentifier = groupIdentifier,
+           let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) {
+            baseURL = groupURL
+        }
+        else {
+            let cacheURLs = fileManager.urls(for: .cachesDirectory,
+                                             in: .userDomainMask)
+            
+            if cacheURLs.count > 0 {
+                baseURL = cacheURLs[0]
+            }
+        }
+        
+        guard let folderURL = baseURL?.appendingPathComponent(TXStandardCache.DOWNLOADED_FOLDER_NAME) else {
+            return nil
+        }
+        
+        return folderURL.appendingPathComponent(TxNative.STRINGS_FILENAME)
     }
 }
 
@@ -297,36 +435,20 @@ extension TXDefaultCache: TXCache {
 /// This class is not thread-safe, so be sure that you are calling the update / get methods from a serial queue.
 @objc
 public final class TXMemoryCache: NSObject {
-    private static let STRING_KEY = "string"
-    
     var translationsByLocale: TXTranslations = [:]
 }
 
 extension TXMemoryCache: TXCache {
-    public func get(key: String, localeCode: String) -> String? {
-        return translationsByLocale[localeCode]?[key]?[TXMemoryCache.STRING_KEY]
+    public func get() -> TXTranslations {
+        return translationsByLocale
     }
     
-    public func update(translations: TXTranslations,
-                       replaceEntries: Bool) {
-        /// If the replaceEntries is true, we replace the whole cache with the translations of the provided
-        /// provider.
-        if replaceEntries {
-            translationsByLocale = translations
-        }
-        else {
-            /// Otherwise we check whether each key in each locale of the provider exists in cache and
-            /// we update it, while leaving the rest of the keys and locales untouched.
-            for (localeCode, localeTranslations) in translations {
-                if translationsByLocale[localeCode] != nil {
-                    for (stringKey, translation) in localeTranslations {
-                        translationsByLocale[localeCode]?[stringKey] = translation
-                    }
-                } else {
-                    translationsByLocale[localeCode] = localeTranslations
-                }
-            }
-        }
+    public func get(key: String, localeCode: String) -> String? {
+        return translationsByLocale[localeCode]?[key]?[TXDecoratorCache.STRING_KEY]
+    }
+    
+    public func update(translations: TXTranslations) {
+        translationsByLocale = translations
     }
 }
 
@@ -334,12 +456,15 @@ extension TXMemoryCache: TXCache {
 /// initialized without a cache (e.g. for the CLI tool).
 @objc
 public final class TXNoOpCache: NSObject, TXCache {
+    public func get() -> TXTranslations {
+        return [:]
+    }
+    
     public func get(key: String, localeCode: String) -> String? {
         return nil
     }
     
-    public func update(translations: TXTranslations,
-                       replaceEntries: Bool) {
+    public func update(translations: TXTranslations) {
         /// No-op
     }
 }
