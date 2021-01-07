@@ -152,7 +152,7 @@ After the cached entries have updated the memory cache, the cache is ready to be
 
 Whenever new translations are fetched from the server using the `fetchTranslations()` 
 method, the standard cache is updated and those translations are stored as-is in the file 
-system, in the same cache fileused by the aforementioned second cache provider so that 
+system, in the same cache file used by the aforementioned second cache provider so that 
 they are available on the next app launch.
 
 #### Alternative cache strategy

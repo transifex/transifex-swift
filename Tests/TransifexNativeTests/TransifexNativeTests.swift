@@ -397,7 +397,7 @@ final class TransifexNativeTests: XCTestCase {
         
         XCTAssertNotNil(cache.get(key: "key1", localeCode: "en"))
         XCTAssertTrue(cache.get(key: "key1", localeCode: "en") == "localized string 1")
-        XCTAssertNil(cache.get(key: "key2", localeCode: "en"))
+        XCTAssertNotNil(cache.get(key: "key2", localeCode: "en"))
     }
 
     static var allTests = [

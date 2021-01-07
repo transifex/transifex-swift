@@ -18,7 +18,8 @@ public typealias TXTranslations = [String: TXLocaleStrings]
 public enum TXCacheOverridePolicy : Int {
     /// All of the cache entries are replaced with the new translations.
     case overrideAll
-    /// Only the translations found both in the cache and in the new translations are updated.
+    /// All new translations are added to the cache, either updating existing translations or adding
+    /// new ones.
     /// If a translation is not found in cache but exists in the new translations, it's not added.
     /// If a translation is found in cache but doesn't exist in the new translations, it's left untouched.
     /// Empty cache entries from the new translations are filtered out.
@@ -243,7 +244,7 @@ public final class TXReadonlyCacheDecorator: TXDecoratorCache {
 /// let cache = TXProviderBasedCache(
 ///     providers: [
 ///         TXDiskCacheProvider(fileURL: firstFileURL),
-///         TXDiskCacheProvider(fileURL: secondFileURL
+///         TXDiskCacheProvider(fileURL: secondFileURL)
 ///     ],
 ///     internalCache: TXMemoryCache()
 /// )
@@ -262,8 +263,11 @@ public final class TXProviderBasedCache: TXDecoratorCache {
     }
 }
 
-/// Decorator class responsible for updating the passed internalCache using a certain override policy defined
-/// in the `TXCacheOverridePolicy` enum.
+/// Class responsible for updating the passed internalCache using a certain override policy defined
+/// in the `TXCacheOverridePolicy` enum. This is done by filtering any translations that are passed
+/// via the `update(translations:)` call using an override policy that checks both the passed
+/// translations and the internal cache state to decide whether a translation should update the internal cache
+/// or not.
 @objc
 public final class TXStringOverrideFilterCache: TXDecoratorCache {
     let policy: TXCacheOverridePolicy
@@ -292,19 +296,16 @@ public final class TXStringOverrideFilterCache: TXDecoratorCache {
                     continue
                 }
                 
-                    // If the policy set set to override untranslated only, then
+                    // If the policy is set to override untranslated only, then
                     // update the cache only if there's no existing translation
                     // for that stringKey.
                 if (policy == .overrideUntranslatedOnly
-                        && self.get(key: stringKey,
+                    && self.get(key: stringKey,
                                 localeCode: localeCode) == nil)
                    ||
                     // If the policy is set to override using translated only,
-                    // then update the cache only if there's an existing
-                    // translation for that stringKey.
-                    (policy == .overrideUsingTranslatedOnly
-                        && self.get(key: stringKey,
-                                    localeCode: localeCode) != nil) {
+                    // then always update the cache.
+                    policy == .overrideUsingTranslatedOnly {
                     if updatedTranslations[localeCode] == nil {
                         updatedTranslations[localeCode] = [:]
                     }
@@ -318,7 +319,7 @@ public final class TXStringOverrideFilterCache: TXDecoratorCache {
     }
 }
 
-/// The standard wrapper cache that the TxNative SDK is initialized with, if no other cache is provided.
+/// The standard cache that the TxNative SDK is initialized with, if no other cache is provided.
 ///
 /// The cache gets initialized using the decorators implemented in the Caches.swift file of the SDK so that it
 /// reads from any existing translation files either from the app bundle or the app sandbox. The cache is also
@@ -379,8 +380,25 @@ public final class TXStandardCache: TXDecoratorCache {
         let resourceName = String(resourceComps[0])
         let resourceExtension = String(resourceComps[1])
         
-        guard let url = Bundle.main.url(forResource: resourceName,
-                                        withExtension: resourceExtension) else {
+        var bundle = Bundle.main
+        
+        // In case the SDK is executed by an app extension, the main bundle does
+        // not return the main app bundle, but the extension one. In order to
+        // retrieve the main app bundle, we would need to peel off two directory
+        // levels - APP.app/PlugIns/APP_EXTENSION.appex
+        //
+        // Ref: https://stackoverflow.com/a/27849695/60949
+        if bundle.bundleURL.pathExtension == "appex" {
+            let mainAppBundleURL = bundle.bundleURL
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            if let mainAppBundle = Bundle(url: mainAppBundleURL) {
+                bundle = mainAppBundle
+            }
+        }
+        
+        guard let url = bundle.url(forResource: resourceName,
+                                   withExtension: resourceExtension) else {
             return nil
         }
 
