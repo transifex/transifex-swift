@@ -8,6 +8,8 @@
 
 import Foundation
 
+public typealias PullCompletionHandler = (TXTranslations, [Error]) -> Void
+
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
 class CDSPullRequest {
 
@@ -28,7 +30,7 @@ class CDSPullRequest {
     }
 
     struct RequestData : Codable {
-        var data : LocaleStrings
+        var data: TXLocaleStrings
     }
 
     init(with request : URLRequest, code : String, session : URLSession) {
@@ -43,7 +45,7 @@ class CDSPullRequest {
     /// the extracted LocaleStrings structure from the server response and the error object when the
     /// request fails
     func perform(with completionHandler: @escaping (String,
-                                                    LocaleStrings?,
+                                                    TXLocaleStrings?,
                                                     RequestError?) -> Void) {
         session.dataTask(with: request) { (data, response, error) in
             guard error == nil else {
@@ -163,6 +165,10 @@ class CDSHandler {
         self.session = session ?? URLSession(configuration: .ephemeral)
     }
     
+    enum FetchError: Error {
+        case invalidCDSURL
+    }
+    
     /// Fetch translations from CDS.
     ///
     /// - Parameters:
@@ -170,10 +176,10 @@ class CDSHandler {
     ///   translations for all locales defined in the configuration
     ///   - completionHandler: a callback function to call when the operation is complete
     public func fetchTranslations(localeCode: String? = nil,
-                                  completionHandler: @escaping ([String: LocaleStrings]) -> Void) {
+                                  completionHandler: @escaping PullCompletionHandler) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             print("Error: Invalid CDS host URL: \(cdsHost)")
-            completionHandler([:])
+            completionHandler([:], [FetchError.invalidCDSURL])
             return
         }
         
@@ -198,8 +204,9 @@ class CDSHandler {
         }
 
         var requestsFinished = 0
-        var translationsByLocale: [String: LocaleStrings] = [:]
-
+        var translationsByLocale: TXTranslations = [:]
+        var errors: [Error] = []
+        
         for (code, requestByLocale) in requestsByLocale {
             let cdsRequest = CDSPullRequest(with: requestByLocale,
                                             code: code,
@@ -208,14 +215,14 @@ class CDSHandler {
                 requestsFinished += 1
                 
                 if let error = error {
-                    print("Error fetching \(code): \(error)")
+                    errors.append(error)
                 }
                 else {
                     translationsByLocale[code] = localeStrings
                 }
                 
                 if requestsFinished == requestsByLocale.count {
-                    completionHandler(translationsByLocale)
+                    completionHandler(translationsByLocale, errors)
                 }
             }
         }
