@@ -1,6 +1,6 @@
 //
 //  TXNativeObjcSwizzler.m
-//  TransifexNative
+//  Transifex
 //
 //  Created by Stelios Petrakis on 5/11/20.
 //  Copyright © 2020 Transifex. All rights reserved.

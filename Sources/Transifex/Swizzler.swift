@@ -1,13 +1,13 @@
 //
 //  Swizzler.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Stelios Petrakis on 5/11/20.
 //  Copyright © 2020 Transifex. All rights reserved.
 //
 
 import Foundation
-import TransifexNativeObjCRuntime
+import TransifexObjCRuntime
 
 /// Swizzles all localizedString() calls made either by Storyboard files or by the use of NSLocalizedString()
 /// function in code.
@@ -23,7 +23,7 @@ class SwizzledBundle : Bundle {
     override func localizedString(forKey key: String,
                                   value: String?,
                                   table tableName: String?) -> String {
-        if Swizzler.activated {
+        if Swizzler.activated && value != Swizzler.SKIP_SWIZZLING_VALUE {
             return Swizzler.localizedString(forKey: key,
                                             value: value,
                                             table: tableName)
@@ -37,8 +37,10 @@ class SwizzledBundle : Bundle {
 }
 
 /// Handles all Swizzling logic so that existing calls to localized methods are intercepted by the
-/// TransifexNative library.
+/// Transifex library.
 class Swizzler {
+    
+    internal static let SKIP_SWIZZLING_VALUE = "__TX_SKIP_SWIZZLING__"
     
     internal static let PARAM_VALUE_KEY = "_value"
     internal static let PARAM_TABLE_KEY = "_table"
@@ -130,7 +132,7 @@ class Swizzler {
                                              params: params)
     }
     
-    /// Method called by the TXNativeObjcSwizler that contains the arguments of the NSString
+    /// Method called by the TXNativeObjcSwizzler that contains the arguments of the NSString
     /// localizedStringWithFormat: method and the format string.
     ///
     /// - Parameters:

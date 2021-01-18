@@ -1,6 +1,6 @@
 //
 //  utils.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 2/8/20.
 //  Copyright © 2020 Transifex. All rights reserved.
@@ -18,7 +18,7 @@ import CommonCrypto
 ///   - sourceString: the actual string
 ///   - context: an optional context that accompanies the string
 /// - Returns: a hash that uniquely identifies the string
-public func generateKey(sourceString: String, context: String?) -> String {
+public func txGenerateKey(sourceString: String, context: String?) -> String {
     var context: String = context ?? ""
     context = context.replacingOccurrences(of: ",", with: ":")
     let finalString = sourceString + ":" + context
@@ -26,6 +26,10 @@ public func generateKey(sourceString: String, context: String?) -> String {
 }
 
 extension String {
+    /// Calculates the md5 hash of the current string. Used by the `txGenerateKey` function to generate
+    /// the final key for a given source string.
+    ///
+    /// - Returns: The md5 hash of the string
     func md5() -> String {
         let data = Data(utf8)
         var hash = [UInt8](repeating: 0, count: Int(CC_MD5_DIGEST_LENGTH))
@@ -37,7 +41,10 @@ extension String {
 }
 
 extension String {
-    
+    /// Returns the matches of the provided pattern in the current string as a list of substrings.
+    ///
+    /// - Parameter pattern: The regular expression pattern to be used
+    /// - Returns: The list of substrings of the current string that match the pattern
     func capturedGroups(withRegex pattern: String) -> [[String]] {
         var results: [[String]] = []
 
@@ -73,7 +80,7 @@ extension String {
     /// returns the same string
     ///
     /// - Returns: Returns a new string with the first and last characters of the original string removed
-    public func removeFirstAndLastCharacters() -> String {
+    func removeFirstAndLastCharacters() -> String {
         guard self.count >= 3 else {
             return self
         }

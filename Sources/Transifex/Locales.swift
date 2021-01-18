@@ -1,6 +1,6 @@
 //
 //  Locales.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 19/7/20.
 //  Copyright © 2020 Transifex. All rights reserved.
@@ -9,10 +9,11 @@
 import Foundation
 
 /// Protocol that developers can use to create custom classes that return the current locale of the app.
-/// If no CurrentLocaleProvider is provided in LocaleState constructor, the TXPreferredLocaleProvider
+/// If no CurrentLocaleProvider is provided in TXLocaleState constructor, the TXPreferredLocaleProvider
 /// is used.
 @objc
 public protocol TXCurrentLocaleProvider {
+    /// Return the current locale to be used by the SDK
     func currentLocale() -> String
 }
 
@@ -46,6 +47,9 @@ public final class TXPreferredLocaleProvider : NSObject {
 }
 
 extension TXPreferredLocaleProvider : TXCurrentLocaleProvider {
+    /// The current user's locale.
+    ///
+    /// - Returns: The current user's locale
     public func currentLocale() -> String {
         return _currentLocale
     }
@@ -53,7 +57,7 @@ extension TXPreferredLocaleProvider : TXCurrentLocaleProvider {
 
 /// Keeps track of the locale-related information for the application,
 /// such as supported locales, source and current locale.
-public final class LocaleState : NSObject {
+public final class TXLocaleState : NSObject {
     
     /// The locale of the source language
     @objc
@@ -87,7 +91,8 @@ public final class LocaleState : NSObject {
     ///   - sourceLocale: the locale of the source language, defaults to "en" if no source locale is
     ///   provided
     ///   - appLocales: a list of all locales supported by the application, defaults to the source locale
-    ///   if the appLocales list is empty
+    ///   if the appLocales list is empty. If the source locale is not included in this list, it's added during
+    ///   initialization.
     ///   - currentLocaleProvider: an object conforming to CurrentLocaleProvider protocol,
     /// defaults to TXPreferredLocaleProvider
     @objc
@@ -95,7 +100,7 @@ public final class LocaleState : NSObject {
          appLocales: [String] = [],
          currentLocaleProvider: TXCurrentLocaleProvider? = nil
     ) {
-        let sourceLocale = sourceLocale ?? LocaleState.DEFAULT_SOURCE_LOCALE
+        let sourceLocale = sourceLocale ?? TXLocaleState.DEFAULT_SOURCE_LOCALE
         self.sourceLocale = sourceLocale
         
         // Make sure we filter all duplicate values
@@ -132,5 +137,12 @@ public final class LocaleState : NSObject {
     /// - Returns: true if the given locale is defined in the app configuration, false otherwise
     public func isAvailableInApp(_ locale: String) -> Bool {
         return appLocales.contains(locale)
+    }
+    
+    /// Description of the source string used for debugging purposes
+    public override var debugDescription: String {
+        """
+TXLocaleState(sourceLocale: \(sourceLocale), appLocales: \(appLocales))
+"""
     }
 }

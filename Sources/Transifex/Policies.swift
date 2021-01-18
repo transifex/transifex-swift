@@ -1,6 +1,6 @@
 //
 //  Rendering.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 2/10/20.
 //  Copyright © 2020 Transifex. All rights reserved.
@@ -13,7 +13,7 @@ import Foundation
 ///
 /// Can be used in multiple cases, such as when the translation is not found.
 @objc
-public protocol MissingPolicy {
+public protocol TXMissingPolicy {
 
     /// Return a string as a translation based on the given source string.
     ///
@@ -25,7 +25,7 @@ public protocol MissingPolicy {
 }
 
 /// Returns the source string when the translation string is missing.
-public final class SourceStringPolicy : NSObject, MissingPolicy {
+public final class TXSourceStringPolicy : NSObject, TXMissingPolicy {
     
     /// Return the source string as the translation string.
     /// - Parameter sourceString: the source string
@@ -41,7 +41,7 @@ public final class SourceStringPolicy : NSObject, MissingPolicy {
 /// `PseudoTranslationPolicy().get("The quick brown fox")`
 /// Returns:
 /// `Ťȟê ʠüıċǩ ƀȓøẁñ ƒøẋ`
-public final class PseudoTranslationPolicy : NSObject, MissingPolicy {
+public final class TXPseudoTranslationPolicy : NSObject, TXMissingPolicy {
     
     let TABLE = [
         "A": "Å", "B": "Ɓ", "C": "Ċ", "D": "Đ",
@@ -79,7 +79,7 @@ public final class PseudoTranslationPolicy : NSObject, MissingPolicy {
 /// `WrappedStringPolicy(">>", "<<").get("Click here")`
 /// Returns:
 /// `>>Click here<<`
-public final class WrappedStringPolicy : NSObject, MissingPolicy {
+public final class TXWrappedStringPolicy : NSObject, TXMissingPolicy {
 
     var start: String?
     var end: String?
@@ -111,24 +111,33 @@ public final class WrappedStringPolicy : NSObject, MissingPolicy {
  
  The result of each policy if fed to the next as source.
  */
-public final class CompositePolicy : NSObject, MissingPolicy {
+public final class TXCompositePolicy : NSObject, TXMissingPolicy {
     
-    var policies: [MissingPolicy] = []
+    var policies: [TXMissingPolicy] = []
     
-    /**
-     Constructor.
-     
-     The order of the policies is important; the result of each policy if fed to the next.
-     */
-    public init(_ policies: MissingPolicy...) {
+    /// Constructor.
+    ///
+    /// The order of the policies is important; the result of each policy is fed to the next one.
+    ///
+    /// - Parameter policies: The missing policies to be used.
+    public init(_ policies: TXMissingPolicy...) {
         self.policies = policies
     }
     
+    /// Objective-C friendly constructor for passing MissingPolicy objects as an array.
+    ///
+    /// The order of the policies is important; the result of each policy is fed to the next one.
+    ///
+    /// - Parameter policies: The missing policies to be used.
     @objc
-    public init(_ policies: [MissingPolicy]) {
+    public init(_ policies: [TXMissingPolicy]) {
         self.policies = policies
     }
     
+    /// Returns a string after it has been fed to all of the provided policies sequentially.
+    ///
+    /// - Parameter sourceString: The source string
+    /// - Returns: The final string
     public func get(sourceString: String) -> String {
         var str: String = sourceString
         for policy in policies {
@@ -139,29 +148,36 @@ public final class CompositePolicy : NSObject, MissingPolicy {
 }
 
 /**
- Defines an interface for error policy classes..
+ Defines an interface for error policy classes.
  
  Error policies define what happens when rendering faces an error.
  They are useful to protect the user from pages failing to load.
  */
 @objc
-public protocol ErrorPolicy {
-
+public protocol TXErrorPolicy {
+    
+    /// Return the error string to be displayed using all the information provided by the SDK.
+    ///
+    /// - Parameters:
+    ///   - sourceString: The source string
+    ///   - stringToRender: The string to render as provided by the cache
+    ///   - localeCode: The locale code
+    ///   - params: Any extra parameters that were passed along with the source string
     func get(sourceString: String,
-             translation: String,
+             stringToRender: String,
              localeCode: String,
-             params: [String]) -> String
+             params: [String: Any]) -> String
 }
 
 /**
  An error policy that simply returns the source string instead of the translation.
  */
-public class RenderedSourceErrorPolicy : ErrorPolicy {
+public final class TXRenderedSourceErrorPolicy : TXErrorPolicy {
     
     public func get(sourceString: String,
-                    translation: String,
+                    stringToRender: String,
                     localeCode: String,
-                    params: [String]) -> String {
+                    params: [String: Any]) -> String {
         return sourceString
     }
 }

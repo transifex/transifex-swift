@@ -1,7 +1,7 @@
 import XCTest
 
-import TransifexNativeTests
+import TransifexTests
 
 var tests = [XCTestCaseEntry]()
-tests += TransifexNativeTests.allTests()
+tests += TransifexTests.allTests()
 XCTMain(tests)

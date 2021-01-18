@@ -1,12 +1,19 @@
 //
 //  ICU.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 17/7/20.
 //  Copyright © 2020 Transifex. All rights reserved.
 //
 
 import Foundation
+
+/// Errors that may be thrown when calling the `format()` method
+/// of the RenderingStrategyFormatter protocol.
+enum RenderingStrategyErrors: Error {
+    /// Rendering strategy not supported
+    case notSupported
+}
 
 /// A protocol for classes that implement different rendering strategies
 protocol RenderingStrategyFormatter {
@@ -19,16 +26,15 @@ protocol RenderingStrategyFormatter {
     ///   - params: A dictionary of parameters that can be used when formating the string
     static func format(stringToRender: String,
                        localeCode: String,
-                       params: [String: Any]) -> String
+                       params: [String: Any]) throws -> String
 }
 
 /// The ICU rendering strategy
 class ICUMessageFormat : RenderingStrategyFormatter {
     static func format(stringToRender: String,
                        localeCode: String,
-                       params: [String: Any]) -> String {
-        // TODO: Define Message Format grammar and render the string
-        return stringToRender
+                       params: [String: Any]) throws -> String {
+        throw RenderingStrategyErrors.notSupported
     }
 }
 
@@ -44,7 +50,7 @@ class PlatformFormat : RenderingStrategyFormatter {
     /// business logic from scratch.
     static func extractPluralizationRule(locale: Locale,
                                          arguments: [CVarArg]) -> PluralizationRule {
-        let key = NSLocalizedString("TransifexNative.StringsDict.TestKey.%d",
+        let key = NSLocalizedString("Transifex.StringsDict.TestKey.%d",
                                     bundle: Bundle.module,
                                     comment: "")
         let pluralizationRule = String(format: key,
@@ -71,7 +77,7 @@ class PlatformFormat : RenderingStrategyFormatter {
     
     static func format(stringToRender: String,
                        localeCode: String,
-                       params: [String: Any]) -> String {
+                       params: [String: Any]) throws -> String {
         // Check if the provided parameters contain an argument array
         // and it can be converted to a [CVarArg] array.
         guard let args = params[Swizzler.PARAM_ARGUMENTS_KEY] as? [Any],

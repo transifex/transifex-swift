@@ -2,11 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>TransifexNative.StringsDict.TestKey.%d</key>
+	<key>Transifex.StringsDict.TestKey.%d</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>%#@d_transifexnative_test@</string>
-		<key>d_transifexnative_test</key>
+		<string>%#@d_transifex_test@</string>
+		<key>d_transifex_test</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
 			<string>NSStringPluralRuleType</string>
