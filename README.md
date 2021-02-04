@@ -22,6 +22,12 @@ Learn more about [Transifex Native](https://docs.transifex.com/transifex-native-
 
 The full documentation is available at [https://transifex.github.io/transifex-swift/](https://transifex.github.io/transifex-swift/).
 
+## Minimum Requirements
+
+| Swift           | Xcode           | Platforms                                         |
+|-----------------|-----------------|---------------------------------------------------|
+| Swift 5.3       | Xcode 12.3      | iOS 10.0  |
+
 ## Usage
 
 The SDK allows you to keep using the same localization hooks that the iOS framework 
@@ -303,12 +309,6 @@ generated using [Jazzy](https://github.com/realm/jazzy) using the following comm
 ```
 jazzy -g https://github.com/transifex/transifex-swift/ -m Transifex
 ```
-
-## Minimum Requirements
-
-| Swift           | Xcode           | Platforms                                         |
-|-----------------|-----------------|---------------------------------------------------|
-| Swift 5.3       | Xcode 12.3      | iOS 10.0  |
 
 ## License
 Licensed under Apache License 2.0, see [LICENSE](LICENSE) file.
