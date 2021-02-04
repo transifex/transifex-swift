@@ -4,38 +4,38 @@
 import PackageDescription
 
 let package = Package(
-    name: "TransifexNative",
+    name: "transifex",
     platforms: [
         .iOS(.v10)
     ],
     products: [
         .library(
-            name: "TransifexNative",
-            targets: ["TransifexNative"]),
+            name: "Transifex",
+            targets: ["Transifex"]),
     ],
     dependencies: [],
     targets: [
         .target(
-            name: "TransifexNativeObjCRuntime"
+            name: "TransifexObjCRuntime"
         ),
         .target(
-            name: "TransifexNative",
-            dependencies: [ "TransifexNativeObjCRuntime" ],
+            name: "Transifex",
+            dependencies: [ "TransifexObjCRuntime" ],
             exclude: [ "TXNativeExtensions.swift" ],
             resources: [
                 .copy("Localizable.stringsdict")
             ]
         ),
         .testTarget(
-            name: "TransifexNativeTests",
+            name: "TransifexTests",
             dependencies: [
-                "TransifexNative",
+                "Transifex",
             ]
         ),
         .testTarget(
-            name: "TransifexNativeObjCTests",
+            name: "TransifexObjCTests",
             dependencies: [
-                "TransifexNativeObjCRuntime",
+                "TransifexObjCRuntime",
             ]
         ),
     ]

@@ -1,6 +1,6 @@
 //
 //  Cache.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 17/7/20.
 //  Copyright © 2020 Transifex. All rights reserved.
@@ -8,8 +8,19 @@
 
 import Foundation
 
+/// Structure that represents a translated string.
+///
+/// Format: "string" : {The translated string}
 public typealias TXStringInfo = [String: String]
+
+/// Structure that represents translated strings with their respective string keys.
+///
+/// Format: {string key} : {TXStringInfo}
 public typealias TXLocaleStrings = [String: TXStringInfo]
+
+/// Structure that represents all of the translated string of an app for the specified app locales.
+///
+/// Format: {locale code} : {TXLocaleStrings}
 public typealias TXTranslations = [String: TXLocaleStrings]
 
 /// Overriding policy `TXStringOverrideFilterCache` decorator class so that any translations fed by
@@ -17,6 +28,7 @@ public typealias TXTranslations = [String: TXLocaleStrings]
 @objc
 public enum TXCacheOverridePolicy : Int {
     /// All of the cache entries are replaced with the new translations.
+    /// Empty cache entries from the new translations are filtered out.
     case overrideAll
     /// All new translations are added to the cache, either updating existing translations or adding
     /// new ones.
@@ -74,27 +86,35 @@ public protocol TXCacheProvider {
 }
 
 /// Cache provider that loads translations from disk
-@objc
-public class TXDiskCacheProvider: NSObject, TXCacheProvider {
+public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
     /// The translations extracted from disk after initialization.
     public let translations: TXTranslations?
     
+    /// Initializes the disk cache provider with a file URL from disk.
+    ///
+    /// The disk cache provider expects the file to be encoded in JSON format using the `TXTranslations`
+    /// data structure.
+    ///
+    /// - Parameter fileURL: The file url of the file that contains the translations
     @objc
     public init(fileURL: URL) {
         self.translations = TXDiskCacheProvider.load(from: fileURL)
     }
     
-    /// Loads the translations from a file url, returns nil in case of an error
+    /// Loads the translations from a file url, returns nil in case of an error.
+    ///
     /// - Parameter fileURL: The url of the file that contains the translations
     /// - Returns: The translations or nil if there was an error
     private static func load(from fileURL: URL) -> TXTranslations? {
+        Logger.verbose("Loading translations from \(fileURL)")
+        
         var fileData: Data?
     
         do {
             fileData = try Data(contentsOf: fileURL)
         }
         catch {
-            print("\(#function) fileURL: \(fileURL) Data error: \(error)")
+            Logger.warning("\(#function) fileURL: \(fileURL) Data error: \(error)")
         }
         
         guard let data = fileData else {
@@ -108,7 +128,7 @@ public class TXDiskCacheProvider: NSObject, TXCacheProvider {
                                                           from: data)
         }
         catch {
-            print("\(#function) fileURL: \(fileURL) Decode Error: \(error)")
+            Logger.error("\(#function) fileURL: \(fileURL) Decode Error: \(error)")
             return nil
         }
         
@@ -122,8 +142,8 @@ public class TXDiskCacheProvider: NSObject, TXCacheProvider {
 
 /// Decorator class managing an internal class and propagating the get() and update() protocol method calls
 /// to said cache.
-@objc
-public class TXDecoratorCache: NSObject, TXCache {
+open class TXDecoratorCache: NSObject, TXCache {
+    /// Key used in the TXStringInfo dictionary
     public static let STRING_KEY = "string"
 
     let internalCache: TXCache
@@ -151,7 +171,6 @@ public class TXDecoratorCache: NSObject, TXCache {
 
 /// Decorator class responsible for storing any updates of the translations to a file url specified in the
 /// constructor.
-@objc
 public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     let fileURL: URL?
     
@@ -171,6 +190,10 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
         super.init(internalCache: internalCache)
     }
     
+    /// Encodes the provided translations to a JSON string and writes the string to a file using the `fileURL`
+    /// property of the constructor.
+    ///
+    /// - Parameter translations: The provided translations
     public override func update(translations: TXTranslations) {
         super.update(translations: translations)
         
@@ -184,7 +207,7 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
                                            fileURL: fileURL)
             }
             catch {
-                print("\(#function) Error: \(error)")
+                Logger.error("\(#function) Error: \(error)")
             }
         }
     }
@@ -200,6 +223,8 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     /// - Throws: The error that may occur during serialization, directory creation or file writing.
     private func storeTranslations(translations: TXTranslations,
                                    fileURL: URL) throws {
+        Logger.verbose("Storing translations  to \(fileURL)")
+        
         let folderURL = fileURL.deletingLastPathComponent()
         
         do {
@@ -229,8 +254,10 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
 }
 
 /// Class that makes the internal cache read-only so that no update operations are allowed.
-@objc
 public final class TXReadonlyCacheDecorator: TXDecoratorCache {
+    /// This method is a no-op as this cache decorator is read-only.
+    ///
+    /// - Parameter translations: The provided translations
     override public func update(translations: TXTranslations) {
         // No-op
     }
@@ -249,8 +276,15 @@ public final class TXReadonlyCacheDecorator: TXDecoratorCache {
 ///     internalCache: TXMemoryCache()
 /// )
 /// ```
-@objc
 public final class TXProviderBasedCache: TXDecoratorCache {
+    /// Initializes the provider based cache with a list of cache providers and an internal cache that will be
+    /// initialized with the contents of those providers.
+    ///
+    /// The order of the cache providers in the list is important.
+    ///
+    /// - Parameters:
+    ///   - providers: The list of cache providers.
+    ///   - internalCache: The internal cache to be used
     @objc
     public init(providers: [TXCacheProvider],
                 internalCache: TXCache) {
@@ -268,10 +302,15 @@ public final class TXProviderBasedCache: TXDecoratorCache {
 /// via the `update(translations:)` call using an override policy that checks both the passed
 /// translations and the internal cache state to decide whether a translation should update the internal cache
 /// or not.
-@objc
 public final class TXStringOverrideFilterCache: TXDecoratorCache {
     let policy: TXCacheOverridePolicy
     
+    /// Initializes the cache with a certain override policy and an internal cache that will be updated
+    /// according to that policy.
+    /// 
+    /// - Parameters:
+    ///   - policy: The override policy to be used
+    ///   - internalCache: The internal cache to be updated with the specified override policy
     @objc
     public init(policy: TXCacheOverridePolicy,
                 internalCache: TXCache) {
@@ -279,15 +318,21 @@ public final class TXStringOverrideFilterCache: TXDecoratorCache {
         super.init(internalCache: internalCache)
     }
     
+    /// Updates the internal cache with the provided translations using the override policy specified during
+    /// initialization.
+    ///
+    /// - Parameter translations: The provided translations
     override public func update(translations: TXTranslations) {
+        let filteredTranslations = filterEmptyTranslations(translations)
+        
         if policy == .overrideAll {
-            super.update(translations: translations)
+            super.update(translations: filteredTranslations)
             return
         }
         
         var updatedTranslations = self.get()
     
-        for (localeCode, localeTranslations) in translations {
+        for (localeCode, localeTranslations) in filteredTranslations {
             for (stringKey, translation) in localeTranslations {
                 // Make sure that the new translation has a value and it's not
                 // an empty string.
@@ -317,15 +362,40 @@ public final class TXStringOverrideFilterCache: TXDecoratorCache {
 
         super.update(translations: updatedTranslations)
     }
+    
+    /// Filters out any empty translations from the provided TXTranslations structure.
+    ///
+    /// - Parameter translations: The provided TXTranslations structure that may include empty
+    /// translations
+    /// - Returns: The filtered TXTranslations structured that contains no empty translations
+    private func filterEmptyTranslations(_ translations: TXTranslations) -> TXTranslations {
+        /// Copy the provided translations to the final structure
+        var filteredTranslations = translations
+        
+        /// Remove the entries from the final structure that contain empty translations
+        for (localeCode, localeTranslations) in translations {
+            for (stringKey, translation) in localeTranslations {
+                // Make sure that the new translation has a value and it's not
+                // an empty string.
+                if let translatedString = translation[TXDecoratorCache.STRING_KEY],
+                   translatedString.count > 0 {
+                    continue
+                }
+                
+                filteredTranslations[localeCode]?.removeValue(forKey: stringKey)
+            }
+        }
+        
+        return filteredTranslations
+    }
 }
 
-/// The standard cache that the TxNative SDK is initialized with, if no other cache is provided.
+/// The standard cache that the TXNative SDK is initialized with, if no other cache is provided.
 ///
 /// The cache gets initialized using the decorators implemented in the Caches.swift file of the SDK so that it
 /// reads from any existing translation files either from the app bundle or the app sandbox. The cache is also
 /// responsible for creating or updating the sandbox file with new translations when they will become available
 /// and it offers  a memory cache for retrieving such translations so that they can be displayed in the UI.
-@objc
 public final class TXStandardCache: TXDecoratorCache {
     /// Initializes the cache using a specific override policy and an optional group identifier based on the
     /// architecture of the application using the SDK.
@@ -340,13 +410,15 @@ public final class TXStandardCache: TXDecoratorCache {
                 groupIdentifier: String? = nil) {
         var providers: [TXCacheProvider] = []
         
-        if let bundledURL = TXStandardCache.bundleURL() {
-            providers.append(TXDiskCacheProvider(fileURL: bundledURL))
+        if let bundleURL = TXStandardCache.bundleURL() {
+            Logger.verbose("Translations bundle url: \(bundleURL)")
+            providers.append(TXDiskCacheProvider(fileURL: bundleURL))
         }
         
         let downloadURL = TXStandardCache.downloadURL(groupIdentifier: groupIdentifier)
         
         if let downloadURL = downloadURL {
+            Logger.verbose("Translations download url: \(downloadURL)")
             providers.append(TXDiskCacheProvider(fileURL: downloadURL))
         }
  
@@ -371,7 +443,7 @@ public final class TXStandardCache: TXDecoratorCache {
     ///
     /// - Returns: The URL of the translations file in the main bundle of the app
     private static func bundleURL() -> URL? {
-        let resourceComps = TxNative.STRINGS_FILENAME.split(separator: ".")
+        let resourceComps = TXNative.STRINGS_FILENAME.split(separator: ".")
         
         guard resourceComps.count == 2 else {
             return nil
@@ -443,7 +515,7 @@ public final class TXStandardCache: TXDecoratorCache {
             return nil
         }
         
-        return folderURL.appendingPathComponent(TxNative.STRINGS_FILENAME)
+        return folderURL.appendingPathComponent(TXNative.STRINGS_FILENAME)
     }
 }
 
@@ -451,7 +523,6 @@ public final class TXStandardCache: TXDecoratorCache {
 /// A simple in-memory cache that updates its contents and returns the proper translation.
 ///
 /// This class is not thread-safe, so be sure that you are calling the update / get methods from a serial queue.
-@objc
 public final class TXMemoryCache: NSObject {
     var translationsByLocale: TXTranslations = [:]
 }
@@ -472,7 +543,6 @@ extension TXMemoryCache: TXCache {
 
 /// A no-op cache that doesn't support storing the values in-memory. Useful when the library needs to be
 /// initialized without a cache (e.g. for the CLI tool).
-@objc
 public final class TXNoOpCache: NSObject, TXCache {
     public func get() -> TXTranslations {
         return [:]

@@ -1,6 +1,6 @@
 //
 //  Plurals.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Dimitrios Bendilas on 23/11/20.
 //  Copyright © 2020 Transifex. All rights reserved.

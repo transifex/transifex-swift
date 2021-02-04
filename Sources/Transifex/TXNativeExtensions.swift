@@ -1,6 +1,6 @@
 //
 //  TXNativeExtensions.swift
-//  TransifexNative
+//  Transifex
 //
 //  Created by Stelios Petrakis on 16/11/20.
 //  Copyright © 2020 Transifex. All rights reserved.
@@ -18,14 +18,14 @@
 // file.
 
 import Foundation
-import TransifexNative
+import Transifex
 
 /// Override Swift String.localizedStringWithFormat: method
 public extension String {
     static func localizedStringWithFormat(
         _ format: String, _ arguments: CVarArg...
     ) -> String {
-        guard let localized = TxNative.localizedString(format: format,
+        guard let localized = TXNative.localizedString(format: format,
                                                        arguments: arguments) else {
             return String(format: format, locale: Locale.current,
                           arguments: arguments)
@@ -40,7 +40,7 @@ public extension NSString {
     class func localizedStringWithFormat(
         _ format: NSString, _ args: CVarArg...
     ) -> Self {
-        guard let localized = TxNative.localizedString(format: format as String,
+        guard let localized = TXNative.localizedString(format: format as String,
                                                        arguments: args) as? Self else {
             return withVaList(args) {
                 self.init(format: format as String, locale: Locale.current,

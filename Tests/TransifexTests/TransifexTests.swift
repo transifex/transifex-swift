@@ -1,8 +1,8 @@
 import XCTest
-@testable import TransifexNative
+@testable import Transifex
 
 /// Partially mocked URLSessionDataTask and URLSession classes so that we can test how
-/// TransifexNative behaves on certain server responses.
+/// Transifex behaves on certain server responses.
 class URLSessionDataTaskMock: URLSessionDataTask {
     private let closure: () -> Void
 
@@ -104,16 +104,25 @@ class MockCacheProvider : TXCacheProvider {
     }
 }
 
-final class TransifexNativeTests: XCTestCase {
+class MockErrorPolicy : TXErrorPolicy {
+    func get(sourceString: String,
+             stringToRender: String,
+             localeCode: String,
+             params: [String : Any]) -> String {
+        return "ERROR"
+    }
+}
+
+final class TransifexTests: XCTestCase {
     func testDuplicateLocaleFiltering() {
         let duplicateLocales = [ "en", "fr", "en" ]
         
-        let localeState = LocaleState(sourceLocale: "en",
-                                      appLocales: duplicateLocales)
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: duplicateLocales)
         
         let expectedAppLocales = [ "en", "fr" ]
         
-        // We test the sorted arrays, in case the `LocaleState` initializer
+        // We test the sorted arrays, in case the `TXLocaleState` initializer
         // has resorted the passed array.
         XCTAssertEqual(localeState.appLocales.sorted(),
                        expectedAppLocales.sorted())
@@ -122,9 +131,9 @@ final class TransifexNativeTests: XCTestCase {
     func testCurrentLocaleProvider() {
         let mockCode = "mock_code"
         let mockLocaleProvider = MockLocaleProvider(mockCode)
-        let localeState = LocaleState(sourceLocale: nil,
-                                      appLocales: [],
-                                      currentLocaleProvider: mockLocaleProvider)
+        let localeState = TXLocaleState(sourceLocale: nil,
+                                        appLocales: [],
+                                        currentLocaleProvider: mockLocaleProvider)
         
         XCTAssertEqual(localeState.currentLocale, mockCode)
     }
@@ -265,13 +274,13 @@ final class TransifexNativeTests: XCTestCase {
     func testPushTranslations() {
         let expectation = self.expectation(description: "Waiting for translations to be pushed")
         let translations = [
-            TxSourceString(key: "testkey",
+            TXSourceString(key: "testkey",
                            sourceString: "sourceString",
                            occurrences: [],
                            characterLimit: 0)
         ]
         
-        let expectedDataString = "{\"meta\":{\"purge\":false},\"data\":{\"testkey\":{\"string\":\"sourceString\",\"meta\":{\"character_limit\":0,\"tags\":[\"ios\"],\"occurrences\":[]}}}}"
+        let expectedDataString = "{\"meta\":{\"purge\":false},\"data\":{\"testkey\":{\"string\":\"sourceString\",\"meta\":{\"character_limit\":0,\"occurrences\":[]}}}}"
         
         let mockResponse = MockResponse(data: expectedDataString.data(using: .utf8))
         
@@ -300,7 +309,8 @@ final class TransifexNativeTests: XCTestCase {
         ]
         let secondProviderTranslations: TXTranslations = [
             "en": [
-                "key2": [ "string": "localized string 2" ]
+                "key2": [ "string": "localized string 2" ],
+                "key3": [ "string": "" ]
             ]
         ]
         
@@ -320,6 +330,7 @@ final class TransifexNativeTests: XCTestCase {
         
         XCTAssertNil(cache.get(key: "key1", localeCode: "en"))
         XCTAssertNotNil(cache.get(key: "key2", localeCode: "en"))
+        XCTAssertNil(cache.get(key: "key3", localeCode: "en"))
     }
     
     func testOverrideFilterCacheUntranslated() {
@@ -398,6 +409,45 @@ final class TransifexNativeTests: XCTestCase {
         XCTAssertNotNil(cache.get(key: "key1", localeCode: "en"))
         XCTAssertTrue(cache.get(key: "key1", localeCode: "en") == "localized string 1")
         XCTAssertNotNil(cache.get(key: "key2", localeCode: "en"))
+    }
+    
+    func testPlatformStrategyWithInvalidSourceString() {
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["fr"])
+        
+        TXNative.initialize(locales: localeState,
+                            token: "<token>",
+                            secret: "<secret>")
+        
+        let core = NativeCore(locales: localeState,
+                              token: "<token>",
+                              secret: "<secret>",
+                              cdsHost: nil,
+                              cache: nil,
+                              renderingStrategy: .platform)
+        
+        let result = core.render(sourceString: "test", stringToRender: nil, localeCode: "", params: [
+                        Swizzler.PARAM_ARGUMENTS_KEY: [1, 2] as [CVarArg]
+        ])
+        
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, "test")
+    }
+    
+    func testErrorPolicy() {
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["fr"])
+        
+        TXNative.initialize(locales: localeState,
+                            token: "<token>",
+                            secret: "<secret>",
+                            errorPolicy: MockErrorPolicy(),
+                            renderingStrategy: .icu)
+        
+        let result = TXNative.translate(sourceString: "source string", params: [:], context: nil)
+
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, "ERROR")
     }
 
     static var allTests = [

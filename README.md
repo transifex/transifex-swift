@@ -1,8 +1,18 @@
-# Transifex Native iOS SDK
+# Transifex iOS SDK
 
-Transifex Native iOS SDK is a collection of tools to easily localize your iOS applications 
-using [Transifex Native](https://www.transifex.com/native/). The tool can fetch translations 
-over the air (OTA) to your apps. It supports apps built both on Objective-C and Swift.
+<p align="left">
+<img src="https://img.shields.io/badge/platforms-iOS-lightgrey.svg">
+<img src="https://github.com/transifex/transifex-swift/workflows/CI/badge.svg">
+</p>
+
+Transifex iOS SDK is a collection of tools to easily localize your iOS applications 
+using [Transifex Native](https://www.transifex.com/native/). 
+
+The SDK can fetch translations over the air (OTA), manages an internal cache of translations 
+and works seamlessly without requiring any changes in the source code of the app by the 
+developer.
+
+Both Objective-C and Swift projects are supported and iOS 10+ is required.
 
 The package is built using Swift 5.3, as it currently requires a bundled resource to be 
 present in the package (which was introduced on version 5.3). An update that will require 
@@ -10,12 +20,18 @@ a lower Swift version is currently WIP.
 
 Learn more about [Transifex Native](https://docs.transifex.com/transifex-native-sdk-overview/introduction).
 
+The full documentation is available at [https://transifex.github.io/transifex-swift/](https://transifex.github.io/transifex-swift/).
+
 ## Usage
 
 The SDK allows you to keep using the same localization hooks that the iOS framework 
 provides, such as `NSLocalizedString`, 
-`String.localizedStringWithFormat(format:...)`, etc, but at the same time taking 
+`String.localizedStringWithFormat(format:...)`, etc, while at the same time taking 
 advantage of the features that Transifex Native offers, such as OTA translations.
+
+Below you can find examples of the SDK initialization both in Swift and Objective-C for
+an app that uses the English language (`en`) as its source locale and it's localized both in
+Greek (`el`) and French (`fr`). 
 
 Keep in mind that in the sample code below you will have to replace 
 `<transifex_token>` and `<transifex_secret>` with the actual token and secret that 
@@ -24,32 +40,32 @@ are associated with your Transifex project and resource.
 ### SDK configuration (Swift)
 
 ```swift
-import TransifexNative
+import Transifex
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        TxNative.initialize(
-            locales: LocaleState(sourceLocale: "en", 
-                                 appLocales: ["en", "el", "fr"]),
+        TXNative.initialize(
+            locales: TXLocaleState(sourceLocale: "en", 
+                                   appLocales: ["en", "el", "fr"]),
             token: "<transifex_token>",
             secret: "<transifex_secret>",
-            cdsHost: "https://cds.svc.transifex.net/",
-            cache: MemoryCache(),
-            missingPolicy: CompositePolicy(
-                PseudoTranslationPolicy(),
-                WrappedStringPolicy(start: "[", end: "]")
+            missingPolicy: TXCompositePolicy(
+                TXPseudoTranslationPolicy(),
+                TXWrappedStringPolicy(start: "[", end: "]")
             )
         )
-        TxNative.fetchTranslations()
+        
+        /// Optional: Fetch translations on launch
+        TXNative.fetchTranslations()
         return true
     }
 }
 ```
 
-You  also need to copy the `TXExtensions.swift` file in your project and include it in all 
-of the targets that call any of the following methods:
+For Swift projects, you  will also need to copy the `TXNativeExtensions.swift` file in 
+your project and include it in all of the targets that call any of the following Swift methods:
 
 * `String.localizedStringWithFormat(format:...)`
 * `NSString.localizedStringWithFormat(format:...)`
@@ -60,67 +76,97 @@ add this file to your project.
 ### SDK configuration (Objective-C)
 
 ```objc
-@import TransifexNative;
+@import Transifex;
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    LocaleState *localeState = [[LocaleState alloc] initWithSourceLocale:@"en"
-                                                              appLocales:@[
-                                                                  @"en",
-                                                                  @"el",
-                                                                  @"fr"
-                                                              ]
-                                                   currentLocaleProvider:nil];
-    PseudoTranslationPolicy *pseudoTranslationPolicy = [PseudoTranslationPolicy new];
-    WrappedStringPolicy *wrappedStringPolicy = [[WrappedStringPolicy alloc] initWithStart:@"["
-                                                                                      end:@"]"];
-    CompositePolicy *compositePolicy = [[CompositePolicy alloc] init:@[
+    TXLocaleState *localeState = [[TXLocaleState alloc] initWithSourceLocale:@"en"
+                                                                  appLocales:@[
+                                                                    @"en",
+                                                                    @"el",
+                                                                    @"fr"
+                                                                  ]
+                                                       currentLocaleProvider:nil];
+    TXPseudoTranslationPolicy *pseudoTranslationPolicy = [TXPseudoTranslationPolicy new];
+    TXWrappedStringPolicy *wrappedStringPolicy = [[TXWrappedStringPolicy alloc] initWithStart:@"["
+                                                                                          end:@"]"];
+    TXCompositePolicy *compositePolicy = [[TXCompositePolicy alloc] init:@[
         pseudoTranslationPolicy,
         wrappedStringPolicy
     ]];
 
-    [TxNative initializeWithLocales:localeState
+    [TXNative initializeWithLocales:localeState
                               token:@"<transifex_token>"
                              secret:@"<transifex_secret>"
-                            cdsHost:@"https://cds.svc.transifex.net/"
-                              cache:[MemoryCache new]
+                            cdsHost:nil
+                            session:nil
+                              cache:nil
                       missingPolicy:compositePolicy
                         errorPolicy:nil
-                  renderingStrategy:RenderingStategyPlatform];
-
-    [TxNative fetchTranslations:nil];
+                  renderingStrategy:TXRenderingStategyPlatform
+                             logger:nil];
+                             
+    /// Optional: Fetch translations on launch
+    [TXNative fetchTranslations:nil
+              completionHandler:nil];
     
     return YES;
 }
+```
+
+### Alternative initialization
+
+If you want your application to make use of the default behavior, you can initialize the 
+SDK using a simpler initilization method:
+
+#### Swift
+
+```swift
+TXNative.initialize(
+    locales: localeState,
+    token: "<transifex_token>"
+)
+```
+#### Objective-C
+
+```objc
+[TXNative initializeWithLocales:localeState
+                          token:@"<transifex_token>"];
 ```
 
 ### Fetching translations
 
 As soon as `fetchTranslations` is called, the SDK will attempt to download the 
 translations for all locales - except for the source locale - that are defined in the 
-initialization of `TxNative`. 
+initialization of `TXNative`. 
 
-For the moment, the translations are stored only in memory and are available for the 
-current app session. In later versions of the SDK, the translations will also be stored on 
-the device and will be available for subsequent app sessions.
+The `fetchTranslations` method in the above examples is called as soon as the
+application launches, but that's not required. Depending on the application, the developer
+might choose to call that method whenever it is most appropriate (for example, each time
+the application is brought to the foreground or when the internet connectivity is 
+established).
 
 ### Pushing source content
 
 In order to push the source translations to CDS, you will first need to prepare an array of 
-`TxSourceString` objects that will hold all the necessary information needed for CDS. 
-You can refer to the `TxSourceString` class for more information, or you can look at the 
+`TXSourceString` objects that will hold all the necessary information needed for CDS. 
+You can refer to the `TXSourceString` class for more information, or you can look at the 
 list below:
 
-* `key` (required): The key of the source string, generated via the public `generateKey()` 
+* `key` (required): The key of the source string, generated via the public `txGenerateKey()` 
 method.
 * `sourceString` (required): The actual source string.
 * `developerComment` (optional): An optional comment provided by the developer to
 assist the translators.
 * `occurrencies` (required): A list of relative paths where the source string is located in 
 the project.
+* `tags` (optional): An optional list of tags that will appear alongside the source string in
+the Transifex dashboard.
+* `characterLimit` (requred): Source string limit that should be respected by translators.
+* `context` (optional): An optional list of strings that provide more context.
 
-After building an array of `TxSourceString` objects, use the `pushTranslations` method 
+After building an array of `TXSourceString` objects, use the `pushTranslations` method 
 to push them to CDS. You can optionally set the `purge` argument to `true` (defaults to 
 `false`) to replace the entire resource content. The completion handler can be used to 
 get notified asynchronously whether the request was successful or not.
@@ -188,26 +234,81 @@ similar initializer as the `TXStandardCache` one, with the exception of the
 ### Application Extensions
 
 In order to add the SDK to an application extension target, be sure to include the 
-`TransifexNative` library in the 'Frameworks and Libraries' section of the General 
+`Transifex` library in the 'Frameworks and Libraries' section of the General 
 settings of the application extension you are working on.
 
-Furthermore, in case Xcode produces a "No such module 'TransifexNative'" error on the 
-`import TransifexNative` statements of the extension files, be sure to add the 
+Furthermore, in case Xcode produces a "No such module 'Transifex'" error on the 
+`import Transifex` statements of the extension files, be sure to add the 
 `$(SRCROOT)` path in the 'Framework Search Paths' setting under the Build Settings of the 
 application extension target.
 
-In order to make the Transifex Native SDK cache file visible by both the extension and the 
-main application targets, you would need to enable the App Groups capability in both the 
-main application and the extension targets and use an existing or create a new app group 
-identifier. Then, you would need to initialize the Transifex Native SDK with the 
-`TXStandardCache` passing that app group identifier as the `groupIdentifier` argument.
+In order to make the Transifex SDK cache file visible by both the extension and the main 
+application targets, you would need to enable the App Groups capability in both the main 
+application and the extension targets and use an existing or create a new app group 
+identifier. Then, you would need to initialize the Transifex SDK with the `TXStandardCache` 
+passing that app group identifier as the `groupIdentifier` argument.
 
-### Invalidating CDS cache
+### URL Session
 
-The cache of CDS has a TTL of 30 minutes. If you update some translations on Transifex 
-and you need to see them on your app immediately, you need to make an HTTP request 
-to the [invalidation endpoint](https://github.com/transifex/transifex-delivery/#invalidate-cache) 
-of CDS.
+By default, an ephemeral URLSession object with no cache is used for all requests made 
+to the CDS service.
+
+For more control over the networking layer, an optional `session` parameter is exposed in 
+the `initialize()` method of the `TXNative` cache, so that developers can offer their
+own session object, if that's desirable (e.g. for more fine grained cache control, certificate
+pinning etc).
+
+### Logging
+
+By default, warning and error messages produced by the SDK are logged in the console 
+using the `print()` method. Developers can offer a class that conforms to the `TXLogger`
+protocol so that they can control the logging mechanism of the SDK or make use of the
+public `TXStandardLogHandler` class to control the log level printed to the console.
+
+## Limitations
+
+### Special cases
+
+Localized strings that are being managed by the OS are not supported by the Transifex 
+SDK:
+
+* Localized entries found in the  `Info.plist` file (e.g. Bundle Display Name and Usage 
+Description strings) that are included in the `InfoPList.strings` file.
+* Localized entried found in the `Root.plist` of the `Settings.bundle` of an app that
+exposes its Settings to the iOS Settings app that are included in the `Root.strings` file.
+
+### ICU support
+
+Also, currently SDK supports only supports the platform rendering strategy, so if the ICU
+rendering strategy is passed during the initialization, translations will trigger the error 
+policy.
+
+### Internet connectivity
+
+If the device cannot access the Internet when `fetchTranslations()` method is called,
+the internal logic of the SDK doesn't retry or wait for a connection, in order to preserve
+resources. Developers are free to detect when internet connectivity is regained in order to
+re-call that method.
+
+## Sample applications
+
+You can find two sample applications that make use of the Transifex iOS SDK in this
+[Github repository](https://github.com/transifex/temp-mobile-sdk-apps).
+
+## Documentation
+
+The [documentation of this SDK](https://transifex.github.io/transifex-swift/) has been 
+generated using [Jazzy](https://github.com/realm/jazzy) using the following command:
+
+```
+jazzy -g https://github.com/transifex/transifex-swift/ -m Transifex
+```
+
+## Minimum Requirements
+
+| Swift           | Xcode           | Platforms                                         |
+|-----------------|-----------------|---------------------------------------------------|
+| Swift 5.3       | Xcode 12.3      | iOS 10.0  |
 
 ## License
 Licensed under Apache License 2.0, see [LICENSE](LICENSE) file.
