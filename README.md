@@ -298,8 +298,7 @@ re-call that method.
 
 ## Sample applications
 
-You can find two sample applications that make use of the Transifex iOS SDK in this
-[Github repository](https://github.com/transifex/temp-mobile-sdk-apps).
+You can find two [sample applications](https://github.com/transifex/transifex-native-sandbox/tree/master/ios) that make use of the Transifex iOS SDK, in Swift and Objective-C.
 
 ## Documentation
 
