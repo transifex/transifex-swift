@@ -450,6 +450,22 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual(result, "ERROR")
     }
 
+    func testCurrentLocale() {
+        let appleLanguagesKey = "AppleLanguages"
+        let storedLanguages = UserDefaults.standard.value(forKey: appleLanguagesKey)
+        
+        UserDefaults.standard.set([ "el" ],
+                                  forKey: appleLanguagesKey)
+        
+        let locale = TXLocaleState(appLocales: [])
+        
+        XCTAssertEqual(locale.currentLocale,
+                       "el")
+        
+        UserDefaults.standard.set(storedLanguages,
+                                  forKey: appleLanguagesKey)
+    }
+    
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
         ("testCurrentLocaleProvider", testCurrentLocaleProvider),
@@ -463,5 +479,8 @@ final class TransifexTests: XCTestCase {
         ("testOverrideFilterCacheAll", testOverrideFilterCacheAll),
         ("testOverrideFilterCacheUntranslated", testOverrideFilterCacheUntranslated),
         ("testOverrideFilterCacheTranslated", testOverrideFilterCacheTranslated),
+        ("testPlatformStrategyWithInvalidSourceString", testPlatformStrategyWithInvalidSourceString),
+        ("testErrorPolicy", testErrorPolicy),
+        ("testCurrentLocale", testCurrentLocale),
     ]
 }

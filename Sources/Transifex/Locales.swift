@@ -41,8 +41,15 @@ public final class TXPreferredLocaleProvider : NSObject {
         _currentLocale = TXPreferredLocaleProvider.getCurrentLocale()
     }
     
+    private static func getPreferredLocale() -> Locale {
+        guard let preferredIdentifier = Locale.preferredLanguages.first else {
+            return Locale.autoupdatingCurrent
+        }
+        return Locale(identifier: preferredIdentifier)
+    }
+
     private static func getCurrentLocale() -> String {
-        return NSLocale.autoupdatingCurrent.languageCode ?? "en"
+        return getPreferredLocale().languageCode ?? "en"
     }
 }
 
