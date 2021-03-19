@@ -129,7 +129,7 @@ class NativeCore : TranslationProvider {
             cdsHost: cdsHost,
             session: session
         )
-        self.cache = cache ?? TXStandardCache()
+        self.cache = cache ?? TXStandardCache.getCache()
         self.missingPolicy = missingPolicy ?? TXSourceStringPolicy()
         self.errorPolicy = errorPolicy ?? TXRenderedSourceErrorPolicy()
         self.renderingStrategy = renderingStrategy
@@ -194,7 +194,7 @@ class NativeCore : TranslationProvider {
         /// If this call call originates from a `localizedStringWithFormat` swizzled method, it will
         /// contain the extra arguments. In that case the first argument of those methods (format) would
         /// have already been resolved by a `NSLocalizedString()` call, so we should not perform
-        /// a second lookup on the cache, we can proceed by directly rendering the strict and let the
+        /// a second lookup on the cache, we can proceed by directly rendering the string and let the
         /// `render()` method extract the ICU plurals.
         if params[Swizzler.PARAM_ARGUMENTS_KEY] != nil {
             return render(sourceString: sourceString,
@@ -240,7 +240,7 @@ class NativeCore : TranslationProvider {
                                     context: context)
             translationTemplate = cache.get(key: key,
                                             localeCode: localeToRender)
-            if translationTemplate == nil {
+            if !String.containsTranslation(translationTemplate) {
                 let bypassedString = self.bypassLocalizer.get(sourceString: sourceString,
                                                               params: params)
                 
@@ -300,7 +300,7 @@ Error rendering source string '\(sourceString)' with string to render '\(stringT
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "0.1.1"
+    internal static let version = "0.1.2"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"

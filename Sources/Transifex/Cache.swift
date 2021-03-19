@@ -23,23 +23,64 @@ public typealias TXLocaleStrings = [String: TXStringInfo]
 /// Format: {locale code} : {TXLocaleStrings}
 public typealias TXTranslations = [String: TXLocaleStrings]
 
-/// Overriding policy `TXStringOverrideFilterCache` decorator class so that any translations fed by
-/// the `update()` method of the `TXCache` protocol are updated using one of the following policies.
+extension String {
+    /// Given an optional translated string, returns whether that string contains a translation or not.
+    ///
+    /// In order for a string to be considered a translation, it has to be not nil and not being an empty string.
+    ///
+    /// - Parameter string: The string to be checked
+    /// - Returns: True if the string contains a translation, False otherwise.
+    static func containsTranslation(_ string: String?) -> Bool {
+        guard let string = string else {
+            return false
+        }
+    
+        return string.count > 0
+    }
+}
+
+/// Update policy that specifies the way that the internal cache is updated with new translations.
+///
+/// You can find an easy to understand table containing a number of cases and how each policy updates the
+/// cache below:
+///
+///```
+/// | Key || Cache | New  || Replace All   | Update using Translated        |
+/// |-----||-------|------||---------------|--------------------------------|
+/// | a   || "a"   | -    || -             | "a"                            |
+/// | b   || "b"   | "B"  || "B"           | "B"                            |
+/// | c   || "c"   | ""   || ""            | "c"                            |
+/// | d   || ""    | -    || -             | ""                             |
+/// | e   || ""    | "E"  || "E"           | "E"                            |
+/// | f   || -     | "F"  || "F"           | "F"                            |
+/// | g   || -     | ""   || ""            | -                              |
+///```
+///
+/// Here's an example on how to read the table above:
+///
+/// * Given a string with `key="c"`
+/// * and a cache that has `"c"` as the stored value for this key (`"c" -> "c"`)
+/// * if an empty translation arrives for this string (`""`)
+///     * if policy is  `.replaceAll`, then the cache will be updated so that (`"c" -> "")`
+///     * in contrast to that, if policy is `.updateUsingTranslated`, then the cache will stay as is
+///     (`"c" -> "c"`), because the new translation is empty.
+///
+/// A `"-"` value means that the respective key does not exist. For example:
+///
+/// * Given a string with `key="f"`
+/// * and a cache that has no entry with `"f"` as a key
+/// * if a translation arrives for this string (`"f" -> "F"`)
+///     * if policy is `.replaceAll`, then the cache will be updated by adding a new entry so that
+///     (`"f" -> "F"`)
+///     * if policy is `.updateUsingTranslated`, then the same will happen, since the new translation
+///     is not empty
 @objc
-public enum TXCacheOverridePolicy : Int {
-    /// All of the cache entries are replaced with the new translations.
-    /// Empty cache entries from the new translations are filtered out.
-    case overrideAll
-    /// All new translations are added to the cache, either updating existing translations or adding
-    /// new ones.
-    /// If a translation is not found in cache but exists in the new translations, it's not added.
-    /// If a translation is found in cache but doesn't exist in the new translations, it's left untouched.
-    /// Empty cache entries from the new translations are filtered out.
-    case overrideUsingTranslatedOnly
-    /// Only the translations not existing in the cache are updated.
-    /// If a translation is found in the cache but not in the new translations, it's left untouched.
-    /// Empty cache entries from the new translations are filtered out.
-    case overrideUntranslatedOnly
+public enum TXCacheUpdatePolicy : Int {
+    /// Discards the existing cache entries completely and populates the cache with the new entries,
+    /// even if they contain empty translations.
+    case replaceAll
+    /// Updates the existing cache with the new entries that have a non-empty translation, ignoring the rest.
+    case updateUsingTranslated
 }
 
 /// A protocol for classes that act as cache for translations.
@@ -90,7 +131,7 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
     /// The translations extracted from disk after initialization.
     public let translations: TXTranslations?
     
-    /// Initializes the disk cache provider with a file URL from disk.
+    /// Initializes the disk cache provider with a file URL from disk synchronously.
     ///
     /// The disk cache provider expects the file to be encoded in JSON format using the `TXTranslations`
     /// data structure.
@@ -297,96 +338,55 @@ public final class TXProviderBasedCache: TXDecoratorCache {
     }
 }
 
-/// Class responsible for updating the passed internalCache using a certain override policy defined
-/// in the `TXCacheOverridePolicy` enum. This is done by filtering any translations that are passed
-/// via the `update(translations:)` call using an override policy that checks both the passed
+/// Class responsible for updating the passed internalCache using a certain update policy defined
+/// in the `TXCacheUpdatePolicy` enum. This is done by filtering any translations that are passed
+/// via the `update(translations:)` call using an update policy that checks both the passed
 /// translations and the internal cache state to decide whether a translation should update the internal cache
 /// or not.
-public final class TXStringOverrideFilterCache: TXDecoratorCache {
-    let policy: TXCacheOverridePolicy
+public final class TXStringUpdateFilterCache: TXDecoratorCache {
+    let policy: TXCacheUpdatePolicy
     
-    /// Initializes the cache with a certain override policy and an internal cache that will be updated
+    /// Initializes the cache with a certain update policy and an internal cache that will be updated
     /// according to that policy.
     /// 
     /// - Parameters:
-    ///   - policy: The override policy to be used
-    ///   - internalCache: The internal cache to be updated with the specified override policy
+    ///   - policy: The update policy to be used
+    ///   - internalCache: The internal cache to be updated with the specified update policy
     @objc
-    public init(policy: TXCacheOverridePolicy,
+    public init(policy: TXCacheUpdatePolicy,
                 internalCache: TXCache) {
         self.policy = policy
         super.init(internalCache: internalCache)
     }
     
-    /// Updates the internal cache with the provided translations using the override policy specified during
+    /// Updates the internal cache with the provided translations using the update policy specified during
     /// initialization.
     ///
     /// - Parameter translations: The provided translations
     override public func update(translations: TXTranslations) {
-        let filteredTranslations = filterEmptyTranslations(translations)
-        
-        if policy == .overrideAll {
-            super.update(translations: filteredTranslations)
+        if policy == .replaceAll {
+            super.update(translations: translations)
             return
         }
         
         var updatedTranslations = self.get()
     
-        for (localeCode, localeTranslations) in filteredTranslations {
+        for (localeCode, localeTranslations) in translations {
             for (stringKey, translation) in localeTranslations {
-                // Make sure that the new translation has a value and it's not
-                // an empty string.
-                guard let translatedString = translation[TXDecoratorCache.STRING_KEY],
-                      translatedString.count > 0 else {
+                /// Make sure that the new entry contains a translation, otherwise don't process it.
+                guard String.containsTranslation(translation[TXDecoratorCache.STRING_KEY]) == true else {
                     continue
                 }
-                
-                    // If the policy is set to override untranslated only, then
-                    // update the cache only if there's no existing translation
-                    // for that stringKey.
-                if (policy == .overrideUntranslatedOnly
-                    && self.get(key: stringKey,
-                                localeCode: localeCode) == nil)
-                   ||
-                    // If the policy is set to override using translated only,
-                    // then always update the cache.
-                    policy == .overrideUsingTranslatedOnly {
-                    if updatedTranslations[localeCode] == nil {
-                        updatedTranslations[localeCode] = [:]
-                    }
 
-                    updatedTranslations[localeCode]?[stringKey] = translation
+                if updatedTranslations[localeCode] == nil {
+                    updatedTranslations[localeCode] = [:]
                 }
+
+                updatedTranslations[localeCode]?[stringKey] = translation
             }
         }
 
         super.update(translations: updatedTranslations)
-    }
-    
-    /// Filters out any empty translations from the provided TXTranslations structure.
-    ///
-    /// - Parameter translations: The provided TXTranslations structure that may include empty
-    /// translations
-    /// - Returns: The filtered TXTranslations structured that contains no empty translations
-    private func filterEmptyTranslations(_ translations: TXTranslations) -> TXTranslations {
-        /// Copy the provided translations to the final structure
-        var filteredTranslations = translations
-        
-        /// Remove the entries from the final structure that contain empty translations
-        for (localeCode, localeTranslations) in translations {
-            for (stringKey, translation) in localeTranslations {
-                // Make sure that the new translation has a value and it's not
-                // an empty string.
-                if let translatedString = translation[TXDecoratorCache.STRING_KEY],
-                   translatedString.count > 0 {
-                    continue
-                }
-                
-                filteredTranslations[localeCode]?.removeValue(forKey: stringKey)
-            }
-        }
-        
-        return filteredTranslations
     }
 }
 
@@ -396,18 +396,17 @@ public final class TXStringOverrideFilterCache: TXDecoratorCache {
 /// reads from any existing translation files either from the app bundle or the app sandbox. The cache is also
 /// responsible for creating or updating the sandbox file with new translations when they will become available
 /// and it offers  a memory cache for retrieving such translations so that they can be displayed in the UI.
-public final class TXStandardCache: TXDecoratorCache {
-    /// Initializes the cache using a specific override policy and an optional group identifier based on the
-    /// architecture of the application using the SDK.
+public final class TXStandardCache: NSObject {
+    /// Initializes and returns the cache using a specific update policy and an optional group identifier based
+    /// on the architecture of the application that uses the SDK.
     ///
     /// - Parameters:
-    ///   - overridePolicy: The specific override policy to be used when updating the internal
-    ///   memory cache with the stored contents from disk. Defaults to .overrideAll.
+    ///   - updatePolicy: The specific update policy to be used when updating the internal
+    ///   memory cache with the stored contents from disk. Defaults to .replaceAll.
     ///   - groupIdentifier: The group identifier of the app, if the app makes use of the app groups
     /// entitlement. Defaults to nil.
-    @objc
-    public init(overridePolicy: TXCacheOverridePolicy = .overrideAll,
-                groupIdentifier: String? = nil) {
+    public static func getCache(updatePolicy: TXCacheUpdatePolicy = .replaceAll,
+                                groupIdentifier: String? = nil) -> TXCache {
         var providers: [TXCacheProvider] = []
         
         if let bundleURL = TXStandardCache.bundleURL() {
@@ -422,20 +421,18 @@ public final class TXStandardCache: TXDecoratorCache {
             providers.append(TXDiskCacheProvider(fileURL: downloadURL))
         }
  
-        let cache = TXFileOutputCacheDecorator(
+        return TXFileOutputCacheDecorator(
             fileURL: downloadURL,
             internalCache: TXReadonlyCacheDecorator(
                 internalCache: TXProviderBasedCache(
                     providers: providers,
-                    internalCache: TXStringOverrideFilterCache(
-                        policy: overridePolicy,
+                    internalCache: TXStringUpdateFilterCache(
+                        policy: updatePolicy,
                         internalCache: TXMemoryCache()
                     )
                 )
             )
         )
-        
-        super.init(internalCache: cache)
     }
     
     /// Constructs the file URL of the translations file found in the main bundle of the app. The method

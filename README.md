@@ -180,9 +180,9 @@ get notified asynchronously whether the request was successful or not.
 ### Standard Cache
 
 The default cache strategy used by the SDK, if no other cache is provided by the 
-developer, is the `TXStandardCache`. The standard cache operates by making use of the 
-publicly exposed classes and protocols from the Cache.swift file of the SDK, so it's easy 
-to construct another cache strategy if that's desired.
+developer, is the `TXStandardCache.getCache()`. The standard cache operates 
+by making use of the publicly exposed classes and protocols from the Cache.swift file of the 
+SDK, so it's easy to construct another cache strategy if that's desired.
 
 The standard cache is initialized with a memory cache (`TXMemoryCache`) that manages all 
 cached entries in memory. After the memory cache gets initialized, it tries to look up if 
@@ -196,9 +196,9 @@ by the developer.
 (using the optional app group identifier argument if provided), in case the app had  already 
 downloaded the translations from the server from a previous launch.
 
-Those two providers are used to initialize the memory cache using an override policy 
-(`TXCacheOverridePolicy`) which is optionally provided by the developer and defaults to 
-the `overrideAll` value. 
+Those two providers are used to initialize the memory cache using an update policy 
+(`TXCacheUpdatePolicy`) which is optionally provided by the developer and defaults to 
+the `replaceAll` value. 
 
 After the cached entries have updated the memory cache, the cache is ready to be used.
 
@@ -210,28 +210,21 @@ they are available on the next app launch.
 #### Alternative cache strategy
 
 You might want to update the internal memory cache as soon as the newly downloaded 
-translations are available and always override all entries, so that the override policy can 
+translations are available and always update all entries, so that the update policy can 
 also be ommited. 
 
-In order to achieve that, you can create a new  `TXDecoratorCache` subclass that has a 
-similar initializer as the `TXStandardCache` one, with the exception of the 
-`TXReadonlyCacheDecorator` and the `TXStringOverrideFilterCache` initializers:
- 
- ```swift
- public init(groupIdentifier: String? = nil) {
-     // ...Same as TXStandardCache...
+In order to achieve that, you can create a new  `TXDecoratorCache` subclass or create a 
+method that returns a `TXCache` instance, just like in the `TXStandardCache.getCache()`
+case.
 
-     let cache = TXFileOutputCacheDecorator(
-         fileURL: downloadURL,
-         internalCache: TXProviderBasedCache(
-             providers: providers,
-             internalCache: TXMemoryCache()
-         )
-     )
-     
-     super.init(internalCache: cache)
- }
- ```
+```swift
+func getCustomCache() -> TXCache {
+    return TXFileOutputCacheDecorator(
+        fileURL: ...,
+        internalCache: ...
+    )
+}
+```
  
  This way, whenever the cache is updated with the new translations from the 
  `fetchTranslations()` method, the `update()` call will propagate to the internal
