@@ -18,3 +18,9 @@
 
 - Applies minor refactors in cache logic
 - Renames override policy to update policy and improves documentation.
+
+## Transifex iOS SDK 0.1.3
+
+*March 22, 2021*
+
+- Fixes a minor version issue
