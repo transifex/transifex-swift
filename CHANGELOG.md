@@ -24,3 +24,9 @@
 *March 22, 2021*
 
 - Fixes a minor version issue
+
+## Transifex iOS SDK 0.1.4
+
+*March 24, 2021*
+
+- Exposes `TXStandardCache.getCache` method in Objective-C.
