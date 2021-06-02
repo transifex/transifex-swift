@@ -405,6 +405,7 @@ public final class TXStandardCache: NSObject {
     ///   memory cache with the stored contents from disk. Defaults to .replaceAll.
     ///   - groupIdentifier: The group identifier of the app, if the app makes use of the app groups
     /// entitlement. Defaults to nil.
+    @objc
     public static func getCache(updatePolicy: TXCacheUpdatePolicy = .replaceAll,
                                 groupIdentifier: String? = nil) -> TXCache {
         var providers: [TXCacheProvider] = []
