@@ -117,6 +117,7 @@ class CDSHandler {
     
     private static let CONTENT_ENDPOINT = "content"
     private static let INVALIDATE_ENDPOINT = "invalidate"
+    private static let FILTER_TAGS_PARAM = "filter[tags]"
     
     fileprivate static let HTTP_STATUS_CODE_OK = 200
     fileprivate static let HTTP_STATUS_CODE_ACCEPTED = 202
@@ -212,8 +213,10 @@ class CDSHandler {
     /// - Parameters:
     ///   - localeCode: an optional locale to fetch translations from; if none provided it will fetch
     ///   translations for all locales defined in the configuration
+    ///   - tags: An optional list of tags so that only strings that have all of the given tags are fetched.   
     ///   - completionHandler: a callback function to call when the operation is complete
     public func fetchTranslations(localeCode: String? = nil,
+                                  tags: [String]? = nil,
                                   completionHandler: @escaping TXPullCompletionHandler) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
@@ -244,7 +247,8 @@ class CDSHandler {
 
         for code in fetchLocaleCodes {
             let url = baseURL.appendingPathComponent(code)
-            var request = URLRequest(url: url)
+            var request = buildURLRequest(url: url,
+                                          tags: tags)
             request.allHTTPHeaderFields = getHeaders(withSecret: false)
             requestsByLocale[code] = request
         }
@@ -481,5 +485,32 @@ Source:
             headers["If-None-Match"] = etag
         }
         return headers
+    }
+    
+    /// Builds the URL request that is going to be used to query CDS using the optional tags list
+    ///
+    /// - Parameters:
+    ///   - url: The initial URL
+    ///   - tags: The optional tag list
+    /// - Returns: The final URL request to be used to query CDS
+    private func buildURLRequest(url: URL,
+                                 tags: [String]?) -> URLRequest {
+        guard let tags = tags,
+              tags.count > 0,
+              var components = URLComponents(url: url,
+                                             resolvingAgainstBaseURL: false) else {
+            return URLRequest(url: url)
+        }
+        
+        let tagList = tags.joined(separator: ",")
+        let queryItem = URLQueryItem(name: CDSHandler.FILTER_TAGS_PARAM,
+                                     value: tagList)
+        components.queryItems = [ queryItem ]
+            
+        guard let tagRequestURL = components.url else {
+            return URLRequest(url: url)
+        }
+        
+        return URLRequest(url: tagRequestURL)
     }
 }
