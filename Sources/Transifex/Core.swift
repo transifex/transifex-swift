@@ -28,10 +28,8 @@ public enum TXRenderingStategy : Int {
 /// If the string is not found the logic returns the value of the `params` dictionary and if this is
 /// also not found, it returns the `sourceString`.
 ///
-/// This logic is used when the app needs to access its source localization or when a string for the
-/// requested localization is not found and the missing policy is about to be called. Due to the fact
-/// that CDS doesn't provide a way to download the source localizations, the SDK needs to look into
-/// the bundled translations for the source locale and use those translations instead.
+/// This logic is used when a string for the requested localization is not found and the missing policy
+/// is about to be called.
 final class BypassLocalizer {
     let bundle : Bundle?
     
@@ -123,7 +121,7 @@ class NativeCore : TranslationProvider {
     ) {
         self.locales = locales
         self.cdsHandler = CDSHandler(
-            localeCodes: self.locales.translatedLocales,
+            localeCodes: self.locales.appLocales,
             token: token,
             secret: secret,
             cdsHost: cdsHost,
@@ -226,36 +224,45 @@ class NativeCore : TranslationProvider {
                    params: [String: Any],
                    context: String?) -> String {
         var translationTemplate: String?
-        let localeToRender = localeCode ?? self.locales.currentLocale
-        let isSource = self.locales.isSource(localeToRender)
+        let localeToRender = localeCode ?? locales.currentLocale
+        let key = txGenerateKey(sourceString: sourceString,
+                                context: context)
+
+        translationTemplate = cache.get(key: key,
+                                        localeCode: localeToRender)
         
-        /// If the source locale is requested, or if the source string is missing from cache,
-        /// the bypass localizer is used, to look up on the application bundle and fetch the
-        /// localized content for the source locale (if found) by bypassing swizzling.
+        var applyMissingPolicy = false
         
-        if isSource {
-            translationTemplate = self.bypassLocalizer.get(sourceString: sourceString,
-                                                           params: params)
-        }
-        else {
-            let key = txGenerateKey(sourceString: sourceString,
-                                    context: context)
-            translationTemplate = cache.get(key: key,
-                                            localeCode: localeToRender)
-            if !String.containsTranslation(translationTemplate) {
-                let bypassedString = self.bypassLocalizer.get(sourceString: sourceString,
-                                                              params: params)
-                
-                return missingPolicy.get(sourceString: bypassedString)
+        /// If the string is not found in the cache, use the bypass localizer to look it up on the
+        /// application bundle, which returns either the bundled translation if found, or the provided
+        /// source string.
+        if !String.containsTranslation(translationTemplate) {
+            translationTemplate = bypassLocalizer.get(sourceString: sourceString,
+                                                      params: params)
+        
+            /// For source locale, we treat the return value of the bypass localizer as the ground truth
+            /// and we use the value to render the final string.
+            ///
+            /// For target locales, we do the same, with the exception that we pass the final rendered
+            /// string from the missing policy to inform the user that this string is missing.
+            if !locales.isSource(localeToRender) {
+                applyMissingPolicy = true
             }
         }
         
-        return render(
+        let renderedString = render(
             sourceString: sourceString,
             stringToRender: translationTemplate,
             localeCode: localeToRender,
             params: params
         )
+        
+        if applyMissingPolicy {
+            return missingPolicy.get(sourceString: renderedString)
+        }
+        else {
+            return renderedString
+        }
     }
     
     /// Renders the translation to the current format, taking into account any variable placeholders.
@@ -319,6 +326,9 @@ public final class TXNative : NSObject {
     }
 
     /// Designated initializer of the TXNative SDK.
+    ///
+    /// Do not call initialize() twice without calling dispose() first to deconstruct the previous singleton
+    /// instance.
     ///
     /// - Parameters:
     ///   - locales: keeps track of the available and current locales
@@ -465,5 +475,11 @@ token: \(token)
     @objc
     public static func forceCacheInvalidation(completionHandler: @escaping (Bool) -> Void) {
         tx?.forceCacheInvalidation(completionHandler: completionHandler)
+    }
+    
+    /// Destructs the TXNative singleton instance so that another one can be used.
+    @objc
+    public static func dispose() {
+        tx = nil
     }
 }

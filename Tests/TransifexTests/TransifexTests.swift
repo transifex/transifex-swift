@@ -126,6 +126,10 @@ class MockErrorPolicy : TXErrorPolicy {
 }
 
 final class TransifexTests: XCTestCase {
+    override func tearDown() {
+        TXNative.dispose()
+    }
+    
     func testDuplicateLocaleFiltering() {
         let duplicateLocales = [ "en", "fr", "en" ]
         
@@ -515,6 +519,61 @@ final class TransifexTests: XCTestCase {
                                   forKey: appleLanguagesKey)
     }
     
+    func testTranslateWithSourceStringsInCache() {
+        let sourceLocale = "en"
+        let localeState = TXLocaleState(sourceLocale: sourceLocale,
+                                        appLocales: [
+                                            sourceLocale,
+                                            "el"])
+        
+        
+        let sourceStringTest = "tx_test_key"
+        let translatedStringTest = "test updated"
+        
+        let sourceStringPlural = "tx_plural_test_key"
+        let translatedStringPluralOne = "car updated"
+        let translatedStringPluralOther = "cars updated"
+        let translatedStringPluralRule = "{cnt, plural, one {\(translatedStringPluralOne)} other {\(translatedStringPluralOther)}}"
+        
+        let keyTest = txGenerateKey(sourceString: sourceStringTest, context: nil)
+        let keyPlural = txGenerateKey(sourceString: sourceStringPlural, context: nil)
+        
+        let existingTranslations: TXTranslations = [
+            sourceLocale: [
+                keyTest: [ "string": translatedStringTest ],
+                keyPlural : [ "string": translatedStringPluralRule ]
+            ]
+        ]
+        
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: existingTranslations)
+        
+        TXNative.initialize(locales: localeState,
+                            token: "<token>",
+                            secret: "<secret>",
+                            cache: memoryCache)
+        
+        let result = TXNative.translate(sourceString: sourceStringTest,
+                                        params: [:],
+                                        context: nil)
+        
+        XCTAssertEqual(result, translatedStringTest)
+        
+        let pluralsResultOne = TXNative.translate(sourceString: sourceStringPlural,
+                                                  params: [
+                                                    Swizzler.PARAM_ARGUMENTS_KEY: [1 as CVarArg]],
+                                                  context: nil)
+        
+        XCTAssertEqual(pluralsResultOne, translatedStringPluralOne)
+        
+        let pluralsResultOther = TXNative.translate(sourceString: sourceStringPlural,
+                                                    params: [
+                                                        Swizzler.PARAM_ARGUMENTS_KEY: [3 as CVarArg]],
+                                                    context: nil)
+        
+        XCTAssertEqual(pluralsResultOther, translatedStringPluralOther)
+    }
+    
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
         ("testCurrentLocaleProvider", testCurrentLocaleProvider),
@@ -531,5 +590,6 @@ final class TransifexTests: XCTestCase {
         ("testPlatformStrategyWithInvalidSourceString", testPlatformStrategyWithInvalidSourceString),
         ("testErrorPolicy", testErrorPolicy),
         ("testCurrentLocale", testCurrentLocale),
+        ("testTranslateWithSourceStringsInCache", testTranslateWithSourceStringsInCache),
     ]
 }
