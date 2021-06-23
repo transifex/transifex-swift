@@ -142,9 +142,11 @@ class NativeCore : TranslationProvider {
     ///
     /// - Parameter localeCode: an optional locale to fetch translations from; if none provided, it
     /// will fetch translations for all locales defined in the configuration
+    /// - Parameter tags: An optional list of tags so that only strings that have all of the given tags are fetched.
     /// - Parameter completionHandler: The completion handler that informs the caller with the
     /// new translations and a list of possible errors that might have occured
     func fetchTranslations(_ localeCode: String? = nil,
+                           tags: [String]? = nil,
                            completionHandler: TXPullCompletionHandler? = nil) {
         cdsHandler.fetchTranslations(localeCode: localeCode) { (translations, errors) in
             if errors.count > 0 {
@@ -428,10 +430,12 @@ token: \(token)
     ///
     /// - Parameter localeCode: if not provided, it will fetch translations for all locales defined in the
     /// app configuration.
+    /// - Parameter tags: An optional list of tags so that only strings that have all of the given tags are fetched.
     /// - Parameter completionHandler: The completion handler that informs the caller with the
     /// new translations and a list of possible errors that might have occured
     @objc
     public static func fetchTranslations(_ localeCode: String? = nil,
+                                         tags: [String]? = nil,
                                          completionHandler: TXPullCompletionHandler? = nil) {
         tx?.fetchTranslations(localeCode,
                               completionHandler: completionHandler)

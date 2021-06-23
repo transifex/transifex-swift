@@ -19,6 +19,7 @@ struct MockResponse {
     var data : Data?
     var statusCode : Int?
     var error : Error?
+    var url : URL?
 }
 
 class URLSessionMock: URLSession {
@@ -60,13 +61,24 @@ class URLSessionMock: URLSession {
         else if let mockResponse = mockResponses?[mockResponseIndex] {
             mockResponseIndex += 1
             
+            let requestURL = request.url!
             let data = mockResponse.data
             let error = mockResponse.error
             let statusCode = mockResponse.statusCode
+            let url = mockResponse.url
+            
+            var finalStatusCode = 200
+            
+            if let statusCode = statusCode {
+                finalStatusCode = statusCode
+            }
+            else if let url = url {
+                finalStatusCode = (url == requestURL ? 200 : 403)
+            }
             
             return URLSessionDataTaskMock {
-                let response = HTTPURLResponse(url: request.url!,
-                                               statusCode: statusCode ?? 200,
+                let response = HTTPURLResponse(url: requestURL,
+                                               statusCode: finalStatusCode,
                                                httpVersion: nil,
                                                headerFields: nil)
                 completionHandler(data, response, error)
@@ -196,6 +208,34 @@ final class TransifexTests: XCTestCase {
         )
         XCTAssertEqual("{cnt, plural, }".extractICUPlurals(), [:])
         XCTAssertEqual("{something}".extractICUPlurals(), nil)
+    }
+    
+    func testFetchTranslationsWithTags() {
+        let expectation = self.expectation(description: "Waiting for translations to be fetched")
+        var translationErrors : [Error]? = nil
+        let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
+        
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")
+        let mockResponse = MockResponse(data: mockResponseData,
+                                        url: expectedURL)
+        
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [mockResponse]
+        
+        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
+                                    token: "test_token",
+                                    session: urlSession)
+        
+        cdsHandler.fetchTranslations(tags: ["ios"]) { translations, errors in
+            translationErrors = errors
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+        }
     }
     
     func testFetchTranslations() {
