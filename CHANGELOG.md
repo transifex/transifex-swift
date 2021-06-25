@@ -30,3 +30,12 @@
 *March 24, 2021*
 
 - Exposes `TXStandardCache.getCache` method in Objective-C.
+
+## Transifex iOS SDK 0.5.0
+
+*June 25, 2021*
+
+- Allows pull command to fetch source string content.
+- Introduces public `dispose()` method to destruct the `TXNative` singleton instance.
+- Adds tag filter support when fetching translations via the `fetchTranslations` method.
+- Exposes `TXSourceString` read-only properties.
