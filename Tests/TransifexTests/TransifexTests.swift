@@ -120,8 +120,21 @@ class MockErrorPolicy : TXErrorPolicy {
     func get(sourceString: String,
              stringToRender: String,
              localeCode: String,
-             params: [String : Any]) -> String {
-        return "ERROR"
+             params: [String : Any]) throws -> String {
+        return "MOCKERROR"
+    }
+}
+
+class MockErrorPolicyException : TXErrorPolicy {
+    enum MockError: Error {
+        case generic
+    }
+    
+    func get(sourceString: String,
+             stringToRender: String,
+             localeCode: String,
+             params: [String : Any]) throws -> String {
+        throw MockError.generic
     }
 }
 
@@ -500,6 +513,21 @@ final class TransifexTests: XCTestCase {
         let result = TXNative.translate(sourceString: "source string", params: [:], context: nil)
 
         XCTAssertNotNil(result)
+        XCTAssertEqual(result, "MOCKERROR")
+    }
+    
+    func testErrorPolicyException() {
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["fr"])
+        
+        TXNative.initialize(locales: localeState,
+                            token: "<token>",
+                            secret: "<secret>",
+                            errorPolicy: MockErrorPolicyException(),
+                            renderingStrategy: .icu)
+        
+        let result = TXNative.translate(sourceString: "source string", params: [:], context: nil)
+
         XCTAssertEqual(result, "ERROR")
     }
 

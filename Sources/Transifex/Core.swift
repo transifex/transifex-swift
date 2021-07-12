@@ -265,6 +265,9 @@ class NativeCore : TranslationProvider {
         }
     }
     
+    /// Error string to be rendered when the error policy produces an exception.
+    private static let ERROR_FALLBACK = "ERROR"
+    
     /// Renders the translation to the current format, taking into account any variable placeholders.
     ///
     /// Delegates the rendering to the appropriate rendering strategy (ICU or platform).
@@ -298,10 +301,21 @@ class NativeCore : TranslationProvider {
 Error rendering source string '\(sourceString)' with string to render '\(stringToRender)'
  locale code: \(localeCode) params: \(params). Error: \(error)
 """)
-            return errorPolicy.get(sourceString: sourceString,
-                                   stringToRender: stringToRender,
-                                   localeCode: localeCode,
-                                   params: params)
+            do {
+                return try errorPolicy.get(sourceString: sourceString,
+                                           stringToRender: stringToRender,
+                                           localeCode: localeCode,
+                                           params: params)
+            }
+            catch {
+                Logger.error("""
+Error running error policy for source string '\(sourceString)' with string to
+render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
+\(error)
+""")
+                
+                return NativeCore.ERROR_FALLBACK
+            }
         }
     }
 }
@@ -309,7 +323,7 @@ Error rendering source string '\(sourceString)' with string to render '\(stringT
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "0.1.4"
+    internal static let version = "0.5.1"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
