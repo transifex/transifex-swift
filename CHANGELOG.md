@@ -39,3 +39,9 @@
 - Introduces public `dispose()` method to destruct the `TXNative` singleton instance.
 - Adds tag filter support when fetching translations via the `fetchTranslations` method.
 - Exposes `TXSourceString` read-only properties.
+
+## Transifex iOS SDK 0.5.1
+
+*July 12, 2021*
+
+- Improves error policy behavior.
