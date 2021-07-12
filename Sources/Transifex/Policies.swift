@@ -166,18 +166,18 @@ public protocol TXErrorPolicy {
     func get(sourceString: String,
              stringToRender: String,
              localeCode: String,
-             params: [String: Any]) -> String
+             params: [String: Any]) throws -> String
 }
 
 /**
- An error policy that simply returns the source string instead of the translation.
+ An error policy that simply returns the string that is going to be rendered in the UI instead of the translation.
  */
 public final class TXRenderedSourceErrorPolicy : TXErrorPolicy {
     
     public func get(sourceString: String,
                     stringToRender: String,
                     localeCode: String,
-                    params: [String: Any]) -> String {
-        return sourceString
+                    params: [String: Any]) throws -> String {
+        return stringToRender
     }
 }

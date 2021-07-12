@@ -265,6 +265,9 @@ class NativeCore : TranslationProvider {
         }
     }
     
+    /// Error string to be rendered when the error policy produces an exception.
+    private static let ERROR_FALLBACK = "ERROR"
+    
     /// Renders the translation to the current format, taking into account any variable placeholders.
     ///
     /// Delegates the rendering to the appropriate rendering strategy (ICU or platform).
@@ -298,10 +301,21 @@ class NativeCore : TranslationProvider {
 Error rendering source string '\(sourceString)' with string to render '\(stringToRender)'
  locale code: \(localeCode) params: \(params). Error: \(error)
 """)
-            return errorPolicy.get(sourceString: sourceString,
-                                   stringToRender: stringToRender,
-                                   localeCode: localeCode,
-                                   params: params)
+            do {
+                return try errorPolicy.get(sourceString: sourceString,
+                                           stringToRender: stringToRender,
+                                           localeCode: localeCode,
+                                           params: params)
+            }
+            catch {
+                Logger.error("""
+Error running error policy for source string '\(sourceString)' with string to
+render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
+\(error)
+""")
+                
+                return NativeCore.ERROR_FALLBACK
+            }
         }
     }
 }
