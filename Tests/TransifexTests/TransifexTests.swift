@@ -16,10 +16,10 @@ class URLSessionDataTaskMock: URLSessionDataTask {
 }
 
 struct MockResponse {
+    var url : URL
     var data : Data?
     var statusCode : Int?
     var error : Error?
-    var url : URL?
 }
 
 class URLSessionMock: URLSession {
@@ -34,60 +34,26 @@ class URLSessionMock: URLSession {
         with request: URLRequest,
         completionHandler: @escaping CompletionHandler
     ) -> URLSessionDataTask {
-        // For POST requests, return 200 if the data included in the
-        // mock response is equal to the data of the HTTP body of the
-        // request.
-        if request.httpMethod == "POST",
-           let mockResponse = mockResponses?[mockResponseIndex] {
-            mockResponseIndex += 1
-            
-            return URLSessionDataTaskMock {
-                if mockResponse.data == request.httpBody {
-                    let response = HTTPURLResponse(url: request.url!,
-                                                   statusCode: 200,
-                                                   httpVersion: nil,
-                                                   headerFields: nil)
-                    completionHandler(nil, response, nil)
-                }
-                else {
-                    let response = HTTPURLResponse(url: request.url!,
-                                                   statusCode: 403,
-                                                   httpVersion: nil,
-                                                   headerFields: nil)
-                    completionHandler(nil, response, nil)
-                }
-            }
-        }
-        else if let mockResponse = mockResponses?[mockResponseIndex] {
-            mockResponseIndex += 1
-            
-            let requestURL = request.url!
-            let data = mockResponse.data
-            let error = mockResponse.error
-            let statusCode = mockResponse.statusCode
-            let url = mockResponse.url
-            
-            var finalStatusCode = 200
-            
-            if let statusCode = statusCode {
-                finalStatusCode = statusCode
-            }
-            else if let url = url {
-                finalStatusCode = (url == requestURL ? 200 : 403)
-            }
-            
-            return URLSessionDataTaskMock {
-                let response = HTTPURLResponse(url: requestURL,
-                                               statusCode: finalStatusCode,
-                                               httpVersion: nil,
-                                               headerFields: nil)
-                completionHandler(data, response, error)
-            }
-        }
-        else {
+        guard
+            let requestURL = request.url,
+            let mockResponse = mockResponses?[mockResponseIndex],
+            mockResponse.url == requestURL else {
             return URLSessionDataTaskMock {
                 completionHandler(nil, nil, nil)
             }
+        }
+        
+        mockResponseIndex += 1
+        
+        let data = mockResponse.data
+        let error = mockResponse.error
+        
+        return URLSessionDataTaskMock {
+            let response = HTTPURLResponse(url: requestURL,
+                                           statusCode: mockResponse.statusCode ?? 200,
+                                           httpVersion: nil,
+                                           headerFields: nil)
+            completionHandler(data, response, error)
         }
     }
 }
@@ -230,11 +196,12 @@ final class TransifexTests: XCTestCase {
     func testFetchTranslationsWithTags() {
         let expectation = self.expectation(description: "Waiting for translations to be fetched")
         var translationErrors : [Error]? = nil
-        let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
         
-        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")
-        let mockResponse = MockResponse(data: mockResponseData,
-                                        url: expectedURL)
+        let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")!
+        
+        let mockResponse = MockResponse(url: expectedURL,
+                                        data: mockResponseData)
         
         let urlSession = URLSessionMock()
         urlSession.mockResponses = [mockResponse]
@@ -260,10 +227,11 @@ final class TransifexTests: XCTestCase {
         var translationsResult : TXTranslations? = nil
         
         let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en")!
         
-        let mockResponse = MockResponse(data: mockResponseData,
-                                        statusCode: 200,
-                                        error: nil)
+        let mockResponse = MockResponse(url: expectedURL,
+                                        data: mockResponseData,
+                                        statusCode: 200)
         
         let urlSession = URLSessionMock()
         urlSession.mockResponses = [mockResponse]
@@ -293,13 +261,13 @@ final class TransifexTests: XCTestCase {
         var translationsResult : TXTranslations? = nil
         
         let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en")!
         
-        let mockResponseNotReady = MockResponse(data: nil,
-                                                statusCode: 202,
-                                                error: nil)
-        let mockResponseReady = MockResponse(data: mockResponseData,
-                                             statusCode: 200,
-                                             error: nil)
+        let mockResponseNotReady = MockResponse(url: expectedURL,
+                                                statusCode: 202)
+        let mockResponseReady = MockResponse(url: expectedURL,
+                                             data: mockResponseData,
+                                             statusCode: 200)
         
         let urlSession = URLSessionMock()
         urlSession.mockResponses = [
@@ -337,17 +305,90 @@ final class TransifexTests: XCTestCase {
                            characterLimit: 0)
         ]
         
-        let expectedDataString = "{\"meta\":{\"purge\":false},\"data\":{\"testkey\":{\"string\":\"sourceString\",\"meta\":{\"character_limit\":0,\"occurrences\":[]}}}}"
+        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"/jobs/content/456\"}}}"
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content")!
         
-        let mockResponse = MockResponse(data: expectedDataString.data(using: .utf8))
+        let mockResponse = MockResponse(url: expectedURL,
+                                        data: expectedDataString.data(using: .utf8),
+                                        statusCode: 202)
+        
+        let expectedJobDataString = "{\"data\":{\"details\":{\"created\":1,\"updated\":0,\"skipped\":0,\"deleted\":0,\"failed\":0},\"errors\":[],\"status\":\"completed\"}}"
+        let expectedJobURL = URL(string: "https://cds.svc.transifex.net/jobs/content/456")!
+        
+        let mockJobResponse = MockResponse(url: expectedJobURL,
+                                           data: expectedJobDataString.data(using: .utf8),
+                                           statusCode: 200)
         
         let urlSession = URLSessionMock()
-        urlSession.mockResponses = [ mockResponse ]
+        urlSession.mockResponses = [ mockResponse, mockJobResponse ]
         let cdsHandler = CDSHandler(localeCodes: [ "en" ],
                                     token: "test_token",
                                     session: urlSession)
         
-        var pushResult : Bool = false
+        var pushResult = false
+        cdsHandler.pushTranslations(translations) { (result) in
+            pushResult = result
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertTrue(pushResult)
+        }
+    }
+    
+    func testPushTranslationsNotReady() {
+        let expectation = self.expectation(description: "Waiting for translations to be pushed")
+        let translations = [
+            TXSourceString(key: "testkey",
+                           sourceString: "sourceString",
+                           occurrences: [],
+                           characterLimit: 0)
+        ]
+        
+        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"/jobs/content/456\"}}}"
+        let expectedURL = URL(string: "https://cds.svc.transifex.net/content")!
+        
+        let mockResponse = MockResponse(url: expectedURL,
+                                        data: expectedDataString.data(using: .utf8),
+                                        statusCode: 202)
+        
+        let expectedJobURL = URL(string: "https://cds.svc.transifex.net/jobs/content/456")!
+
+        let expectedPendingJobDataString = "{\"data\":{\"status\":\"pending\"}}"
+        let mockPendingJobResponse = MockResponse(url: expectedJobURL,
+                                           data: expectedPendingJobDataString.data(using: .utf8),
+                                           statusCode: 200)
+        
+        let expectedProcessingJobDataString = "{\"data\":{\"status\":\"processing\"}}"
+        let mockProcessingJobResponse = MockResponse(url: expectedJobURL,
+                                           data: expectedProcessingJobDataString.data(using: .utf8),
+                                           statusCode: 200)
+        
+        let expectedCompletedJobDataString = "{\"data\":{\"details\":{\"created\":1,\"updated\":0,\"skipped\":0,\"deleted\":0,\"failed\":0},\"errors\":[],\"status\":\"completed\"}}"
+        let mockCompletedJobResponse = MockResponse(url: expectedJobURL,
+                                                    data: expectedCompletedJobDataString.data(using: .utf8),
+                                                    statusCode: 200)
+        
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [
+            mockResponse,
+            mockPendingJobResponse,
+            mockPendingJobResponse,
+            mockPendingJobResponse,
+            mockPendingJobResponse,
+            mockPendingJobResponse,
+            mockProcessingJobResponse,
+            mockProcessingJobResponse,
+            mockProcessingJobResponse,
+            mockProcessingJobResponse,
+            mockProcessingJobResponse,
+            mockCompletedJobResponse
+        ]
+        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
+                                    token: "test_token",
+                                    session: urlSession)
+        
+        var pushResult = false
         cdsHandler.pushTranslations(translations) { (result) in
             pushResult = result
             expectation.fulfill()
@@ -612,6 +653,7 @@ final class TransifexTests: XCTestCase {
         ("testFetchTranslations", testFetchTranslations),
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testPushTranslations", testPushTranslations),
+        ("testPushTranslationsNotReady", testPushTranslationsNotReady),
         ("testReplaceAllPolicy", testReplaceAllPolicy),
         ("testUpdateUsingTranslatePolicy", testUpdateUsingTranslatePolicy),
         ("testReadOnlyCache", testReadOnlyCache),
