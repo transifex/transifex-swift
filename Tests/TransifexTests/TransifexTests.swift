@@ -326,7 +326,7 @@ final class TransifexTests: XCTestCase {
                                     session: urlSession)
         
         var pushResult = false
-        cdsHandler.pushTranslations(translations) { (result) in
+        cdsHandler.pushTranslations(translations) { (result, errors) in
             pushResult = result
             expectation.fulfill()
         }
@@ -389,7 +389,7 @@ final class TransifexTests: XCTestCase {
                                     session: urlSession)
         
         var pushResult = false
-        cdsHandler.pushTranslations(translations) { (result) in
+        cdsHandler.pushTranslations(translations) { (result, errors) in
             pushResult = result
             expectation.fulfill()
         }
@@ -650,6 +650,7 @@ final class TransifexTests: XCTestCase {
         ("testEncodingSourceString", testEncodingSourceString),
         ("testEncodingSourceStringWithMeta", testEncodingSourceStringWithMeta),
         ("testExtractICUPlurals", testExtractICUPlurals),
+        ("testFetchTranslationsWithTags", testFetchTranslationsWithTags),
         ("testFetchTranslations", testFetchTranslations),
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testPushTranslations", testPushTranslations),
@@ -659,6 +660,7 @@ final class TransifexTests: XCTestCase {
         ("testReadOnlyCache", testReadOnlyCache),
         ("testPlatformStrategyWithInvalidSourceString", testPlatformStrategyWithInvalidSourceString),
         ("testErrorPolicy", testErrorPolicy),
+        ("testErrorPolicyException", testErrorPolicyException),
         ("testCurrentLocale", testCurrentLocale),
         ("testTranslateWithSourceStringsInCache", testTranslateWithSourceStringsInCache),
     ]

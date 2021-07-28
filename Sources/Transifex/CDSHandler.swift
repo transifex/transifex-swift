@@ -11,6 +11,33 @@ import Foundation
 /// Completion handler used when fetching translations from CDS
 public typealias TXPullCompletionHandler = (TXTranslations, [Error]) -> Void
 
+/// All possible errors that may be produced during a fetch (pull) or a push operation
+public enum TXCDSError: Error {
+    /// The provided CDS url was invalid
+    case invalidCDSURL
+    /// No locale codes were provided to the fetch operation
+    case noLocaleCodes
+    /// Translation strings to be pushed failed to be serialized
+    case failedSerialization
+    /// The CDS request failed with a specific underlying error
+    case requestFailed(error : Error)
+    /// The HTTP response received by CDS was invalid
+    case invalidHTTPResponse
+    /// The server responded with a specific failure status code
+    case serverError(statusCode : Int)
+    /// The fetch / push operation exceeded the MAX_RETRIES (20)
+    case maxRetriesReached
+    /// The server response could not be parsed
+    case nonParsableResponse
+    /// No data was received from the server response
+    case noData
+    /// The job status request failed
+    case failedJobRequest
+    /// A specific job error was returned by CDS
+    case jobError(status: String, code: String, title: String,
+                  detail: String, source: [String : String])
+}
+
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
 class CDSPullRequest {
     let code : String
@@ -19,14 +46,6 @@ class CDSPullRequest {
     
     private var retryCount = 0
     
-    enum RequestError: Error {
-        case requestFailed(error : Error)
-        case invalidHTTPResponse
-        case serverError(statusCode : Int)
-        case maxRetriesReached
-        case nonParsableResponse
-    }
-
     struct RequestData : Codable {
         var data: TXLocaleStrings
     }
@@ -44,7 +63,7 @@ class CDSPullRequest {
     /// request fails
     func perform(with completionHandler: @escaping (String,
                                                     TXLocaleStrings?,
-                                                    RequestError?) -> Void) {
+                                                    TXCDSError?) -> Void) {
         session.dataTask(with: request) { (data, response, error) in
             guard error == nil else {
                 completionHandler(self.code,
@@ -236,11 +255,6 @@ class CDSHandler {
         }
     }
     
-    enum FetchError: Error {
-        case invalidCDSURL
-        case noLocaleCodes
-    }
-    
     /// Fetch translations from CDS.
     ///
     /// - Parameters:
@@ -253,7 +267,7 @@ class CDSHandler {
                                   completionHandler: @escaping TXPullCompletionHandler) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
-            completionHandler([:], [FetchError.invalidCDSURL])
+            completionHandler([:], [TXCDSError.invalidCDSURL])
             return
         }
         
@@ -270,7 +284,7 @@ class CDSHandler {
         
         if fetchLocaleCodes.count == 0 {
             Logger.error("Error: No locale codes to fetch")
-            completionHandler([:], [FetchError.noLocaleCodes])
+            completionHandler([:], [TXCDSError.noLocaleCodes])
             return
         }
         
@@ -385,17 +399,19 @@ class CDSHandler {
     ///   - completionHandler: a callback function to call when the operation is complete
     public func pushTranslations(_ translations: [TXSourceString],
                                  purge: Bool = false,
-                                 completionHandler: @escaping (Bool) -> Void) {
+                                 completionHandler: @escaping (Bool, [Error]) -> Void) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
-            completionHandler(false)
+            completionHandler(false,
+                              [TXCDSError.invalidCDSURL])
             return
         }
         
         guard let jsonData = serializeTranslations(translations,
                                                    purge: purge) else {
             Logger.error("Error while serializing translations")
-            completionHandler(false)
+            completionHandler(false,
+                              [TXCDSError.failedSerialization])
             return
         }
         
@@ -410,25 +426,29 @@ class CDSHandler {
         session.dataTask(with: request) { (data, response, error) in
             guard error == nil else {
                 Logger.error("Error pushing strings: \(error!)")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.requestFailed(error: error!)])
                 return
             }
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 Logger.error("Error pushing strings: Not a valid HTTP response")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.invalidHTTPResponse])
                 return
             }
             
             if httpResponse.statusCode != CDSHandler.HTTP_STATUS_CODE_ACCEPTED {
                 Logger.error("HTTP Status error while pushing strings: \(httpResponse.statusCode)")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.serverError(statusCode: httpResponse.statusCode)])
                 return
             }
             
             guard let data = data else {
                 Logger.error("Error: No data received while pushing strings")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.noData])
                 return
             }
             
@@ -444,7 +464,8 @@ class CDSHandler {
             }
             
             guard let finalResponse = response else {
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.nonParsableResponse])
                 return
             }
             
@@ -468,7 +489,7 @@ class CDSHandler {
     /// successful or not.
     private func pollJobStatus(jobURL: String,
                                retryCount: Int,
-                               completionHandler: @escaping (Bool) -> Void) {
+                               completionHandler: @escaping (Bool, [Error]) -> Void) {
         // Delay the job status request by 1 second, so that the server can
         // have enough time to process the job.
         Thread.sleep(forTimeInterval: 1.0)
@@ -477,9 +498,12 @@ class CDSHandler {
             jobStatus, jobErrors, jobDetails in
             guard let finalJobStatus = jobStatus else {
                 Logger.error("Error: Fetch job status request failed")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.failedJobRequest])
                 return
             }
+            
+            var finalErrors: [Error] = []
             
             if let errors = jobErrors {
                 for error in errors {
@@ -489,6 +513,11 @@ class CDSHandler {
 Source:
 \(error.source)
 """)
+                    finalErrors.append(TXCDSError.jobError(status: error.status,
+                                                           code: error.code,
+                                                           title: error.title,
+                                                           detail: error.detail,
+                                                           source: error.source))
                 }
             }
             
@@ -512,13 +541,12 @@ failed: \(details.failed)
                                            completionHandler: completionHandler)
                     }
                     else {
-                        Logger.error("Error: Max retries \(CDSHandler.MAX_RETRIES) reached")
-                        completionHandler(false)
+                        completionHandler(false, [TXCDSError.maxRetriesReached])
                     }
                 case .failed:
-                    completionHandler(false)
+                    completionHandler(false, finalErrors)
                 case .completed:
-                    completionHandler(true)
+                    completionHandler(true, finalErrors)
             }
         }
     }

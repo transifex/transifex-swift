@@ -163,10 +163,11 @@ class NativeCore : TranslationProvider {
     ///   - translations: A list of `TXSourceString` objects.
     ///   - purge: Whether to replace the entire resource  content (true) or not (false). Defaults to false.
     ///   - completionHandler: A callback to be called when the push operation is complete with a
-    /// boolean argument that informs the caller that the operation was successful (true) or not (false).
+    /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
+    /// an array that may or may not contain any errors produced during the push operation.
     func pushTranslations(_ translations: [TXSourceString],
                           purge: Bool = false,
-                          completionHandler: @escaping (Bool) -> Void) {
+                          completionHandler: @escaping (Bool, [Error]) -> Void) {
         cdsHandler.pushTranslations(translations,
                                     purge: purge,
                                     completionHandler: completionHandler)
@@ -471,11 +472,12 @@ token: \(token)
     ///   - translations: A list of `TXSourceString` objects.
     ///   - purge: Whether to replace the entire resource content (true) or not (false). Defaults to false.
     ///   - completionHandler: A callback to be called when the push operation is complete with a
-    /// boolean argument that informs the caller that the operation was successful (true) or not (false).
+    /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
+    /// an array that may or may not contain any errors produced during the push operation.
     @objc
     public static func pushTranslations(_ translations: [TXSourceString],
                                         purge: Bool = false,
-                                        completionHandler: @escaping (Bool) -> Void) {
+                                        completionHandler: @escaping (Bool, [Error]) -> Void) {
         tx?.pushTranslations(translations,
                              purge: purge,
                              completionHandler: completionHandler)
