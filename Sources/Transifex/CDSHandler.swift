@@ -11,25 +11,41 @@ import Foundation
 /// Completion handler used when fetching translations from CDS
 public typealias TXPullCompletionHandler = (TXTranslations, [Error]) -> Void
 
+/// All possible errors that may be produced during a fetch (pull) or a push operation
+public enum TXCDSError: Error {
+    /// The provided CDS url was invalid
+    case invalidCDSURL
+    /// No locale codes were provided to the fetch operation
+    case noLocaleCodes
+    /// Translation strings to be pushed failed to be serialized
+    case failedSerialization
+    /// The CDS request failed with a specific underlying error
+    case requestFailed(error : Error)
+    /// The HTTP response received by CDS was invalid
+    case invalidHTTPResponse
+    /// The server responded with a specific failure status code
+    case serverError(statusCode : Int)
+    /// The fetch / push operation exceeded the MAX_RETRIES (20)
+    case maxRetriesReached
+    /// The server response could not be parsed
+    case nonParsableResponse
+    /// No data was received from the server response
+    case noData
+    /// The job status request failed
+    case failedJobRequest
+    /// A specific job error was returned by CDS
+    case jobError(status: String, code: String, title: String,
+                  detail: String, source: [String : String])
+}
+
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
 class CDSPullRequest {
-
-    private static let MAX_RETRIES = 20
-
     let code : String
     let request : URLRequest
     let session : URLSession
     
     private var retryCount = 0
     
-    enum RequestError: Error {
-        case requestFailed(error : Error)
-        case invalidHTTPResponse
-        case serverError(statusCode : Int)
-        case maxRetriesReached
-        case nonParsableResponse
-    }
-
     struct RequestData : Codable {
         var data: TXLocaleStrings
     }
@@ -47,7 +63,7 @@ class CDSPullRequest {
     /// request fails
     func perform(with completionHandler: @escaping (String,
                                                     TXLocaleStrings?,
-                                                    RequestError?) -> Void) {
+                                                    TXCDSError?) -> Void) {
         session.dataTask(with: request) { (data, response, error) in
             guard error == nil else {
                 completionHandler(self.code,
@@ -92,7 +108,7 @@ class CDSPullRequest {
             case CDSHandler.HTTP_STATUS_CODE_ACCEPTED:
                 Logger.info("Received 202 response while fetching locale: \(self.code)")
                 
-                if self.retryCount < CDSPullRequest.MAX_RETRIES {
+                if self.retryCount < CDSHandler.MAX_RETRIES {
                     self.retryCount += 1
                     self.perform(with: completionHandler)
                 }
@@ -112,11 +128,14 @@ class CDSPullRequest {
 
 /// Handles communication with the Content Delivery Service.
 class CDSHandler {
+    /// Max retries for both the pull and the push / job status requests
+    fileprivate static let MAX_RETRIES = 20
 
     private static let CDS_HOST = "https://cds.svc.transifex.net"
     
     private static let CONTENT_ENDPOINT = "content"
     private static let INVALIDATE_ENDPOINT = "invalidate"
+    
     private static let FILTER_TAGS_PARAM = "filter[tags]"
     
     fileprivate static let HTTP_STATUS_CODE_OK = 200
@@ -134,27 +153,60 @@ class CDSHandler {
     
     /// Private structure that's used to parse the data received by the invalidate endpoint
     private struct InvalidationResponseData: Decodable {
-        var status: String
-        var token: String
-        var count: Int
+        struct Data: Decodable {
+            var status: String
+            var token: String
+            var count: Int
+        }
+        var data: Data
     }
     
     /// Private structure that's used to parse the server response when pushing source strings
     private struct PushResponseData: Decodable {
+        struct Links: Decodable {
+            var job: String
+        }
+        struct Data: Decodable {
+            var id: String
+            var links: Links
+        }
+        var data: Data
+    }
+    
+    /// Private structure that's used to parse the server response when fetching the job status.
+    ///
+    /// The errors field is available only in the 'completed' and 'failed' statuses and the details field is
+    /// available only in the 'completed' status.
+    private struct JobStatusResponseData: Decodable {
+        struct Data: Decodable {
+            var status: JobStatus
+            var errors: [JobError]?
+            var details: JobDetails?
+        }
+        var data: Data
+    }
+    
+    private struct JobDetails: Decodable {
         var created: Int
         var updated: Int
         var skipped: Int
         var deleted: Int
         var failed: Int
-        var errors: [PushResponseError]
     }
     
-    private struct PushResponseError: Decodable {
+    private struct JobError: Decodable {
         var status: String
         var code: String
         var title: String
         var detail: String
         var source: [String: String]
+    }
+    
+    private enum JobStatus: String, Decodable {
+        case pending
+        case processing
+        case completed
+        case failed
     }
 
     /// A list of locale codes for the configured languages in the application
@@ -203,11 +255,6 @@ class CDSHandler {
         }
     }
     
-    enum FetchError: Error {
-        case invalidCDSURL
-        case noLocaleCodes
-    }
-    
     /// Fetch translations from CDS.
     ///
     /// - Parameters:
@@ -220,7 +267,7 @@ class CDSHandler {
                                   completionHandler: @escaping TXPullCompletionHandler) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
-            completionHandler([:], [FetchError.invalidCDSURL])
+            completionHandler([:], [TXCDSError.invalidCDSURL])
             return
         }
         
@@ -237,7 +284,7 @@ class CDSHandler {
         
         if fetchLocaleCodes.count == 0 {
             Logger.error("Error: No locale codes to fetch")
-            completionHandler([:], [FetchError.noLocaleCodes])
+            completionHandler([:], [TXCDSError.noLocaleCodes])
             return
         }
         
@@ -327,13 +374,13 @@ class CDSHandler {
                 let response = try decoder.decode(InvalidationResponseData.self,
                                                   from: data)
                 
-                if response.status != "success" {
+                if response.data.status != "success" {
                     Logger.error("Unsuccessful invalidation request")
                     completionHandler(false)
                     return
                 }
                 
-                Logger.verbose("Invalidated \(response.count) translations from CDS for all locales in the project")
+                Logger.verbose("Invalidated \(response.data.count) translations from CDS for all locales in the project")
                 completionHandler(true)
             }
             catch {
@@ -352,17 +399,19 @@ class CDSHandler {
     ///   - completionHandler: a callback function to call when the operation is complete
     public func pushTranslations(_ translations: [TXSourceString],
                                  purge: Bool = false,
-                                 completionHandler: @escaping (Bool) -> Void) {
+                                 completionHandler: @escaping (Bool, [Error]) -> Void) {
         guard let cdsHostURL = URL(string: cdsHost) else {
             Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
-            completionHandler(false)
+            completionHandler(false,
+                              [TXCDSError.invalidCDSURL])
             return
         }
         
         guard let jsonData = serializeTranslations(translations,
                                                    purge: purge) else {
             Logger.error("Error while serializing translations")
-            completionHandler(false)
+            completionHandler(false,
+                              [TXCDSError.failedSerialization])
             return
         }
         
@@ -377,32 +426,29 @@ class CDSHandler {
         session.dataTask(with: request) { (data, response, error) in
             guard error == nil else {
                 Logger.error("Error pushing strings: \(error!)")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.requestFailed(error: error!)])
                 return
             }
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 Logger.error("Error pushing strings: Not a valid HTTP response")
-                completionHandler(false)
+                completionHandler(false,
+                                  [TXCDSError.invalidHTTPResponse])
                 return
             }
             
-            let statusCode = httpResponse.statusCode
-
-            if statusCode == CDSHandler.HTTP_STATUS_CODE_OK {
-                completionHandler(true)
-                return
-            }
-            
-            Logger.error("HTTP Status error while pushing strings: \(statusCode)")
-            
-            if statusCode == CDSHandler.HTTP_STATUS_CODE_FORBIDDEN {
-                completionHandler(false)
+            if httpResponse.statusCode != CDSHandler.HTTP_STATUS_CODE_ACCEPTED {
+                Logger.error("HTTP Status error while pushing strings: \(httpResponse.statusCode)")
+                completionHandler(false,
+                                  [TXCDSError.serverError(statusCode: httpResponse.statusCode)])
                 return
             }
             
             guard let data = data else {
-                completionHandler(false)
+                Logger.error("Error: No data received while pushing strings")
+                completionHandler(false,
+                                  [TXCDSError.noData])
                 return
             }
             
@@ -417,18 +463,161 @@ class CDSHandler {
                 Logger.error("Error while decoding CDS push response: \(error)")
             }
             
-            if let response = response {
-                for error in response.errors {
+            guard let finalResponse = response else {
+                completionHandler(false,
+                                  [TXCDSError.nonParsableResponse])
+                return
+            }
+            
+            self.pollJobStatus(jobURL: finalResponse.data.links.job,
+                               retryCount: 0,
+                               completionHandler: completionHandler)
+            
+        }.resume()
+    }
+    
+    /// Polls the job status for CDSHandler.MAX_RETRIES times, or until it receives a failure or a
+    /// successful job status.
+    ///
+    /// Warning: Do not call this method from the main thread as it sleeps for 1 second before performing
+    /// the actual network request.
+    ///
+    /// - Parameters:
+    ///   - jobURL: The relative job url (e.g. /jobs/content/123)
+    ///   - retryCount: The current retry number
+    ///   - completionHandler: The completion handler that informs the caller whether the job was
+    /// successful or not.
+    private func pollJobStatus(jobURL: String,
+                               retryCount: Int,
+                               completionHandler: @escaping (Bool, [Error]) -> Void) {
+        // Delay the job status request by 1 second, so that the server can
+        // have enough time to process the job.
+        Thread.sleep(forTimeInterval: 1.0)
+        
+        fetchJobStatus(jobURL: jobURL) {
+            jobStatus, jobErrors, jobDetails in
+            guard let finalJobStatus = jobStatus else {
+                Logger.error("Error: Fetch job status request failed")
+                completionHandler(false,
+                                  [TXCDSError.failedJobRequest])
+                return
+            }
+            
+            var finalErrors: [Error] = []
+            
+            if let errors = jobErrors {
+                for error in errors {
                     Logger.error("""
 \(error.title) (\(error.status) - \(error.code)):
 \(error.detail)
 Source:
 \(error.source)
 """)
+                    finalErrors.append(TXCDSError.jobError(status: error.status,
+                                                           code: error.code,
+                                                           title: error.title,
+                                                           detail: error.detail,
+                                                           source: error.source))
                 }
             }
+            
+            if let details = jobDetails {
+                Logger.verbose("""
+created: \(details.created)
+updated: \(details.updated)
+skipped: \(details.skipped)
+deleted: \(details.deleted)
+failed: \(details.failed)
+""")
+            }
+        
+            switch finalJobStatus {
+                case .pending:
+                    fallthrough
+                case .processing:
+                    if retryCount < CDSHandler.MAX_RETRIES {
+                        self.pollJobStatus(jobURL: jobURL,
+                                           retryCount: retryCount + 1,
+                                           completionHandler: completionHandler)
+                    }
+                    else {
+                        completionHandler(false, [TXCDSError.maxRetriesReached])
+                    }
+                case .failed:
+                    completionHandler(false, finalErrors)
+                case .completed:
+                    completionHandler(true, finalErrors)
+            }
+        }
+    }
+    
+    /// Peforms a single job status request to the CDS for a given job id and returns the response
+    /// asynchronously
+    ///
+    /// - Parameters:
+    ///   - jobURL: The relative job url (e.g. /jobs/content/123)
+    ///   - completionHandler: A completion handler that contains the parsed response. The
+    ///   response consists of the job status (which is nil in case of a failure), an optional array of errors
+    ///   in case job failed or succeeded with errros and an optional structure of the job details in case job
+    ///   was successful.
+    private func fetchJobStatus(jobURL: String,
+                                completionHandler: @escaping (JobStatus?,
+                                                              [JobError]?,
+                                                              JobDetails?) -> Void) {
+        guard let cdsHostURL = URL(string: cdsHost) else {
+            Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
+            completionHandler(nil, nil, nil)
+            return
+        }
+        
+        Logger.verbose("Fetching job status for job: \(jobURL)...")
+        
+        let baseURL = cdsHostURL
+            .appendingPathComponent(jobURL)
+        var request = URLRequest(url: baseURL)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = getHeaders(withSecret: true)
 
-            completionHandler(false)
+        session.dataTask(with: request) { (data, response, error) in
+            guard error == nil else {
+                Logger.error("Error retrieving job status: \(error!)")
+                completionHandler(nil, nil, nil)
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                Logger.error("Error retrieving job status: Not a valid HTTP response")
+                completionHandler(nil, nil, nil)
+                return
+            }
+            
+            if httpResponse.statusCode != CDSHandler.HTTP_STATUS_CODE_OK {
+                Logger.error("HTTP Status error while retrieving job status: \(httpResponse.statusCode)")
+                completionHandler(nil, nil, nil)
+                return
+            }
+            
+            guard let finalData = data else {
+                Logger.error("Error: No data received while retrieving job status")
+                completionHandler(nil, nil, nil)
+                return
+            }
+            
+            let decoder = JSONDecoder()
+            var responseData: JobStatusResponseData? = nil
+            
+            do {
+                responseData = try decoder.decode(JobStatusResponseData.self,
+                                                  from: finalData)
+            }
+            catch {
+                Logger.error("Error while decoding CDS job status response: \(error)")
+            }
+            
+            completionHandler(responseData?.data.status,
+                              responseData?.data.errors,
+                              responseData?.data.details)
+            
         }.resume()
     }
     
@@ -471,8 +660,9 @@ Source:
                             etag: String? = nil) -> [String: String] {
         var headers = [
             "Accept-Encoding": "gzip",
-            "Content-Type": "application/json",
-            "X-NATIVE-SDK": "mobile/ios/\(TXNative.version)"
+            "Content-Type": "application/json; charset=utf-8",
+            "X-NATIVE-SDK": "mobile/ios/\(TXNative.version)",
+            "Accept-version": "v2"
         ]
         if withSecret == true,
            let secret = secret {

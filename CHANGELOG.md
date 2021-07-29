@@ -45,3 +45,11 @@
 *July 12, 2021*
 
 - Improves error policy behavior.
+
+## Transifex iOS SDK 1.0.0
+
+*July 28, 2021*
+
+- Updates endpoint logic for v2 of CDS.
+- Push translations method now also returns an array of errors.
+- Improves CDSHandler unit tests.
