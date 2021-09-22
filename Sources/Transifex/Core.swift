@@ -226,12 +226,22 @@ class NativeCore : TranslationProvider {
                    context: String?) -> String {
         var translationTemplate: String?
         let localeToRender = localeCode ?? locales.currentLocale
-        let key = txGenerateKey(sourceString: sourceString,
-                                context: context)
-
-        translationTemplate = cache.get(key: key,
-                                        localeCode: localeToRender)
         
+        translationTemplate = cache.get(key: sourceString,
+                                        localeCode: localeToRender)
+
+        // If the source string cannot be found in the cache, try looking up
+        // the generated key for that source string, in case the developer has
+        // either used a previous version of the TXCli tool or passed the
+        // `hashKeys` argument on the push command.
+        if translationTemplate == nil {
+            let key = txGenerateKey(sourceString: sourceString,
+                                    context: context)
+
+            translationTemplate = cache.get(key: key,
+                                            localeCode: localeToRender)
+        }
+            
         var applyMissingPolicy = false
         
         /// If the string is not found in the cache, use the bypass localizer to look it up on the
