@@ -53,3 +53,11 @@
 - Updates endpoint logic for v2 of CDS.
 - Push translations method now also returns an array of errors.
 - Improves CDSHandler unit tests.
+
+## Transifex iOS SDK 1.0.1
+
+*September 22, 2021*
+
+- When rendering a translation the logic now first uses the original source 
+string as a key to look up to the cache and falls back to the generated hash
+key if the entry is not found.
