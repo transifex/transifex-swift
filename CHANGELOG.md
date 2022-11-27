@@ -61,3 +61,10 @@
 - When rendering a translation the logic now first uses the original source 
 string as a key to look up to the cache and falls back to the generated hash
 key if the entry is not found.
+
+## Transifex iOS SDK 1.0.2
+
+*November 28, 2022*
+
+- Adds method to activate SDK from a Swift Package.
+- Adds reference to SwiftUI limitation in README.
