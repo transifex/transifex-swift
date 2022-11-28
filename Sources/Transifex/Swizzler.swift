@@ -12,14 +12,6 @@ import TransifexObjCRuntime
 /// Swizzles all localizedString() calls made either by Storyboard files or by the use of NSLocalizedString()
 /// function in code.
 class SwizzledBundle : Bundle {
-    /// By setting a static method we are ensuring that this logic will only be executed one (much like the
-    /// dispatch_once in ObjC).
-    public static let activate: () = {
-        allBundles.forEach({ (bundle) in
-            object_setClass(bundle, SwizzledBundle.self)
-        })
-    }()
-    
     override func localizedString(forKey key: String,
                                   value: String?,
                                   table tableName: String?) -> String {
@@ -64,7 +56,7 @@ class Swizzler {
         
         self.translationProvider = translationProvider
         
-        SwizzledBundle.activate
+        activate(bundles: Bundle.allBundles)
         
         TXNativeObjcSwizzler.activate {
             return self.localizedString(format: $0,
@@ -72,6 +64,18 @@ class Swizzler {
         }
         
         activated = true
+    }
+    
+    /// Swizzles the passed bundles so that their localization methods are intercepted.
+    ///
+    /// - Parameter bundles: The Bundle that will be swizzled
+    internal static func activate(bundles: [Bundle]) {
+        bundles.forEach({ (bundle) in
+            guard !bundle.isKind(of: SwizzledBundle.self) else {
+                return
+            }
+            object_setClass(bundle, SwizzledBundle.self)
+        })
     }
     
     /// Centralized method that all swizzled or overriden localizedStringWithFormat: methods will call once

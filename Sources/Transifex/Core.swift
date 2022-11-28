@@ -334,7 +334,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "1.0.1"
+    internal static let version = "1.0.2"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -428,6 +428,30 @@ token: \(token)
                    missingPolicy: nil,
                    errorPolicy: nil,
                    renderingStrategy: .platform)
+    }
+    
+    /// Activate the SDK for a certain Bundle. Use this method to activate the SDK for a Swift package in
+    /// case multiple Swift packages are used as modules for an application.
+    ///
+    /// Only call this method from each module, and not from the main application, by passing the
+    /// `Bundle.module` as the argument:
+    ///
+    /// ```swift
+    /// TXNative.activate(bundle: .module)
+    /// ```
+    ///
+    /// Make sure that this method is called after the SDK has been initialized.
+    ///
+    /// - Parameter bundle: the bundle to be activated. Pass `.bundle` when calling this method
+    /// from a Swift package.
+    @objc
+    public static func activate(bundle: Bundle) {
+        guard tx != nil else {
+            Logger.error("Transifex Native is not initialized")
+            return
+        }
+        
+        Swizzler.activate(bundles: [bundle])
     }
     
     /// Return the translation of the given source string on a certain locale.
