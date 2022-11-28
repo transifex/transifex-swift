@@ -17,18 +17,18 @@
     <header>
       <div class="content-wrapper">
         <p><a href="index.html">Transifex Docs</a> (100% documented)</p>
-        <p class="header-right"><a href="https://github.com/transifex/transifex-swift/"><img src="img/gh.png"/>View on GitHub</a></p>
-        <p class="header-right">
+        <p class="header-right"><a href="https://github.com/transifex/transifex-swift/"><img src="img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
           <form role="search" action="search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
           </form>
-        </p>
+        </div>
       </div>
     </header>
     <div class="content-wrapper">
       <p id="breadcrumbs">
         <a href="index.html">Transifex Reference</a>
-        <img id="carat" src="img/carat.png" />
+        <img id="carat" src="img/carat.png" alt=""/>
         Transifex  Reference
       </p>
     </div>
@@ -178,20 +178,20 @@
 <img src="https://github.com/transifex/transifex-swift/workflows/CI/badge.svg">
 </p>
 
-<p>Transifex iOS SDK is a collection of tools to easily localize your iOS applications 
-using <a href="https://www.transifex.com/native/">Transifex Native</a>. </p>
+<p>Transifex iOS SDK is a collection of tools to easily localize your iOS applications
+using <a href="https://www.transifex.com/native/">Transifex Native</a>.</p>
 
-<p>The SDK can fetch translations over the air (OTA), manages an internal cache of translations 
-and works seamlessly without requiring any changes in the source code of the app by the 
+<p>The SDK can fetch translations over the air (OTA), manages an internal cache of translations
+and works seamlessly without requiring any changes in the source code of the app by the
 developer.</p>
 
 <p>Both Objective-C and Swift projects are supported and iOS 10+ is required.</p>
 
-<p>The package is built using Swift 5.3, as it currently requires a bundled resource to be 
-present in the package (which was introduced on version 5.3). An update that will require 
+<p>The package is built using Swift 5.3, as it currently requires a bundled resource to be
+present in the package (which was introduced on version 5.3). An update that will require
 a lower Swift version is currently WIP.</p>
 
-<p>Learn more about <a href="https://docs.transifex.com/transifex-native-sdk-overview/introduction">Transifex Native</a>.</p>
+<p>Learn more about <a href="https://developers.transifex.com/docs/native">Transifex Native</a>.</p>
 
 <p>The full documentation is available at <a href="https://transifex.github.io/transifex-swift/">https://transifex.github.io/transifex-swift/</a>.</p>
 <h2 id='minimum-requirements' class='heading'>Minimum Requirements</h2>
@@ -211,18 +211,18 @@ a lower Swift version is currently WIP.</p>
 </tbody></table>
 <h2 id='usage' class='heading'>Usage</h2>
 
-<p>The SDK allows you to keep using the same localization hooks that the iOS framework 
-provides, such as <code>NSLocalizedString</code>, 
-<code>String.localizedStringWithFormat(format:...)</code>, etc, while at the same time taking 
+<p>The SDK allows you to keep using the same localization hooks that the iOS framework
+provides, such as <code>NSLocalizedString</code>,
+<code>String.localizedStringWithFormat(format:...)</code>, etc, while at the same time taking
 advantage of the features that Transifex Native offers, such as OTA translations.</p>
 
 <p>Below you can find examples of the SDK initialization both in Swift and Objective-C for
 an app that uses the English language (<code>en</code>) as its source locale and it&rsquo;s localized both in
-Greek (<code>el</code>) and French (<code>fr</code>). </p>
+Greek (<code>el</code>) and French (<code>fr</code>).</p>
 
-<p>Keep in mind that in the sample code below you will have to replace 
-<code>&lt;transifex_token&gt;</code> and <code>&lt;transifex_secret&gt;</code> with the actual token and secret that 
-are associated with your Transifex project and resource. </p>
+<p>Keep in mind that in the sample code below you will have to replace
+<code>&lt;transifex_token&gt;</code> and <code>&lt;transifex_secret&gt;</code> with the actual token and secret that
+are associated with your Transifex project and resource.</p>
 <h3 id='sdk-configuration-swift' class='heading'>SDK configuration (Swift)</h3>
 <pre class="highlight swift"><code><span class="kd">import</span> <span class="kt">Transifex</span>
 
@@ -231,7 +231,7 @@ are associated with your Transifex project and resource. </p>
 
     <span class="kd">func</span> <span class="nf">application</span><span class="p">(</span><span class="n">_</span> <span class="nv">application</span><span class="p">:</span> <span class="kt">UIApplication</span><span class="p">,</span> <span class="n">didFinishLaunchingWithOptions</span> <span class="nv">launchOptions</span><span class="p">:</span> <span class="p">[</span><span class="kt">UIApplication</span><span class="o">.</span><span class="kt">LaunchOptionsKey</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]?)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
         <span class="kt">TXNative</span><span class="o">.</span><span class="nf">initialize</span><span class="p">(</span>
-            <span class="nv">locales</span><span class="p">:</span> <span class="kt">TXLocaleState</span><span class="p">(</span><span class="nv">sourceLocale</span><span class="p">:</span> <span class="s">"en"</span><span class="p">,</span> 
+            <span class="nv">locales</span><span class="p">:</span> <span class="kt">TXLocaleState</span><span class="p">(</span><span class="nv">sourceLocale</span><span class="p">:</span> <span class="s">"en"</span><span class="p">,</span>
                                    <span class="nv">appLocales</span><span class="p">:</span> <span class="p">[</span><span class="s">"en"</span><span class="p">,</span> <span class="s">"el"</span><span class="p">,</span> <span class="s">"fr"</span><span class="p">]),</span>
             <span class="nv">token</span><span class="p">:</span> <span class="s">"&lt;transifex_token&gt;"</span><span class="p">,</span>
             <span class="nv">secret</span><span class="p">:</span> <span class="s">"&lt;transifex_secret&gt;"</span><span class="p">,</span>
@@ -248,7 +248,7 @@ are associated with your Transifex project and resource. </p>
 <span class="p">}</span>
 </code></pre>
 
-<p>For Swift projects, you  will also need to copy the <code>TXNativeExtensions.swift</code> file in 
+<p>For Swift projects, you  will also need to copy the <code>TXNativeExtensions.swift</code> file in
 your project and include it in all of the targets that call any of the following Swift methods:</p>
 
 <ul>
@@ -299,7 +299,7 @@ add this file to your project.</p>
 </code></pre>
 <h3 id='alternative-initialization' class='heading'>Alternative initialization</h3>
 
-<p>If you want your application to make use of the default behavior, you can initialize the 
+<p>If you want your application to make use of the default behavior, you can initialize the
 SDK using a simpler initilization method:</p>
 <h4 id='swift' class='heading'>Swift</h4>
 <pre class="highlight swift"><code><span class="kt">TXNative</span><span class="o">.</span><span class="nf">initialize</span><span class="p">(</span>
@@ -313,28 +313,28 @@ SDK using a simpler initilization method:</p>
 </code></pre>
 <h3 id='fetching-translations' class='heading'>Fetching translations</h3>
 
-<p>As soon as <code>fetchTranslations</code> is called, the SDK will attempt to download the 
-translations for all locales that are defined in the initialization of <code><a href="Classes/TXNative.html">TXNative</a></code>. </p>
+<p>As soon as <code>fetchTranslations</code> is called, the SDK will attempt to download the
+translations for all locales that are defined in the initialization of <code><a href="Classes/TXNative.html">TXNative</a></code>.</p>
 
 <p>The <code>fetchTranslations</code> method in the above examples is called as soon as the
 application launches, but that&rsquo;s not required. Depending on the application, the developer
 might choose to call that method whenever it is most appropriate (for example, each time
-the application is brought to the foreground or when the internet connectivity is 
+the application is brought to the foreground or when the internet connectivity is
 established).</p>
 <h3 id='pushing-source-content' class='heading'>Pushing source content</h3>
 
-<p>In order to push the source translations to CDS, you will first need to prepare an array of 
-<code><a href="Classes/TXSourceString.html">TXSourceString</a></code> objects that will hold all the necessary information needed for CDS. 
-You can refer to the <code><a href="Classes/TXSourceString.html">TXSourceString</a></code> class for more information, or you can look at the 
+<p>In order to push the source translations to CDS, you will first need to prepare an array of
+<code><a href="Classes/TXSourceString.html">TXSourceString</a></code> objects that will hold all the necessary information needed for CDS.
+You can refer to the <code><a href="Classes/TXSourceString.html">TXSourceString</a></code> class for more information, or you can look at the
 list below:</p>
 
 <ul>
-<li><code>key</code> (required): The key of the source string, generated via the public <code>txGenerateKey()</code> 
+<li><code>key</code> (required): The key of the source string, generated via the public <code>txGenerateKey()</code>
 method.</li>
 <li><code>sourceString</code> (required): The actual source string.</li>
 <li><code>developerComment</code> (optional): An optional comment provided by the developer to
 assist the translators.</li>
-<li><code>occurrencies</code> (required): A list of relative paths where the source string is located in 
+<li><code>occurrencies</code> (required): A list of relative paths where the source string is located in
 the project.</li>
 <li><code>tags</code> (optional): An optional list of tags that will appear alongside the source string in
 the Transifex dashboard.</li>
@@ -342,48 +342,48 @@ the Transifex dashboard.</li>
 <li><code>context</code> (optional): An optional list of strings that provide more context.</li>
 </ul>
 
-<p>After building an array of <code><a href="Classes/TXSourceString.html">TXSourceString</a></code> objects, use the <code>pushTranslations</code> method 
-to push them to CDS. You can optionally set the <code>purge</code> argument to <code>true</code> (defaults to 
-<code>false</code>) to replace the entire resource content. The completion handler can be used to 
+<p>After building an array of <code><a href="Classes/TXSourceString.html">TXSourceString</a></code> objects, use the <code>pushTranslations</code> method
+to push them to CDS. You can optionally set the <code>purge</code> argument to <code>true</code> (defaults to
+<code>false</code>) to replace the entire resource content. The completion handler can be used to
 get notified asynchronously whether the request was successful or not.</p>
 <h3 id='standard-cache' class='heading'>Standard Cache</h3>
 
-<p>The default cache strategy used by the SDK, if no other cache is provided by the 
-developer, is the <code>TXStandardCache.getCache()</code>. The standard cache operates 
-by making use of the publicly exposed classes and protocols from the Cache.swift file of the 
+<p>The default cache strategy used by the SDK, if no other cache is provided by the
+developer, is the <code>TXStandardCache.getCache()</code>. The standard cache operates
+by making use of the publicly exposed classes and protocols from the Cache.swift file of the
 SDK, so it&rsquo;s easy to construct another cache strategy if that&rsquo;s desired.</p>
 
-<p>The standard cache is initialized with a memory cache (<code><a href="Classes/TXMemoryCache.html">TXMemoryCache</a></code>) that manages all 
-cached entries in memory. After the memory cache gets initialized, it tries to look up if 
-there are any already stored cache files in the file system using the 
-<code><a href="Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a></code> class: </p>
+<p>The standard cache is initialized with a memory cache (<code><a href="Classes/TXMemoryCache.html">TXMemoryCache</a></code>) that manages all
+cached entries in memory. After the memory cache gets initialized, it tries to look up if
+there are any already stored cache files in the file system using the
+<code><a href="Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a></code> class:</p>
 
 <ul>
-<li>The first cache provider is the bundle cache provider, that looks up for an already 
-created cache file in the main application bundle of the app that may have been offered 
+<li>The first cache provider is the bundle cache provider, that looks up for an already
+created cache file in the main application bundle of the app that may have been offered
 by the developer.</li>
-<li>The second cache provider looks up for a cache file in the application sandbox directory 
-(using the optional app group identifier argument if provided), in case the app had  already 
+<li>The second cache provider looks up for a cache file in the application sandbox directory
+(using the optional app group identifier argument if provided), in case the app had  already
 downloaded the translations from the server from a previous launch.</li>
 </ul>
 
-<p>Those two providers are used to initialize the memory cache using an update policy 
-(<code><a href="Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a></code>) which is optionally provided by the developer and defaults to 
-the <code>replaceAll</code> value. </p>
+<p>Those two providers are used to initialize the memory cache using an update policy
+(<code><a href="Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a></code>) which is optionally provided by the developer and defaults to
+the <code>replaceAll</code> value.</p>
 
 <p>After the cached entries have updated the memory cache, the cache is ready to be used.</p>
 
-<p>Whenever new translations are fetched from the server using the <code>fetchTranslations()</code> 
-method, the standard cache is updated and those translations are stored as-is in the file 
-system, in the same cache file used by the aforementioned second cache provider so that 
+<p>Whenever new translations are fetched from the server using the <code>fetchTranslations()</code>
+method, the standard cache is updated and those translations are stored as-is in the file
+system, in the same cache file used by the aforementioned second cache provider so that
 they are available on the next app launch.</p>
 <h4 id='alternative-cache-strategy' class='heading'>Alternative cache strategy</h4>
 
-<p>You might want to update the internal memory cache as soon as the newly downloaded 
-translations are available and always update all entries, so that the update policy can 
-also be ommited. </p>
+<p>You might want to update the internal memory cache as soon as the newly downloaded
+translations are available and always update all entries, so that the update policy can
+also be ommited.</p>
 
-<p>In order to achieve that, you can create a new  <code><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></code> subclass or create a 
+<p>In order to achieve that, you can create a new  <code><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></code> subclass or create a
 method that returns a <code><a href="Protocols/TXCache.html">TXCache</a></code> instance, just like in the <code>TXStandardCache.getCache()</code>
 case.</p>
 <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getCustomCache</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">TXCache</span> <span class="p">{</span>
@@ -394,56 +394,59 @@ case.</p>
 <span class="p">}</span>
 </code></pre>
 
-<p>This way, whenever the cache is updated with the new translations from the 
+<p>This way, whenever the cache is updated with the new translations from the
  <code>fetchTranslations()</code> method, the <code>update()</code> call will propagate to the internal
  <code><a href="Classes/TXMemoryCache.html">TXMemoryCache</a></code> and update all of its entries.</p>
 <h3 id='application-extensions' class='heading'>Application Extensions</h3>
 
-<p>In order to add the SDK to an application extension target, be sure to include the 
-<code>Transifex</code> library in the &lsquo;Frameworks and Libraries&rsquo; section of the General 
+<p>In order to add the SDK to an application extension target, be sure to include the
+<code>Transifex</code> library in the &lsquo;Frameworks and Libraries&rsquo; section of the General
 settings of the application extension you are working on.</p>
 
-<p>Furthermore, in case Xcode produces a &ldquo;No such module &lsquo;Transifex&rsquo;&rdquo; error on the 
-<code>import Transifex</code> statements of the extension files, be sure to add the 
-<code>$(SRCROOT)</code> path in the &lsquo;Framework Search Paths&rsquo; setting under the Build Settings of the 
+<p>Furthermore, in case Xcode produces a &ldquo;No such module &lsquo;Transifex&rsquo;&rdquo; error on the
+<code>import Transifex</code> statements of the extension files, be sure to add the
+<code>$(SRCROOT)</code> path in the &lsquo;Framework Search Paths&rsquo; setting under the Build Settings of the
 application extension target.</p>
 
-<p>In order to make the Transifex SDK cache file visible by both the extension and the main 
-application targets, you would need to enable the App Groups capability in both the main 
-application and the extension targets and use an existing or create a new app group 
-identifier. Then, you would need to initialize the Transifex SDK with the <code><a href="Classes/TXStandardCache.html">TXStandardCache</a></code> 
+<p>In order to make the Transifex SDK cache file visible by both the extension and the main
+application targets, you would need to enable the App Groups capability in both the main
+application and the extension targets and use an existing or create a new app group
+identifier. Then, you would need to initialize the Transifex SDK with the <code><a href="Classes/TXStandardCache.html">TXStandardCache</a></code>
 passing that app group identifier as the <code>groupIdentifier</code> argument.</p>
 <h3 id='url-session' class='heading'>URL Session</h3>
 
-<p>By default, an ephemeral URLSession object with no cache is used for all requests made 
+<p>By default, an ephemeral URLSession object with no cache is used for all requests made
 to the CDS service.</p>
 
-<p>For more control over the networking layer, an optional <code>session</code> parameter is exposed in 
+<p>For more control over the networking layer, an optional <code>session</code> parameter is exposed in
 the <code>initialize()</code> method of the <code><a href="Classes/TXNative.html">TXNative</a></code> cache, so that developers can offer their
 own session object, if that&rsquo;s desirable (e.g. for more fine grained cache control, certificate
 pinning etc).</p>
 <h3 id='logging' class='heading'>Logging</h3>
 
-<p>By default, warning and error messages produced by the SDK are logged in the console 
+<p>By default, warning and error messages produced by the SDK are logged in the console
 using the <code>print()</code> method. Developers can offer a class that conforms to the <code><a href="Classes/TXLogger.html">TXLogger</a></code>
 protocol so that they can control the logging mechanism of the SDK or make use of the
 public <code><a href="Classes/TXStandardLogHandler.html">TXStandardLogHandler</a></code> class to control the log level printed to the console.</p>
 <h2 id='limitations' class='heading'>Limitations</h2>
 <h3 id='special-cases' class='heading'>Special cases</h3>
 
-<p>Localized strings that are being managed by the OS are not supported by the Transifex 
+<p>Localized strings that are being managed by the OS are not supported by the Transifex
 SDK:</p>
 
 <ul>
-<li>Localized entries found in the  <code>Info.plist</code> file (e.g. Bundle Display Name and Usage 
+<li>Localized entries found in the  <code>Info.plist</code> file (e.g. Bundle Display Name and Usage
 Description strings) that are included in the <code>InfoPList.strings</code> file.</li>
 <li>Localized entried found in the <code>Root.plist</code> of the <code>Settings.bundle</code> of an app that
 exposes its Settings to the iOS Settings app that are included in the <code>Root.strings</code> file.</li>
 </ul>
+<h3 id='swiftui' class='heading'>SwiftUI</h3>
+
+<p>The SDK does not currently support SwiftUI views.</p>
 <h3 id='icu-support' class='heading'>ICU support</h3>
 
 <p>Also, currently SDK supports only supports the platform rendering strategy, so if the ICU
-rendering strategy is passed during the initialization, translations will trigger the error 
+rendering strategy is passed during the initialization, translations will trigger the error
 policy.</p>
 <h3 id='internet-connectivity' class='heading'>Internet connectivity</h3>
 
@@ -456,7 +459,7 @@ re-call that method.</p>
 <p>You can find two <a href="https://github.com/transifex/transifex-native-sandbox/tree/master/ios">sample applications</a> that make use of the Transifex iOS SDK, in Swift and Objective-C.</p>
 <h2 id='documentation' class='heading'>Documentation</h2>
 
-<p>The <a href="https://transifex.github.io/transifex-swift/">documentation of this SDK</a> has been 
+<p>The <a href="https://transifex.github.io/transifex-swift/">documentation of this SDK</a> has been
 generated using <a href="https://github.com/realm/jazzy">Jazzy</a> using the following command:</p>
 <pre class="highlight plaintext"><code>jazzy -g https://github.com/transifex/transifex-swift/ -m Transifex
 </code></pre>
@@ -467,11 +470,10 @@ generated using <a href="https://github.com/realm/jazzy">Jazzy</a> using the fol
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2021 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2021-07-29)</p>
-          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.6</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+          <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2022-11-28)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
     </div>
   </body>
-</div>
 </html>
