@@ -68,3 +68,11 @@ key if the entry is not found.
 
 - Adds method to activate SDK from a Swift Package.
 - Adds reference to SwiftUI limitation in README.
+
+## Transifex iOS SDK 1.0.3
+
+*December 27, 2022*
+
+- Fixes TXPreferredLocaleProvider so that it uses the correct language candidate
+based on user's preference and supported languages by the app developer.
+- Fixes deprecation warnings on Github action.
