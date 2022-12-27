@@ -572,20 +572,45 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual(result, "ERROR")
     }
 
-    func testCurrentLocale() {
+    func testCurrentLocaleNotFirstPreference() {
         let appleLanguagesKey = "AppleLanguages"
         let storedLanguages = UserDefaults.standard.value(forKey: appleLanguagesKey)
         
-        UserDefaults.standard.set([ "el" ],
+        UserDefaults.standard.set([ "nl", "fr" ],
                                   forKey: appleLanguagesKey)
         
-        let locale = TXLocaleState(appLocales: [])
+        let locale = TXLocaleState(sourceLocale: "en",
+                                   appLocales: [ "fr", "de", "es", "it"])
         
         XCTAssertEqual(locale.currentLocale,
-                       "el")
+                       "fr")
         
         UserDefaults.standard.set(storedLanguages,
                                   forKey: appleLanguagesKey)
+    }
+    
+    func testCurrentLocaleNotAnyPreference() {
+        let appleLanguagesKey = "AppleLanguages"
+        let storedLanguages = UserDefaults.standard.value(forKey: appleLanguagesKey)
+        
+        UserDefaults.standard.set([ "nl", "fr" ],
+                                  forKey: appleLanguagesKey)
+        
+        let locale = TXLocaleState(sourceLocale: "en",
+                                   appLocales: [ "de", "es", "it"])
+        
+        XCTAssertEqual(locale.currentLocale,
+                       "en")
+        
+        UserDefaults.standard.set(storedLanguages,
+                                  forKey: appleLanguagesKey)
+    }
+    
+    func testSourceLocalePosition() {
+        let locale = TXLocaleState(sourceLocale: "en",
+                                   appLocales: [ "fr", "el" ])
+        
+        XCTAssertTrue(locale.appLocales.first == "en")
     }
     
     func testTranslateWithSourceStringsInCache() {
@@ -661,7 +686,9 @@ final class TransifexTests: XCTestCase {
         ("testPlatformStrategyWithInvalidSourceString", testPlatformStrategyWithInvalidSourceString),
         ("testErrorPolicy", testErrorPolicy),
         ("testErrorPolicyException", testErrorPolicyException),
-        ("testCurrentLocale", testCurrentLocale),
+        ("testCurrentLocaleNotFirstPreference", testCurrentLocaleNotFirstPreference),
+        ("testCurrentLocaleNotAnyPreference", testCurrentLocaleNotAnyPreference),
+        ("testSourceLocalePosition", testSourceLocalePosition),
         ("testTranslateWithSourceStringsInCache", testTranslateWithSourceStringsInCache),
     ]
 }

@@ -17,15 +17,23 @@ public protocol TXCurrentLocaleProvider {
     func currentLocale() -> String
 }
 
-/// Class that returns the language code of the current user's locale and falls back to "en" if the language
-/// code cannot be found.
+/// Class that returns the active language code that can be used for localization, based on the current user's
+/// language preferences and the locales that the application supports. The class falls back to "en" if the
+/// language code cannot be found.
 public final class TXPreferredLocaleProvider : NSObject {
+    private static let FALLBACK_LOCALE = "en"
+    private var _appLocales : [String]
     private var _currentLocale : String
     
-    override init() {
+    /// Designated initializer.
+    ///
+    /// - Parameter appLocales: The locales the the application supports.
+    init(_ appLocales: [String]) {
+        _appLocales = appLocales
+        
         // Fetch the current locale on initialization and return it when it's
         // requested by the `currentLocale()` method.
-        _currentLocale = TXPreferredLocaleProvider.getCurrentLocale()
+        _currentLocale = Self.getCurrentLocale(_appLocales)
 
         super.init()
 
@@ -38,18 +46,33 @@ public final class TXPreferredLocaleProvider : NSObject {
     
     @objc
     private func currentLocaleDidChange() {
-        _currentLocale = TXPreferredLocaleProvider.getCurrentLocale()
+        _currentLocale = Self.getCurrentLocale(_appLocales)
     }
     
     private static func getPreferredLocale() -> Locale {
-        guard let preferredIdentifier = Locale.preferredLanguages.first else {
+        if let preferredLanguage = Locale.preferredLanguages.first {
+            return Locale(identifier: preferredLanguage)
+        }
+        else {
             return Locale.autoupdatingCurrent
         }
-        return Locale(identifier: preferredIdentifier)
     }
 
-    private static func getCurrentLocale() -> String {
-        return getPreferredLocale().languageCode ?? "en"
+    private static func getCurrentLocale(_ appLocales: [String]) -> String {
+        // Attempt to get the most preferred locale based on:
+        // * the supported app locales provided by the developer when
+        //   initializing the TXNative instance.
+        // * the preferred languages set by the user in the device Settings.
+        if let preferredLocalization = Bundle.preferredLocalizations(from: appLocales,
+                                                                     forPreferences: Locale.preferredLanguages).first {
+            return preferredLocalization
+        }
+        // Although it's highly unlikely that a preferred localization will not
+        // be extracted using the preferredLocalizations() call, we have a
+        // number of fallbacks in place to locate the best candidate.
+        else {
+            return getPreferredLocale().languageCode ?? FALLBACK_LOCALE
+        }
     }
 }
 
@@ -113,13 +136,19 @@ public final class TXLocaleState : NSObject {
         // Make sure we filter all duplicate values
         // by converting the array to a Set.
         var distinctAppLocales = Set(appLocales)
-        // Insert the source locale in case it hasn't been added.
-        distinctAppLocales.insert(sourceLocale)
+        // Remove the source locale (if it has been already added by the
+        // developer).
+        distinctAppLocales.remove(sourceLocale)
+        
+        self.translatedLocales = Array(distinctAppLocales)
+        
         self.appLocales = Array(distinctAppLocales)
+        // Add the source locale as the first element of the array, as the
+        // `TXPreferredLocaleProvider` (and `Bundle.preferredLocalizations` more
+        // specifically) uses the first element as a fallback.
+        self.appLocales.insert(sourceLocale, at: 0)
         
-        self.translatedLocales = self.appLocales.filter { $0 != sourceLocale }
-        
-        self.currentLocaleProvider = currentLocaleProvider ?? TXPreferredLocaleProvider()
+        self.currentLocaleProvider = currentLocaleProvider ?? TXPreferredLocaleProvider(self.appLocales)
     }
     
     /// Returns true if the given locale is the source locale, false otherwise.
