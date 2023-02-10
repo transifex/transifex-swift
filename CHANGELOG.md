@@ -76,3 +76,13 @@ key if the entry is not found.
 - Fixes TXPreferredLocaleProvider so that it uses the correct language candidate
 based on user's preference and supported languages by the app developer.
 - Fixes deprecation warnings on Github action.
+
+## Transifex iOS SDK 1.0.4
+
+*February 10, 2023*
+
+- Improves tags filter support.
+- Adds status filter support.
+- Tags and status filters can be either specified during initialization and/or
+when `fetchTranslations()` is called.
+- Fixes issue where the passed custom session was not being used.
