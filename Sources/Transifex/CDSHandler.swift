@@ -126,17 +126,34 @@ class CDSPullRequest {
     }
 }
 
+/// The struct used to configure the communication with CDS, passed into the CDSHander initializer.
+struct CDSConfiguration {
+    /// A list of locale codes for the configured languages in the application
+    var localeCodes: [String]
+    /// The API token to use for connecting to the CDS
+    var token: String
+    /// The API secret to use for connecting to the CDS
+    var secret: String? = nil
+    /// The host of the Content Delivery Service
+    var cdsHost: String = CDSHandler.CDS_HOST
+    /// Fetch only strings that contain specific tags from CDS, e.g. "master,react"
+    var filterTags: [String] = []
+    /// Fetch only strings matching translation status: reviewed,proofread,finalized
+    var filterStatus: String? = nil
+}
+
 /// Handles communication with the Content Delivery Service.
 class CDSHandler {
     /// Max retries for both the pull and the push / job status requests
     fileprivate static let MAX_RETRIES = 20
 
-    private static let CDS_HOST = "https://cds.svc.transifex.net"
+    internal static let CDS_HOST = "https://cds.svc.transifex.net"
     
     private static let CONTENT_ENDPOINT = "content"
     private static let INVALIDATE_ENDPOINT = "invalidate"
     
     private static let FILTER_TAGS_PARAM = "filter[tags]"
+    private static let FILTER_STATUS_PARAM = "filter[status]"
     
     fileprivate static let HTTP_STATUS_CODE_OK = 200
     fileprivate static let HTTP_STATUS_CODE_ACCEPTED = 202
@@ -208,41 +225,23 @@ class CDSHandler {
         case completed
         case failed
     }
-
-    /// A list of locale codes for the configured languages in the application
-    let localeCodes: [String]
     
-    /// The API token to use for connecting to the CDS
-    let token: String
-    
-    /// The API secret to use for connecting to the CDS
-    let secret: String?
-    
-    /// The host of the Content Delivery Service
-    let cdsHost: String
-    
-    /// The url session to be used for the requests to the CDS, defaults to an ephemeral URLSession
+    /// The url session to be used for the requests to the CDS, defaults to an ephemeral URLSession with
+    /// a disabled URL cache.
     let session: URLSession
     
-    /// An etag per locale code, used for optimizing requests
-    var etagByLocale: [String: String] = [:]
+    /// The configuration structure holding all the neccessary settings for configuring the communication
+    /// with CDS.
+    let configuration: CDSConfiguration
     
     /// Constructor
     ///
     /// - Parameters:
-    ///   - localeCodes: a list of locale codes for the configured languages in the application
-    ///   - token: the API token to use for connecting to the CDS
-    ///   - secret: the API secret to use for connecting to the CDS
-    ///   - cdsHost: the host of the Content Delivery Service
-    init(localeCodes: [String],
-         token: String,
-         secret: String? = nil,
-         cdsHost: String? = CDS_HOST,
+    ///   - configuration: The configuration struct for communicating with CDS.
+    ///   - session: The url session to be used for requests to CDS.
+    init(configuration: CDSConfiguration,
          session: URLSession? = nil) {
-        self.localeCodes = localeCodes
-        self.token = token
-        self.secret = secret
-        self.cdsHost = cdsHost ?? CDSHandler.CDS_HOST
+        self.configuration = configuration
         
         if let session = session {
             self.session = session
@@ -260,13 +259,15 @@ class CDSHandler {
     /// - Parameters:
     ///   - localeCode: an optional locale to fetch translations from; if none provided it will fetch
     ///   translations for all locales defined in the configuration
-    ///   - tags: An optional list of tags so that only strings that have all of the given tags are fetched.   
+    ///   - tags: An optional list of tags so that only strings that have all of the given tags are fetched.
+    ///   - status: An optional status so that only strings matching translation status are fetched.
     ///   - completionHandler: a callback function to call when the operation is complete
     public func fetchTranslations(localeCode: String? = nil,
-                                  tags: [String]? = nil,
+                                  tags: [String] = [],
+                                  status: String? = nil,
                                   completionHandler: @escaping TXPullCompletionHandler) {
-        guard let cdsHostURL = URL(string: cdsHost) else {
-            Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
+        guard let cdsHostURL = URL(string: configuration.cdsHost) else {
+            Logger.error("Error: Invalid CDS host URL: \(configuration.cdsHost)")
             completionHandler([:], [TXCDSError.invalidCDSURL])
             return
         }
@@ -279,7 +280,7 @@ class CDSHandler {
             fetchLocaleCodes = [ localeCode ]
         }
         else {
-            fetchLocaleCodes = localeCodes
+            fetchLocaleCodes = configuration.localeCodes
         }
         
         if fetchLocaleCodes.count == 0 {
@@ -295,7 +296,8 @@ class CDSHandler {
         for code in fetchLocaleCodes {
             let url = baseURL.appendingPathComponent(code)
             var request = buildURLRequest(url: url,
-                                          tags: tags)
+                                          tags: tags.count > 0 ? tags : configuration.filterTags,
+                                          status: status ?? configuration.filterStatus)
             request.allHTTPHeaderFields = getHeaders(withSecret: false)
             requestsByLocale[code] = request
         }
@@ -330,8 +332,8 @@ class CDSHandler {
     /// - Parameter completionHandler: A completion handler informing the caller whether the
     /// request was successful or not
     public func forceCacheInvalidation(completionHandler: @escaping (Bool) -> Void) {
-        guard let cdsHostURL = URL(string: cdsHost) else {
-            Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
+        guard let cdsHostURL = URL(string: configuration.cdsHost) else {
+            Logger.error("Error: Invalid CDS host URL: \(configuration.cdsHost)")
             completionHandler(false)
             return
         }
@@ -400,8 +402,8 @@ class CDSHandler {
     public func pushTranslations(_ translations: [TXSourceString],
                                  purge: Bool = false,
                                  completionHandler: @escaping (Bool, [Error]) -> Void) {
-        guard let cdsHostURL = URL(string: cdsHost) else {
-            Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
+        guard let cdsHostURL = URL(string: configuration.cdsHost) else {
+            Logger.error("Error: Invalid CDS host URL: \(configuration.cdsHost)")
             completionHandler(false,
                               [TXCDSError.invalidCDSURL])
             return
@@ -564,8 +566,8 @@ failed: \(details.failed)
                                 completionHandler: @escaping (JobStatus?,
                                                               [JobError]?,
                                                               JobDetails?) -> Void) {
-        guard let cdsHostURL = URL(string: cdsHost) else {
-            Logger.error("Error: Invalid CDS host URL: \(cdsHost)")
+        guard let cdsHostURL = URL(string: configuration.cdsHost) else {
+            Logger.error("Error: Invalid CDS host URL: \(configuration.cdsHost)")
             completionHandler(nil, nil, nil)
             return
         }
@@ -665,11 +667,11 @@ failed: \(details.failed)
             "Accept-version": "v2"
         ]
         if withSecret == true,
-           let secret = secret {
-            headers["Authorization"] = "Bearer \(token):\(secret)"
+           let secret = configuration.secret {
+            headers["Authorization"] = "Bearer \(configuration.token):\(secret)"
         }
         else {
-            headers["Authorization"] = "Bearer \(token)"
+            headers["Authorization"] = "Bearer \(configuration.token)"
         }
         if let etag = etag {
             headers["If-None-Match"] = etag
@@ -677,26 +679,37 @@ failed: \(details.failed)
         return headers
     }
     
-    /// Builds the URL request that is going to be used to query CDS using the optional tags list
+    /// Builds the URL request that is going to be used to query CDS using the optional tags list and status
+    /// filters.
     ///
     /// - Parameters:
     ///   - url: The initial URL
-    ///   - tags: The optional tag list
+    ///   - tags: The optional tag list filter
+    ///   - status: The optional status filter
     /// - Returns: The final URL request to be used to query CDS
     private func buildURLRequest(url: URL,
-                                 tags: [String]?) -> URLRequest {
-        guard let tags = tags,
-              tags.count > 0,
-              var components = URLComponents(url: url,
+                                 tags: [String],
+                                 status: String?) -> URLRequest {
+        guard tags.count > 0 || status != nil else {
+            return URLRequest(url: url)
+        }
+        guard var components = URLComponents(url: url,
                                              resolvingAgainstBaseURL: false) else {
             return URLRequest(url: url)
         }
-        
-        let tagList = tags.joined(separator: ",")
-        let queryItem = URLQueryItem(name: CDSHandler.FILTER_TAGS_PARAM,
-                                     value: tagList)
-        components.queryItems = [ queryItem ]
-            
+        var queryItems : [URLQueryItem] = []
+        if tags.count > 0 {
+            let tagList = tags.joined(separator: ",")
+            let queryItem = URLQueryItem(name: Self.FILTER_TAGS_PARAM,
+                                         value: tagList)
+            queryItems.append(queryItem)
+        }
+        if let status = status {
+            let queryItem = URLQueryItem(name: Self.FILTER_STATUS_PARAM,
+                                         value: status)
+            queryItems.append(queryItem)
+        }
+        components.queryItems = queryItems
         guard let tagRequestURL = components.url else {
             return URLRequest(url: url)
         }
