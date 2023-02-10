@@ -108,6 +108,10 @@ class NativeCore : TranslationProvider {
     ///   - errorPolicy: an optional policy to determine how to handle rendering errors
     ///   - renderingStrategy: determines which strategy to be used when rendering the final
     ///   string.
+    ///   - filterTags: An optional list of tags so that only strings that have all of the given tags are
+    ///   fetched.
+    ///   - filterStatus: An optional status so that only strings matching translation status are
+    ///   fetched.
     init(
         locales: TXLocaleState,
         token: String,
@@ -117,14 +121,21 @@ class NativeCore : TranslationProvider {
         session: URLSession? = nil,
         missingPolicy: TXMissingPolicy? = nil,
         errorPolicy: TXErrorPolicy? = nil,
-        renderingStrategy : TXRenderingStategy
+        renderingStrategy : TXRenderingStategy,
+        filterTags: [String] = [],
+        filterStatus: String? = nil
     ) {
         self.locales = locales
-        self.cdsHandler = CDSHandler(
+        let cdsConfiguration = CDSConfiguration(
             localeCodes: self.locales.appLocales,
             token: token,
             secret: secret,
-            cdsHost: cdsHost,
+            cdsHost: cdsHost ?? CDSHandler.CDS_HOST,
+            filterTags: filterTags,
+            filterStatus: filterStatus
+        )
+        self.cdsHandler = CDSHandler(
+            configuration: cdsConfiguration,
             session: session
         )
         self.cache = cache ?? TXStandardCache.getCache()
@@ -140,13 +151,19 @@ class NativeCore : TranslationProvider {
     ///
     /// - Parameter localeCode: an optional locale to fetch translations from; if none provided, it
     /// will fetch translations for all locales defined in the configuration
-    /// - Parameter tags: An optional list of tags so that only strings that have all of the given tags are fetched.
+    /// - Parameter tags: An optional list of tags so that only strings that have all of the given tags are
+    /// fetched.
+    /// - Parameter status: An optional status so that only strings matching translation status are
+    /// fetched.
     /// - Parameter completionHandler: The completion handler that informs the caller with the
     /// new translations and a list of possible errors that might have occured
     func fetchTranslations(_ localeCode: String? = nil,
-                           tags: [String]? = nil,
+                           tags: [String] = [],
+                           status: String? = nil,
                            completionHandler: TXPullCompletionHandler? = nil) {
-        cdsHandler.fetchTranslations(localeCode: localeCode) { (translations, errors) in
+        cdsHandler.fetchTranslations(localeCode: localeCode,
+                                     tags: tags,
+                                     status: status) { (translations, errors) in
             if errors.count > 0 {
                 Logger.error("\(#function) Errors: \(errors)")
             }
@@ -334,7 +351,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "1.0.3"
+    internal static let version = "1.0.4"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -370,6 +387,10 @@ public final class TXNative : NSObject {
     ///   translation (used for ICU rendering strategy)
     ///   - renderingStrategy: determines which strategy to be used when rendering the final
     ///   string; defaults to platform strategy
+    ///   - filterTags: An optional list of tags so that only strings that have all of the given tags are
+    ///   fetched.
+    ///   - filterStatus: An optional status so that only strings matching translation status are
+    ///   fetched.
     @objc
     public static func initialize(
         locales: TXLocaleState,
@@ -380,7 +401,9 @@ public final class TXNative : NSObject {
         cache: TXCache? = nil,
         missingPolicy: TXMissingPolicy? = nil,
         errorPolicy: TXErrorPolicy? = nil,
-        renderingStrategy: TXRenderingStategy = .platform
+        renderingStrategy: TXRenderingStategy = .platform,
+        filterTags: [String]? = nil,
+        filterStatus: String? = nil
     ) {
         guard tx == nil else {
             Logger.warning("Transifex Native is already initialized")
@@ -399,9 +422,12 @@ token: \(token)
                         secret: secret,
                         cdsHost: cdsHost,
                         cache: cache,
+                        session: session,
                         missingPolicy: missingPolicy,
                         errorPolicy: errorPolicy,
-                        renderingStrategy: renderingStrategy)
+                        renderingStrategy: renderingStrategy,
+                        filterTags: filterTags ?? [],
+                        filterStatus: filterStatus)
     }
     
     /// Designated initializer of the Transifex SDK using the platform rendering strategy and only the
@@ -487,16 +513,21 @@ token: \(token)
     
     /// Fetches the translations from CDS.
     ///
-    /// - Parameter localeCode: if not provided, it will fetch translations for all locales defined in the
-    /// app configuration.
-    /// - Parameter tags: An optional list of tags so that only strings that have all of the given tags are fetched.
-    /// - Parameter completionHandler: The completion handler that informs the caller with the
-    /// new translations and a list of possible errors that might have occured
+    /// - Parameters:
+    ///   - localeCode: If not provided, it will fetch translations for all locales defined in the app
+    ///   configuration.
+    ///   - tags: An optional list of tags so that only strings that have all of the given tags are fetched.
+    ///   - status: An optional status so that only strings matching translation status are fetched.
+    ///   - completionHandler: The completion handler that informs the caller when the operation
+    ///   is complete, reporting the new translations and a list of possible errors that might have occured.
     @objc
     public static func fetchTranslations(_ localeCode: String? = nil,
                                          tags: [String]? = nil,
+                                         status: String? = nil,
                                          completionHandler: TXPullCompletionHandler? = nil) {
         tx?.fetchTranslations(localeCode,
+                              tags: tags ?? [],
+                              status: status,
                               completionHandler: completionHandler)
     }
     

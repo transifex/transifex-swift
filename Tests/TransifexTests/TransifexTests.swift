@@ -105,6 +105,8 @@ class MockErrorPolicyException : TXErrorPolicy {
 }
 
 final class TransifexTests: XCTestCase {
+    static let testToken = "<token>"
+
     override func tearDown() {
         TXNative.dispose()
     }
@@ -193,32 +195,238 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual("{something}".extractICUPlurals(), nil)
     }
     
-    func testFetchTranslationsWithTags() {
-        let expectation = self.expectation(description: "Waiting for translations to be fetched")
-        var translationErrors : [Error]? = nil
+    func testTXNativeFetchTranslationsWithStatus() {
+        let mockResponse1 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=translated")!,
+                                         data: "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8))
         
-        let mockResponseData = "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8)
-        let expectedURL = URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")!
-        
-        let mockResponse = MockResponse(url: expectedURL,
-                                        data: mockResponseData)
-        
+        let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
+                                         data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
+
         let urlSession = URLSessionMock()
-        urlSession.mockResponses = [mockResponse]
-        
-        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
-                                    token: "test_token",
+        urlSession.mockResponses = [
+            mockResponse1,
+            mockResponse2
+        ]
+
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["en"])
+        TXNative.initialize(locales: localeState,
+                            token: Self.testToken,
+                            session: urlSession,
+                            filterStatus: "translated")
+
+        let expectation1 = self.expectation(description: "Waiting for translated translations to be fetched")
+        var translationErrors : [Error]? = nil
+        var translationsStructure : TXTranslations? = nil
+
+        TXNative.fetchTranslations() { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation1.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 2)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey1"])
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey2"])
+        }
+
+        let expectation2 = self.expectation(description: "Waiting for reviewed translations to be fetched as an override")
+        translationErrors = nil
+        translationsStructure = nil
+
+        TXNative.fetchTranslations(status: "reviewed") { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation2.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 1)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey3"])
+        }
+    }
+
+    func testTXNativeFetchTranslationsWithTags() {
+        let mockResponse1 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")!,
+                                         data: "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8))
+
+        let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=android")!,
+                                         data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
+
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [
+            mockResponse1,
+            mockResponse2 ]
+
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["en"])
+        TXNative.initialize(locales: localeState,
+                            token: Self.testToken,
+                            session: urlSession,
+                            filterTags: ["ios"])
+
+        let expectation1 = self.expectation(description: "Waiting for iOS translations to be fetched")
+        var translationErrors : [Error]? = nil
+        var translationsStructure : TXTranslations? = nil
+
+        TXNative.fetchTranslations() { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation1.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 2)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey1"])
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey2"])
+        }
+
+        let expectation2 = self.expectation(description: "Waiting for Android translations to be fetched as an override")
+        translationErrors = nil
+        translationsStructure = nil
+
+        TXNative.fetchTranslations(tags: ["android"]) { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation2.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 1)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey3"])
+        }
+    }
+
+    func testCDSHandlerFetchTranslationsWithStatus() {
+        let mockResponse1 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=translated")!,
+                                         data: "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8))
+
+        let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
+                                         data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
+
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [
+            mockResponse1,
+            mockResponse2
+        ]
+
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
                                     session: urlSession)
+
+        let expectation1 = self.expectation(description: "Waiting for translated translations to be fetched")
+        var translationErrors : [Error]? = nil
+        var translationsStructure : TXTranslations? = nil
+
+        cdsHandler.fetchTranslations(status: "translated") { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation1.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 2)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey1"])
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey2"])
+        }
+
+        let expectation2 = self.expectation(description: "Waiting for reviewed translations to be fetched")
+        translationErrors = nil
+        translationsStructure = nil
+
+        cdsHandler.fetchTranslations(status: "reviewed") { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation2.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 1)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey3"])
+        }
+    }
+
+    func testCDSHandlerFetchTranslationsWithTags() {
+        let mockResponse1 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=ios")!,
+                                         data: "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8))
+
+        let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=android")!,
+                                         data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
+
+        let urlSession = URLSessionMock()
+        urlSession.mockResponses = [
+            mockResponse1,
+            mockResponse2
+        ]
+
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
+                                    session: urlSession)
+
+        let expectation1 = self.expectation(description: "Waiting for iOS translations to be fetched")
+        var translationErrors : [Error]? = nil
+        var translationsStructure : TXTranslations? = nil
         
         cdsHandler.fetchTranslations(tags: ["ios"]) { translations, errors in
+            translationsStructure = translations
             translationErrors = errors
-            expectation.fulfill()
+            expectation1.fulfill()
         }
         
         waitForExpectations(timeout: 1.0) { (error) in
             XCTAssertNil(error)
             XCTAssertNotNil(translationErrors)
             XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 2)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey1"])
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey2"])
+        }
+
+        let expectation2 = self.expectation(description: "Waiting for Android translations to be fetched")
+        translationErrors = nil
+        translationsStructure = nil
+
+        cdsHandler.fetchTranslations(tags: ["android"]) { translations, errors in
+            translationsStructure = translations
+            translationErrors = errors
+            expectation2.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0) { (error) in
+            XCTAssertNil(error)
+            XCTAssertNotNil(translationErrors)
+            XCTAssertTrue(translationErrors?.count == 0)
+            XCTAssertNotNil(translationsStructure)
+            XCTAssertTrue(translationsStructure?["en"]?.count == 1)
+            XCTAssertNotNil(translationsStructure?["en"]?["testkey3"])
         }
     }
     
@@ -236,8 +444,9 @@ final class TransifexTests: XCTestCase {
         let urlSession = URLSessionMock()
         urlSession.mockResponses = [mockResponse]
         
-        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
-                                    token: "test_token",
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
                                     session: urlSession)
         
         cdsHandler.fetchTranslations { (translations, errors) in
@@ -276,8 +485,9 @@ final class TransifexTests: XCTestCase {
             mockResponseReady
         ]
         
-        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
-                                    token: "test_token",
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
                                     session: urlSession)
         
         cdsHandler.fetchTranslations { (translations, errors) in
@@ -321,8 +531,9 @@ final class TransifexTests: XCTestCase {
         
         let urlSession = URLSessionMock()
         urlSession.mockResponses = [ mockResponse, mockJobResponse ]
-        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
-                                    token: "test_token",
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
                                     session: urlSession)
         
         var pushResult = false
@@ -384,8 +595,9 @@ final class TransifexTests: XCTestCase {
             mockProcessingJobResponse,
             mockCompletedJobResponse
         ]
-        let cdsHandler = CDSHandler(localeCodes: [ "en" ],
-                                    token: "test_token",
+        let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
+                                                token: Self.testToken)
+        let cdsHandler = CDSHandler(configuration: cdsConfiguration,
                                     session: urlSession)
         
         var pushResult = false
@@ -522,13 +734,9 @@ final class TransifexTests: XCTestCase {
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["fr"])
         
-        TXNative.initialize(locales: localeState,
-                            token: "<token>",
-                            secret: "<secret>")
-        
         let core = NativeCore(locales: localeState,
-                              token: "<token>",
-                              secret: "<secret>",
+                              token: Self.testToken,
+                              secret: nil,
                               cdsHost: nil,
                               cache: nil,
                               renderingStrategy: .platform)
@@ -546,8 +754,7 @@ final class TransifexTests: XCTestCase {
                                         appLocales: ["fr"])
         
         TXNative.initialize(locales: localeState,
-                            token: "<token>",
-                            secret: "<secret>",
+                            token: Self.testToken,
                             errorPolicy: MockErrorPolicy(),
                             renderingStrategy: .icu)
         
@@ -562,8 +769,7 @@ final class TransifexTests: XCTestCase {
                                         appLocales: ["fr"])
         
         TXNative.initialize(locales: localeState,
-                            token: "<token>",
-                            secret: "<secret>",
+                            token: Self.testToken,
                             errorPolicy: MockErrorPolicyException(),
                             renderingStrategy: .icu)
         
@@ -643,8 +849,7 @@ final class TransifexTests: XCTestCase {
         memoryCache.update(translations: existingTranslations)
         
         TXNative.initialize(locales: localeState,
-                            token: "<token>",
-                            secret: "<secret>",
+                            token: Self.testToken,
                             cache: memoryCache)
         
         let result = TXNative.translate(sourceString: sourceStringTest,
@@ -675,7 +880,10 @@ final class TransifexTests: XCTestCase {
         ("testEncodingSourceString", testEncodingSourceString),
         ("testEncodingSourceStringWithMeta", testEncodingSourceStringWithMeta),
         ("testExtractICUPlurals", testExtractICUPlurals),
-        ("testFetchTranslationsWithTags", testFetchTranslationsWithTags),
+        ("testTXNativeFetchTranslationsWithStatus", testTXNativeFetchTranslationsWithStatus),
+        ("testTXNativeFetchTranslationsWithTags", testTXNativeFetchTranslationsWithTags),
+        ("testCDSHandlerFetchTranslationsWithStatus", testCDSHandlerFetchTranslationsWithStatus),
+        ("testCDSHandlerFetchTranslationsWithTags", testCDSHandlerFetchTranslationsWithTags),
         ("testFetchTranslations", testFetchTranslations),
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testPushTranslations", testPushTranslations),
