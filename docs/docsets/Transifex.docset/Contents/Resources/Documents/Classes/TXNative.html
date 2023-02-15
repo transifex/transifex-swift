@@ -243,9 +243,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:"></a>
-                    <a name="//apple_ref/swift/Method/initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:)" class="dashAnchor"></a>
-                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:">initialize(locales:<wbr>token:<wbr>secret:<wbr>cdsHost:<wbr>session:<wbr>cache:<wbr>missingPolicy:<wbr>errorPolicy:<wbr>renderingStrategy:<wbr>)</a>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:"></a>
+                    <a name="//apple_ref/swift/Method/initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:">initialize(locales:<wbr>token:<wbr>secret:<wbr>cdsHost:<wbr>session:<wbr>cache:<wbr>missingPolicy:<wbr>errorPolicy:<wbr>renderingStrategy:<wbr>filterTags:<wbr>filterStatus:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -273,7 +273,9 @@ instance.</p>
     <span class="nv">cache</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXCache.html">TXCache</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
     <span class="nv">missingPolicy</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
     <span class="nv">errorPolicy</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXErrorPolicy.html">TXErrorPolicy</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
-    <span class="nv">renderingStrategy</span><span class="p">:</span> <span class="kt"><a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a></span> <span class="o">=</span> <span class="o">.</span><span class="n">platform</span>
+    <span class="nv">renderingStrategy</span><span class="p">:</span> <span class="kt"><a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a></span> <span class="o">=</span> <span class="o">.</span><span class="n">platform</span><span class="p">,</span>
+    <span class="nv">filterTags</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">filterStatus</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
 <span class="p">)</span></code></pre>
 
                         </div>
@@ -395,6 +397,32 @@ string; defaults to platform strategy</p>
                                 </div>
                               </td>
                             </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filterTags</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional list of tags so that only strings that have all of the given tags are
+fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filterStatus</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional status so that only strings matching translation status are
+fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
@@ -418,7 +446,7 @@ string; defaults to platform strategy</p>
 required fields (locale state and token).</p>
 
 <p>For a more involved SDK initialization, you can use the
-<code><a href="../Classes/TXNative.html#/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:">initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:)</a></code>
+<code>initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:)</code>
 method.</p>
 
                       </div>
@@ -648,9 +676,9 @@ TXExtensions.swift file.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:completionHandler:"></a>
-                    <a name="//apple_ref/swift/Method/fetchTranslations(_:tags:completionHandler:)" class="dashAnchor"></a>
-                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:completionHandler:">fetchTranslations(_:<wbr>tags:<wbr>completionHandler:<wbr>)</a>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:status:completionHandler:"></a>
+                    <a name="//apple_ref/swift/Method/fetchTranslations(_:tags:status:completionHandler:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:status:completionHandler:">fetchTranslations(_:<wbr>tags:<wbr>status:<wbr>completionHandler:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -668,6 +696,7 @@ TXExtensions.swift file.</p>
                           <pre class="highlight swift"><code><span class="kd">@objc</span>
 <span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">fetchTranslations</span><span class="p">(</span><span class="n">_</span> <span class="nv">localeCode</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
                                      <span class="nv">tags</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+                                     <span class="nv">status</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
                                      <span class="nv">completionHandler</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span></code></pre>
 
                         </div>
@@ -684,8 +713,8 @@ TXExtensions.swift file.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>if not provided, it will fetch translations for all locales defined in the
-app configuration.</p>
+                                  <p>If not provided, it will fetch translations for all locales defined in the app
+configuration.</p>
                                 </div>
                               </td>
                             </tr>
@@ -704,13 +733,25 @@ app configuration.</p>
                             <tr>
                               <td>
                                 <code>
+                                <em>status</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional status so that only strings matching translation status are fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
                                 <em>completionHandler</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The completion handler that informs the caller with the
-new translations and a list of possible errors that might have occured</p>
+                                  <p>The completion handler that informs the caller when the operation
+is complete, reporting the new translations and a list of possible errors that might have occured.</p>
                                 </div>
                               </td>
                             </tr>
@@ -877,7 +918,7 @@ not (false).</p>
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2022-11-28)</p>
+          <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2023-02-15)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
