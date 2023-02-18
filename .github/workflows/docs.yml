@@ -1,0 +1,30 @@
+name: Docs
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-12
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Clean and prepare docs branch
+      run: |
+        git fetch origin docs
+        git branch -D docs &>/dev/null || true
+        git checkout -b docs
+    - name: Install Jazzy
+      run: gem install jazzy
+    - name: Run Jazzy
+      run: jazzy -g https://github.com/transifex/transifex-swift -m Transifex
+    - name: Commit files
+      run: |
+        git add .
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -a -m "CI: Automated build push" | exit 0
+    - name: Push changes
+      run: git push -f --set-upstream origin docs
+
