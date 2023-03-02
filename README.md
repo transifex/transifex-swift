@@ -138,10 +138,14 @@ If you are interested in setting up the SDK for your application extensions as w
                       missingPolicy:compositePolicy
                         errorPolicy:nil
                   renderingStrategy:TXRenderingStategyPlatform
-                             logger:nil];
+                             logger:nil
+                         filterTags:nil
+                       filterStatus:nil];
 
     /// Optional: Fetch translations on launch
     [TXNative fetchTranslations:nil
+                           tags:nil
+                         status:nil
               completionHandler:nil];
 
     return YES;
@@ -215,9 +219,11 @@ txios-cli push --token <transifex_token> --secret <transifex_secret> --project M
 
 By default, the iOS Native SDK uses the current locale set on the iOS device and also listens for changes to the current locale.
 
-Developers can override this setting by providing a custom class that conforms to the [TXCurrentLocaleProvider](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html) protocol and return a specific locale code in the [currentLocale()](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html#/c:@M@Transifex@objc(pl)TXCurrentLocaleProvider(im)currentLocale) method.
+Developers can override this setting by providing a custom class that conforms to the [TXCurrentLocaleProvider](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html) protocol and returns a specific locale code in the [currentLocale()](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html#/c:@M@Transifex@objc(pl)TXCurrentLocaleProvider(im)currentLocale) method.
 
 This custom locale provider can then be provided during the initialization of the [TXLocaleState](https://transifex.github.io/transifex-swift/Classes/TXLocaleState.html) object as its final argument ([currentLocaleProvider](https://transifex.github.io/transifex-swift/Classes/TXLocaleState.html#/c:@M@Transifex@objc(cs)TXLocaleState(im)initWithSourceLocale:appLocales:currentLocaleProvider:)):
+
+Swift example:
 
 ```swift
 class CustomLocaleProvider : TXCurrentLocaleProvider {
@@ -232,6 +238,31 @@ let locales = TXLocaleState(sourceLocale: "en",
 
 TXNative.initialize(locales: locales,
                     token: "<token>")
+```
+
+Objective-C example:
+
+```objc
+@interface CustomLocaleProvider : NSObject <TXCurrentLocaleProvider>
+
+@end
+
+@implementation CustomLocaleProvider
+
+- (NSString *)currentLocale {
+    return @"el";
+}
+
+@end
+
+/// ...
+
+TXLocaleState *locales = [[TXLocaleState alloc] initWithSourceLocale:@"en"
+                                                          appLocales:@[@"en", @"el"]
+                                               currentLocaleProvider:customLocale];
+
+[TXNative initializeWithLocales:locales
+                          token:@"<token>"];
 ```
 
 It is worth noting that the iOS SDK manages an internal cache of translations in the file system of the translations fetched over-the-air.
