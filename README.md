@@ -20,7 +20,7 @@ a lower Swift version is currently WIP.
 
 Learn more about [Transifex Native](https://developers.transifex.com/docs/native).
 
-The full documentation is available at [https://transifex.github.io/transifex-swift/](https://transifex.github.io/transifex-swift/).
+The full SDK documentation is available at [https://transifex.github.io/transifex-swift/](https://transifex.github.io/transifex-swift/).
 
 ## Minimum Requirements
 
@@ -31,19 +31,44 @@ The full documentation is available at [https://transifex.github.io/transifex-sw
 ## Usage
 
 The SDK allows you to keep using the same localization hooks that the iOS framework
-provides, such as `NSLocalizedString`,
-`String.localizedStringWithFormat(format:...)`, etc, while at the same time taking
-advantage of the features that Transifex Native offers, such as OTA translations.
+provides, such as `NSLocalizedString`, `String.localizedStringWithFormat(format:...)`, etc, while at the same time taking advantage of the features that Transifex Native offers, such as OTA translations.
 
 Below you can find examples of the SDK initialization both in Swift and Objective-C for
 an app that uses the English language (`en`) as its source locale and it's localized both in
 Greek (`el`) and French (`fr`).
 
-Keep in mind that in the sample code below you will have to replace
+Keep in mind that in the sample codes below you will have to replace
 `<transifex_token>` and `<transifex_secret>` with the actual token and secret that
 are associated with your Transifex project and resource.
 
 ### SDK configuration (Swift)
+
+To complete the setup you will need to:
+
+Add "Transifex" as a package dependency in Xcode, by selecting your project, heading over to the 'Swift Packages' section, tapping on the '+' button, and entering the public [repository URL](https://github.com/transifex/transifex-swift/) in the search field.
+Initialize the SDK in your application using the `transifex_token` provided by your Transifex Native project.
+
+Here is a basic configuration example in Swift:
+
+```swift
+import Transifex
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        TXNative.initialize(
+            locales: TXLocaleState(sourceLocale: "en",
+                                   appLocales: ["en", "el", "fr"]),
+            token: "<transifex_token>"
+        )
+
+        return true
+    }
+}
+```
+
+And a more complex one, defining a policy for handling missing translations and providing a secret for programmatically pushing strings.
 
 ```swift
 import Transifex
@@ -79,6 +104,8 @@ your project and include it in all of the targets that call any of the following
 If none of your application targets call any of the above methods, then you don't need to
 add this file to your project.
 
+If you are interested in setting up the SDK for your application extensions as well, you can look into the related section in the [documentation](https://transifex.github.io/transifex-swift/#application-extensions). The documentation also covers more special cases, such as providing a custom NSURLSession or configuring logging.
+
 ### SDK configuration (Objective-C)
 
 ```objc
@@ -111,10 +138,14 @@ add this file to your project.
                       missingPolicy:compositePolicy
                         errorPolicy:nil
                   renderingStrategy:TXRenderingStategyPlatform
-                             logger:nil];
+                             logger:nil
+                         filterTags:nil
+                       filterStatus:nil];
 
     /// Optional: Fetch translations on launch
     [TXNative fetchTranslations:nil
+                           tags:nil
+                         status:nil
               completionHandler:nil];
 
     return YES;
@@ -152,7 +183,7 @@ might choose to call that method whenever it is most appropriate (for example, e
 the application is brought to the foreground or when the internet connectivity is
 established).
 
-### Pushing source content
+### Pushing source content programmatically
 
 In order to push the source translations to CDS, you will first need to prepare an array of
 `TXSourceString` objects that will hold all the necessary information needed for CDS.
@@ -175,6 +206,68 @@ After building an array of `TXSourceString` objects, use the `pushTranslations` 
 to push them to CDS. You can optionally set the `purge` argument to `true` (defaults to
 `false`) to replace the entire resource content. The completion handler can be used to
 get notified asynchronously whether the request was successful or not.
+
+### Pushing source content using the CLI
+
+Use the [Transifex CLI-swift](https://github.com/transifex/transifex-swift-cli) to collect all your app content and send it to Transifex for translation. To perform this action you will need the `transifex_secret` token that you created in your Transifex Native project.
+
+```
+txios-cli push --token <transifex_token> --secret <transifex_secret> --project MyApp.xcodeproj
+```
+
+### Display translated content
+
+By default, the iOS Native SDK uses the current locale set on the iOS device and also listens for changes to the current locale.
+
+Developers can override this setting by providing a custom class that conforms to the [TXCurrentLocaleProvider](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html) protocol and returns a specific locale code in the [currentLocale()](https://transifex.github.io/transifex-swift/Protocols/TXCurrentLocaleProvider.html#/c:@M@Transifex@objc(pl)TXCurrentLocaleProvider(im)currentLocale) method.
+
+This custom locale provider can then be provided during the initialization of the [TXLocaleState](https://transifex.github.io/transifex-swift/Classes/TXLocaleState.html) object as its final argument ([currentLocaleProvider](https://transifex.github.io/transifex-swift/Classes/TXLocaleState.html#/c:@M@Transifex@objc(cs)TXLocaleState(im)initWithSourceLocale:appLocales:currentLocaleProvider:)):
+
+Swift example:
+
+```swift
+class CustomLocaleProvider : TXCurrentLocaleProvider {
+    func currentLocale() -> String {
+        return "el"
+    }
+}
+
+let locales = TXLocaleState(sourceLocale: "en",
+                            appLocales: ["en", "el"],
+                            currentLocaleProvider: CustomLocaleProvider())
+
+TXNative.initialize(locales: locales,
+                    token: "<token>")
+```
+
+Objective-C example:
+
+```objc
+@interface CustomLocaleProvider : NSObject <TXCurrentLocaleProvider>
+
+@end
+
+@implementation CustomLocaleProvider
+
+- (NSString *)currentLocale {
+    return @"el";
+}
+
+@end
+
+/// ...
+
+TXLocaleState *locales = [[TXLocaleState alloc] initWithSourceLocale:@"en"
+                                                          appLocales:@[@"en", @"el"]
+                                               currentLocaleProvider:customLocale];
+
+[TXNative initializeWithLocales:locales
+                          token:@"<token>"];
+```
+
+It is worth noting that the iOS SDK manages an internal cache of translations in the file system of the translations fetched over-the-air.
+
+You can find more about [caching in the documentation](https://transifex.github.io/transifex-swift/#standard-cache).
 
 ### Standard Cache
 
