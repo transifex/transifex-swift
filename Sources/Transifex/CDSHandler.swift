@@ -18,7 +18,7 @@ public enum TXCDSError: Error {
     /// No locale codes were provided to the fetch operation
     case noLocaleCodes
     /// Translation strings to be pushed failed to be serialized
-    case failedSerialization
+    case failedSerialization(error: Error)
     /// The CDS request failed with a specific underlying error
     case requestFailed(error : Error)
     /// The HTTP response received by CDS was invalid
@@ -33,9 +33,20 @@ public enum TXCDSError: Error {
     case noData
     /// The job status request failed
     case failedJobRequest
+    /// There is no generated data to be sent to CDS
+    case noDataToBeSent
     /// A specific job error was returned by CDS
     case jobError(status: String, code: String, title: String,
                   detail: String, source: [String : String])
+}
+
+/// All possible warnings that may be produced when pushing strings to CDS.
+public enum TXCDSWarning: Error {
+    /// A duplicate source string pair has been detected.
+    case duplicateSourceString(sourceString: String,
+                               duplicate: String)
+    /// A source string with an empty key has been detected.
+    case emptyKey(SourceString: String)
 }
 
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
@@ -401,23 +412,38 @@ class CDSHandler {
     ///   - completionHandler: a callback function to call when the operation is complete
     public func pushTranslations(_ translations: [TXSourceString],
                                  purge: Bool = false,
-                                 completionHandler: @escaping (Bool, [Error]) -> Void) {
+                                 completionHandler: @escaping (Bool, [TXCDSError], [TXCDSWarning]) -> Void) {
+        let serializedResult = Self.serializeTranslations(translations,
+                                                          purge: purge)
+        switch serializedResult.0 {
+        case .success(let jsonData):
+            guard jsonData.count > 0 else {
+                completionHandler(false, [.noDataToBeSent], serializedResult.1)
+                return
+            }
+            Logger.verbose("Pushing translations to CDS: \(translations)...")
+            pushData(jsonData,
+                     warnings: serializedResult.1,
+                     completionHandler: completionHandler)
+        case .failure(let error):
+            completionHandler(false, [.failedSerialization(error: error)], serializedResult.1)
+        }
+    }
+
+    /// Pushes the generated JSON data containing the source strings and propagates any generated
+    /// warnings to the final completion handler.
+    ///
+    /// - Parameters:
+    ///   - jsonData: The generated JSON data
+    ///   - warnings: Any generated CDS warnings that have been generated
+    ///   - completionHandler: Callback function to be called when the push operation completes.
+    private func pushData(_ jsonData: Data,
+                          warnings: [TXCDSWarning],
+                          completionHandler: @escaping (Bool, [TXCDSError], [TXCDSWarning]) -> Void) {
         guard let cdsHostURL = URL(string: configuration.cdsHost) else {
-            Logger.error("Error: Invalid CDS host URL: \(configuration.cdsHost)")
-            completionHandler(false,
-                              [TXCDSError.invalidCDSURL])
+            completionHandler(false, [.invalidCDSURL], warnings)
             return
         }
-        
-        guard let jsonData = serializeTranslations(translations,
-                                                   purge: purge) else {
-            Logger.error("Error while serializing translations")
-            completionHandler(false,
-                              [TXCDSError.failedSerialization])
-            return
-        }
-        
-        Logger.verbose("Pushing translations to CDS: \(translations)...")
         
         let baseURL = cdsHostURL.appendingPathComponent(CDSHandler.CONTENT_ENDPOINT)
         var request = URLRequest(url: baseURL)
@@ -426,31 +452,23 @@ class CDSHandler {
         request.allHTTPHeaderFields = getHeaders(withSecret: true)
 
         session.dataTask(with: request) { (data, response, error) in
-            guard error == nil else {
-                Logger.error("Error pushing strings: \(error!)")
-                completionHandler(false,
-                                  [TXCDSError.requestFailed(error: error!)])
+            if let error = error {
+                completionHandler(false, [.requestFailed(error: error)], warnings)
                 return
             }
             
             guard let httpResponse = response as? HTTPURLResponse else {
-                Logger.error("Error pushing strings: Not a valid HTTP response")
-                completionHandler(false,
-                                  [TXCDSError.invalidHTTPResponse])
+                completionHandler(false, [.invalidHTTPResponse], warnings)
                 return
             }
             
             if httpResponse.statusCode != CDSHandler.HTTP_STATUS_CODE_ACCEPTED {
-                Logger.error("HTTP Status error while pushing strings: \(httpResponse.statusCode)")
-                completionHandler(false,
-                                  [TXCDSError.serverError(statusCode: httpResponse.statusCode)])
+                completionHandler(false, [.serverError(statusCode: httpResponse.statusCode)], warnings)
                 return
             }
             
             guard let data = data else {
-                Logger.error("Error: No data received while pushing strings")
-                completionHandler(false,
-                                  [TXCDSError.noData])
+                completionHandler(false, [.noData], warnings)
                 return
             }
             
@@ -461,17 +479,15 @@ class CDSHandler {
                 response = try decoder.decode(PushResponseData.self,
                                               from: data)
             }
-            catch {
-                Logger.error("Error while decoding CDS push response: \(error)")
-            }
+            catch { }
             
             guard let finalResponse = response else {
-                completionHandler(false,
-                                  [TXCDSError.nonParsableResponse])
+                completionHandler(false, [.nonParsableResponse], warnings)
                 return
             }
             
             self.pollJobStatus(jobURL: finalResponse.data.links.job,
+                               warnings: warnings,
                                retryCount: 0,
                                completionHandler: completionHandler)
             
@@ -490,8 +506,9 @@ class CDSHandler {
     ///   - completionHandler: The completion handler that informs the caller whether the job was
     /// successful or not.
     private func pollJobStatus(jobURL: String,
+                               warnings: [TXCDSWarning],
                                retryCount: Int,
-                               completionHandler: @escaping (Bool, [Error]) -> Void) {
+                               completionHandler: @escaping (Bool, [TXCDSError], [TXCDSWarning]) -> Void) {
         // Delay the job status request by 1 second, so that the server can
         // have enough time to process the job.
         Thread.sleep(forTimeInterval: 1.0)
@@ -499,27 +516,19 @@ class CDSHandler {
         fetchJobStatus(jobURL: jobURL) {
             jobStatus, jobErrors, jobDetails in
             guard let finalJobStatus = jobStatus else {
-                Logger.error("Error: Fetch job status request failed")
-                completionHandler(false,
-                                  [TXCDSError.failedJobRequest])
+                completionHandler(false, [.failedJobRequest], warnings)
                 return
             }
             
-            var finalErrors: [Error] = []
+            var finalErrors: [TXCDSError] = []
             
-            if let errors = jobErrors {
+            if let errors = jobErrors, errors.count > 0 {
                 for error in errors {
-                    Logger.error("""
-\(error.title) (\(error.status) - \(error.code)):
-\(error.detail)
-Source:
-\(error.source)
-""")
-                    finalErrors.append(TXCDSError.jobError(status: error.status,
-                                                           code: error.code,
-                                                           title: error.title,
-                                                           detail: error.detail,
-                                                           source: error.source))
+                    finalErrors.append(.jobError(status: error.status,
+                                                 code: error.code,
+                                                 title: error.title,
+                                                 detail: error.detail,
+                                                 source: error.source))
                 }
             }
             
@@ -539,16 +548,17 @@ failed: \(details.failed)
                 case .processing:
                     if retryCount < CDSHandler.MAX_RETRIES {
                         self.pollJobStatus(jobURL: jobURL,
+                                           warnings: warnings,
                                            retryCount: retryCount + 1,
                                            completionHandler: completionHandler)
                     }
                     else {
-                        completionHandler(false, [TXCDSError.maxRetriesReached])
+                        completionHandler(false, [.maxRetriesReached], warnings)
                     }
                 case .failed:
-                    completionHandler(false, finalErrors)
+                    completionHandler(false, finalErrors, warnings)
                 case .completed:
-                    completionHandler(true, finalErrors)
+                    completionHandler(true, finalErrors, warnings)
             }
         }
     }
@@ -627,28 +637,30 @@ failed: \(details.failed)
     ///
     /// - Parameter translations: a list of `TXSourceString` objects
     /// - Parameter purge: Whether the resulting data will replace the entire resource content or not
-    /// - Returns: a Data object ready to be used in the CDS request
-    private func serializeTranslations(_ translations: [TXSourceString],
-                                       purge: Bool = false) -> Data? {
+    /// - Returns: A tuple containing the Result object that either contains the Data object ready to be
+    /// used in the CDS request or an error and the list of warnings generated during processing.
+    private static func serializeTranslations(_ translations: [TXSourceString],
+                                              purge: Bool = false) -> (Result<Data, Error>, [TXCDSWarning]) {
         var sourceStrings: [String:SourceString] = [:]
-        
+        var warnings: [TXCDSWarning] = []
+
         for translation in translations {
-            sourceStrings[translation.key] = translation.sourceStringRepresentation()
+            let key = translation.key
+            let sourceString = translation.sourceStringRepresentation()
+            if let duplicateSourceString = sourceStrings[key] {
+                warnings.append(.duplicateSourceString(sourceString: sourceString.debugDescription,
+                                                       duplicate: duplicateSourceString.debugDescription))
+            }
+            if key.trimmingCharacters(in: .whitespacesAndNewlines).count == 0 {
+                warnings.append(.emptyKey(SourceString: sourceString.debugDescription))
+            }
+            sourceStrings[key] = translation.sourceStringRepresentation()
         }
-        
+
         let data = PushData(data: sourceStrings,
                             meta: PushData.Meta(purge: purge))
-        
-        var jsonData: Data?
-        
-        do {
-            jsonData = try JSONEncoder().encode(data)
-        }
-        catch {
-            Logger.error("Error encoding source strings: \(error)")
-        }
-        
-        return jsonData
+
+        return (Result { try JSONEncoder().encode(data) }, warnings)
     }
 
     /// Return the headers to use when making requests.

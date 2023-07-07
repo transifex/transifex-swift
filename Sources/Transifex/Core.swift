@@ -181,10 +181,11 @@ class NativeCore : TranslationProvider {
     ///   - purge: Whether to replace the entire resource  content (true) or not (false). Defaults to false.
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
-    /// an array that may or may not contain any errors produced during the push operation.
+    /// an array that may or may not contain any errors produced during the push operation and an array of
+    /// non-blocking errors (warnings) that may have been generated during the push procedure.
     func pushTranslations(_ translations: [TXSourceString],
                           purge: Bool = false,
-                          completionHandler: @escaping (Bool, [Error]) -> Void) {
+                          completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
         cdsHandler.pushTranslations(translations,
                                     purge: purge,
                                     completionHandler: completionHandler)
@@ -538,11 +539,12 @@ token: \(token)
     ///   - purge: Whether to replace the entire resource content (true) or not (false). Defaults to false.
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
-    /// an array that may or may not contain any errors produced during the push operation.
+    /// an array that may or may not contain any errors produced during the push operation and an array of
+    /// non-blocking errors (warnings) that may have been generated during the push procedure.
     @objc
     public static func pushTranslations(_ translations: [TXSourceString],
                                         purge: Bool = false,
-                                        completionHandler: @escaping (Bool, [Error]) -> Void) {
+                                        completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
         tx?.pushTranslations(translations,
                              purge: purge,
                              completionHandler: completionHandler)
