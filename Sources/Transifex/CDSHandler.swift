@@ -49,6 +49,76 @@ public enum TXCDSWarning: Error {
     case emptyKey(SourceString: String)
 }
 
+/// Class that holds the configuration of the `pushTranslations()` method that controls various aspect
+/// of the push to CDS.
+public final class TXPushConfiguration : NSObject {
+    /// Purge content
+    ///
+    /// If `purge`: true in meta object, then replace the entire resource content with the pushed content of
+    /// this request.
+    ///
+    /// If `purge`: false in meta object (the default), then append the source content of this request to the
+    /// existing resource content.
+    @objc
+    public let purge: Bool
+
+    /// Replace tags
+    ///
+    /// If `overrideTags`: true in meta object, then replace the existing string tags with the tags of this
+    /// request.
+    ///
+    /// If `overrideTags`: false in meta object (the default), then append tags from source content to
+    /// tags of existing strings instead of overwriting them.
+    @objc
+    public let overrideTags: Bool
+
+    /// Replace occurrences
+    ///
+    /// If `overrideOccurrences`: true in meta object, then replace the existing string occurrences with
+    /// the occurrences of this request.
+    ///
+    /// If `overrideOccurrences`: false in meta object (the default), then append occurrences from
+    /// source content to occurrences of existing strings instead of overwriting them.
+    @objc
+    public let overrideOccurrences: Bool
+
+    /// Keep translations
+    ///
+    /// If `keepTranslations`: true in meta object (the default), then preserve translations on source
+    /// content updates.
+    ///
+    /// If `keepTranslations`: false in meta object, then delete translations on source string content
+    /// updates.
+    @objc
+    public let keepTranslations: Bool
+
+    /// Dry run
+    ///
+    /// If `dryRun`: true in meta object, then emulate a content push, without doing actual changes.
+    @objc
+    public let dryRun: Bool
+
+    @objc
+    public init(purge: Bool = false,
+                overrideTags: Bool = false,
+                overrideOccurrences: Bool = false,
+                keepTranslations: Bool = true,
+                dryRun: Bool = false) {
+        self.purge = purge
+        self.overrideTags = overrideTags
+        self.overrideOccurrences = overrideOccurrences
+        self.keepTranslations = keepTranslations
+        self.dryRun = dryRun
+    }
+
+    /// Description of the configuration used for debugging purposes
+    public override var debugDescription: String {
+        """
+TXPushConfiguration(purge: \(purge), overrideTags: \(overrideTags), overrideOccurrences: \(overrideOccurrences), keepTranslations: \(keepTranslations), dryRun: \(dryRun))
+"""
+    }
+}
+
 /// Handles the logic of a pull HTTP request to CDS for a certain locale code
 class CDSPullRequest {
     let code : String
@@ -175,6 +245,26 @@ class CDSHandler {
         var data: [String:SourceString]
         struct Meta: Encodable {
             var purge: Bool
+            var overrideTags: Bool
+            var overrideOccurrences: Bool
+            var keepTranslations: Bool
+            var dryRun: Bool
+
+            enum CodingKeys: String, CodingKey {
+                case purge
+                case overrideTags = "override_tags"
+                case overrideOccurrences = "override_occurrences"
+                case keepTranslations = "keep_translations"
+                case dryRun = "dry_run"
+            }
+
+            init(from configuration: TXPushConfiguration) {
+                purge = configuration.purge
+                overrideTags = configuration.overrideTags
+                overrideOccurrences = configuration.overrideOccurrences
+                keepTranslations = configuration.keepTranslations
+                dryRun = configuration.dryRun
+            }
         }
         var meta: Meta
     }
@@ -407,14 +497,17 @@ class CDSHandler {
     ///
     /// - Parameters:
     ///   - translations: A list of `TXSourceString` objects
-    ///   - purge: Whether the request will replace the entire resource content (true) or not (false)
-    ///   Defaults to false
-    ///   - completionHandler: a callback function to call when the operation is complete
+    ///   - configuration: A configuration object containing all the options that will be used alongside
+    ///   the push operation (see `TXPushConfiguration`).
+    ///   - completionHandler: A callback to be called when the push operation is complete with a
+    /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
+    /// an array that may or may not contain any errors produced during the push operation and an array of
+    /// non-blocking errors (warnings) that may have been generated during the push procedure.
     public func pushTranslations(_ translations: [TXSourceString],
-                                 purge: Bool = false,
+                                 configuration: TXPushConfiguration = TXPushConfiguration(),
                                  completionHandler: @escaping (Bool, [TXCDSError], [TXCDSWarning]) -> Void) {
         let serializedResult = Self.serializeTranslations(translations,
-                                                          purge: purge)
+                                                          configuration: configuration)
         switch serializedResult.0 {
         case .success(let jsonData):
             guard jsonData.count > 0 else {
@@ -636,11 +729,12 @@ failed: \(details.failed)
     /// Serialize the given translation units to the final data that should be passed in the push CDS request.
     ///
     /// - Parameter translations: a list of `TXSourceString` objects
-    /// - Parameter purge: Whether the resulting data will replace the entire resource content or not
+    /// - Parameter configuration: A configuration object containing all the options that will be used alongside
+    ///   the push operation (see `TXPushConfiguration`).
     /// - Returns: A tuple containing the Result object that either contains the Data object ready to be
     /// used in the CDS request or an error and the list of warnings generated during processing.
     private static func serializeTranslations(_ translations: [TXSourceString],
-                                              purge: Bool = false) -> (Result<Data, Error>, [TXCDSWarning]) {
+                                              configuration: TXPushConfiguration = TXPushConfiguration()) -> (Result<Data, Error>, [TXCDSWarning]) {
         var sourceStrings: [String:SourceString] = [:]
         var warnings: [TXCDSWarning] = []
 
@@ -658,7 +752,7 @@ failed: \(details.failed)
         }
 
         let data = PushData(data: sourceStrings,
-                            meta: PushData.Meta(purge: purge))
+                            meta: PushData.Meta(from: configuration))
 
         return (Result { try JSONEncoder().encode(data) }, warnings)
     }

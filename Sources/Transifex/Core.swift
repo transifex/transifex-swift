@@ -178,16 +178,17 @@ class NativeCore : TranslationProvider {
     ///
     /// - Parameters:
     ///   - translations: A list of `TXSourceString` objects.
-    ///   - purge: Whether to replace the entire resource  content (true) or not (false). Defaults to false.
+    ///   - configuration: A configuration object containing all the options that will be used alongside
+    ///   the push operation (see `TXPushConfiguration`).
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
     /// an array that may or may not contain any errors produced during the push operation and an array of
     /// non-blocking errors (warnings) that may have been generated during the push procedure.
     func pushTranslations(_ translations: [TXSourceString],
-                          purge: Bool = false,
+                          configuration: TXPushConfiguration = TXPushConfiguration(),
                           completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
         cdsHandler.pushTranslations(translations,
-                                    purge: purge,
+                                    configuration: configuration,
                                     completionHandler: completionHandler)
     }
     
@@ -553,17 +554,18 @@ token: \(token)
     ///
     /// - Parameters:
     ///   - translations: A list of `TXSourceString` objects.
-    ///   - purge: Whether to replace the entire resource content (true) or not (false). Defaults to false.
+    ///   - configuration: A configuration object containing all the options that will be used alongside
+    ///   the push operation (see `TXPushConfiguration`).
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
     /// an array that may or may not contain any errors produced during the push operation and an array of
     /// non-blocking errors (warnings) that may have been generated during the push procedure.
     @objc
     public static func pushTranslations(_ translations: [TXSourceString],
-                                        purge: Bool = false,
+                                        configuration: TXPushConfiguration = TXPushConfiguration(),
                                         completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
         tx?.pushTranslations(translations,
-                             purge: purge,
+                             configuration: configuration,
                              completionHandler: completionHandler)
     }
     
