@@ -537,7 +537,7 @@ final class TransifexTests: XCTestCase {
                                     session: urlSession)
         
         var pushResult = false
-        cdsHandler.pushTranslations(translations) { (result, errors) in
+        cdsHandler.pushTranslations(translations) { (result, errors, warnings) in
             pushResult = result
             expectation.fulfill()
         }
@@ -601,7 +601,7 @@ final class TransifexTests: XCTestCase {
                                     session: urlSession)
         
         var pushResult = false
-        cdsHandler.pushTranslations(translations) { (result, errors) in
+        cdsHandler.pushTranslations(translations) { (result, errors, warnings) in
             pushResult = result
             expectation.fulfill()
         }
