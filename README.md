@@ -195,7 +195,7 @@ method.
 * `sourceString` (required): The actual source string.
 * `developerComment` (optional): An optional comment provided by the developer to
 assist the translators.
-* `occurrencies` (required): A list of relative paths where the source string is located in
+* `occurrences` (required): A list of relative paths where the source string is located in
 the project.
 * `tags` (optional): An optional list of tags that will appear alongside the source string in
 the Transifex dashboard.
