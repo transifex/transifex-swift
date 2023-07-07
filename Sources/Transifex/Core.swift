@@ -504,6 +504,23 @@ token: \(token)
         )
     }
     
+    /// Helper method used when translation is not possible (e.g. in SwiftUI views).
+    ///
+    /// This method applies the translation using the currently selected locale. For pluralization use the
+    /// `localizedString(format:arguments:)` method.
+    ///
+    /// Make sure that this method is called after the SDK has been initialized, otherwise
+    /// "<SDK NOT INITIALIZED>" string will be shown instead.
+    ///
+    /// - Parameter sourceString: The source string to be translated
+    /// - Returns: The translated string
+    public static func t(_ sourceString: String) -> String {
+        return tx?.translate(sourceString: sourceString,
+                             localeCode: nil,
+                             params: [:],
+                             context: nil) ?? "<SDK NOT INITIALIZED>"
+    }
+
     /// Used by the Swift localizedString(format:arguments:) methods found in the
     /// TXExtensions.swift file.
     public static func localizedString(format: String,
