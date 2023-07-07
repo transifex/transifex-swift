@@ -86,3 +86,16 @@ based on user's preference and supported languages by the app developer.
 - Tags and status filters can be either specified during initialization and/or
 when `fetchTranslations()` is called.
 - Fixes issue where the passed custom session was not being used.
+
+## Transifex iOS SDK 2.0.0
+
+*July 7, 2023*
+
+- Adds `t()` translation method for cases where Transifex iOS logic cannot
+intercept the localization (e.g. SwiftUI).
+- `pushTranslations()` now reports back any generated warnings as a separate
+array.
+- Push logic detects and reports warnings such as duplicate source string keys
+or empty source string keys.
+- `pushTranslations()` now accepts a configuration object that holds any extra
+options that might need to be set during the push logic.
