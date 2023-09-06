@@ -215,6 +215,16 @@ Use the [Transifex CLI-swift](https://github.com/transifex/transifex-swift-cli) 
 txios-cli push --token <transifex_token> --secret <transifex_secret> --project MyApp.xcodeproj
 ```
 
+You may also use the `--excluded-files` option in the `push` command, providing a comma separated list of filenames to be excluded from processing.
+
+Example:
+
+```
+txios-cli push ... --excluded-files ExcludedFile1.strings,ExcludedFile2.strings
+```
+
+For more details and additional options, please refer to the related [Transifex CLI-swift](https://github.com/transifex/transifex-swift-cli) documentation.
+
 ### Display translated content
 
 By default, the iOS Native SDK uses the current locale set on the iOS device and also listens for changes to the current locale.
