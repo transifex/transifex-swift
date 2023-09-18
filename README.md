@@ -215,12 +215,12 @@ Use the [Transifex CLI-swift](https://github.com/transifex/transifex-swift-cli) 
 txios-cli push --token <transifex_token> --secret <transifex_secret> --project MyApp.xcodeproj
 ```
 
-You may also use the `--excluded-files` option in the `push` command, providing a comma separated list of filenames to be excluded from processing.
+You may also use the `--excluded-files` option in the `push` command, providing a space separated list of filenames to be excluded from processing.
 
 Example:
 
 ```
-txios-cli push ... --excluded-files ExcludedFile1.strings,ExcludedFile2.strings
+txios-cli push ... --excluded-files ExcludedFile1.strings ExcludedFile2.strings
 ```
 
 For more details and additional options, please refer to the related [Transifex CLI-swift](https://github.com/transifex/transifex-swift-cli) documentation.
