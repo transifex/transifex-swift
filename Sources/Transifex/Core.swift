@@ -32,13 +32,21 @@ public enum TXRenderingStategy : Int {
 /// is about to be called.
 final class BypassLocalizer {
     let bundle : Bundle?
-    
+
+    private static let IOS_LANGUAGE_TAG_DELIMITER = "-"
+    private static let TRANSIFEX_LANGUAGE_TAG_DELIMITER = "_"
+
     /// Initializes bypass localizer with a certain locale.
     ///
     /// - Parameter localeCode: The locale to be used
     init(with localeCode: String) {
+        /// Ensure that the bundled localized project container will be accessible for the provided locale,
+        /// as the iOS uses a hyphen for the language tag (e.g. en-GB) while Transifex uses an
+        /// underscore (e.g. en_GB).
+        let normalizedLocaleCode = localeCode.replacingOccurrences(of: Self.TRANSIFEX_LANGUAGE_TAG_DELIMITER,
+                                                                   with: Self.IOS_LANGUAGE_TAG_DELIMITER)
         /// Get the bundle for the provided locale code, if it exists.
-        guard let bundlePath = Bundle.main.path(forResource: localeCode,
+        guard let bundlePath = Bundle.main.path(forResource: normalizedLocaleCode,
                                                 ofType: "lproj") else {
             self.bundle = nil
             return
