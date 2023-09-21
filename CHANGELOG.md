@@ -99,3 +99,13 @@ array.
 or empty source string keys.
 - `pushTranslations()` now accepts a configuration object that holds any extra
 options that might need to be set during the push logic.
+
+## Transifex iOS SDK 2.0.1
+
+*September 21, 2023*
+
+- Addresses language tag discrepancy: The fallback mechanism for accessing the
+bundled source locale translations, in case the target translations was not
+found, was trying to access the file by using the format that Transifex uses
+(e.g. `en_US`) instead of the one that iOS and Xcode use (e.g. `en-US`). The
+logic now normalizes the locale name to match the format that iOS accepts.
