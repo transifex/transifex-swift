@@ -32,13 +32,21 @@ public enum TXRenderingStategy : Int {
 /// is about to be called.
 final class BypassLocalizer {
     let bundle : Bundle?
-    
+
+    private static let IOS_LANGUAGE_TAG_DELIMITER = "-"
+    private static let TRANSIFEX_LANGUAGE_TAG_DELIMITER = "_"
+
     /// Initializes bypass localizer with a certain locale.
     ///
     /// - Parameter localeCode: The locale to be used
     init(with localeCode: String) {
+        /// Ensure that the bundled localized project container will be accessible for the provided locale,
+        /// as the iOS uses a hyphen for the language tag (e.g. en-GB) while Transifex uses an
+        /// underscore (e.g. en_GB).
+        let normalizedLocaleCode = localeCode.replacingOccurrences(of: Self.TRANSIFEX_LANGUAGE_TAG_DELIMITER,
+                                                                   with: Self.IOS_LANGUAGE_TAG_DELIMITER)
         /// Get the bundle for the provided locale code, if it exists.
-        guard let bundlePath = Bundle.main.path(forResource: localeCode,
+        guard let bundlePath = Bundle.main.path(forResource: normalizedLocaleCode,
                                                 ofType: "lproj") else {
             self.bundle = nil
             return
@@ -353,7 +361,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.0"
+    internal static let version = "2.0.1"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
