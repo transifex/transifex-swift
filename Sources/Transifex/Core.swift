@@ -365,7 +365,19 @@ public final class TXNative : NSObject {
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
-    
+
+    /// XML name to be used for the root XML element when the pluralization rule is not supported by CDS
+    /// and has to be uploaded as XML instead of the ICU format.
+    public static let CDS_XML_ROOT_TAG_NAME = "cds-root"
+
+    /// XML name to be used for the child XML elements when the pluralization rule is not supported by
+    /// CDS and has to be uploaded as XML instead of the ICU format.
+    public static let CDS_XML_TAG_NAME = "cds-unit"
+
+    /// XML attribute to be used in the CDS_XML_TAG_NAME elements when the pluralization rule is not
+    /// supported by CDS and has to be uploaded as XML instead of the ICU format.
+    public static let CDS_XML_ID_ATTRIBUTE = "id"
+
     /// An instance of the core class that handles all the work
     private static var tx : NativeCore?
     

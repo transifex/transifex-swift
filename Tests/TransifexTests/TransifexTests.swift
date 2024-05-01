@@ -140,11 +140,13 @@ final class TransifexTests: XCTestCase {
                                                 comment: "Test comment",
                                                 characterLimit: 10,
                                                 tags: ["test"])
-        
-        let jsonData = try! JSONEncoder().encode(sourceStringMeta)
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let jsonData = try! encoder.encode(sourceStringMeta)
         let jsonString = String(data: jsonData, encoding: .utf8)
         
-        let expectedJsonString = "{\"character_limit\":10,\"tags\":[\"test\"],\"developer_comment\":\"Test comment\",\"context\":[\"test\"]}"
+        let expectedJsonString = "{\"character_limit\":10,\"context\":[\"test\"],\"developer_comment\":\"Test comment\",\"tags\":[\"test\"]}"
         
         XCTAssertEqual(jsonString, expectedJsonString)
     }
@@ -170,31 +172,104 @@ final class TransifexTests: XCTestCase {
                                         key:"testkey",
                                         meta: sourceStringMeta)
 
-        let jsonData = try! JSONEncoder().encode(sourceString)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let jsonData = try! encoder.encode(sourceString)
         let jsonString = String(data: jsonData, encoding: .utf8)
 
-        let expectedJsonString = "{\"string\":\"test string\",\"meta\":{\"character_limit\":10,\"tags\":[\"test\"],\"developer_comment\":\"Test comment\",\"context\":[\"test\"]}}"
+        let expectedJsonString = "{\"meta\":{\"character_limit\":10,\"context\":[\"test\"],\"developer_comment\":\"Test comment\",\"tags\":[\"test\"]},\"string\":\"test string\"}"
         
         XCTAssertEqual(jsonString, expectedJsonString)
     }
     
+    func testExtractMultipleICUPlurals() {
+        XCTAssertEqual(
+            "There {term1, plural, one {is %d person} other {are %d people}} sitting in {term2, plural, one {%d table} two {a couple of tables} other {%d tables}} in this restaurant".extractICUPlurals(),
+            [
+                "{term1, plural, one {is %d person} other {are %d people}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "is %d person",
+                                    .other: "are %d people"
+                                ]),
+                "{term2, plural, one {%d table} two {a couple of tables} other {%d tables}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%d table",
+                                    .two: "a couple of tables",
+                                    .other: "%d tables"
+                                ])
+            ]
+        )
+    }
+
     func testExtractICUPlurals() {
         XCTAssertEqual(
             "{???, plural, one {One table} two {A couple of tables} other {%d tables}}".extractICUPlurals(),
             [
-                PluralizationRule.one: "One table",
-                PluralizationRule.two: "A couple of tables",
-                PluralizationRule.other: "%d tables"
+                "{???, plural, one {One table} two {A couple of tables} other {%d tables}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "One table",
+                                    .two: "A couple of tables",
+                                    .other: "%d tables"
+                                ])
             ]
         )
         XCTAssertEqual(
             "{cnt, plural, other {%d tables}}".extractICUPlurals(),
-            [PluralizationRule.other: "%d tables"]
+            [
+                "{cnt, plural, other {%d tables}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .other: "%d tables"
+                                ])
+            ]
         )
         XCTAssertEqual("{cnt, plural, }".extractICUPlurals(), [:])
-        XCTAssertEqual("{something}".extractICUPlurals(), nil)
+        XCTAssertEqual("{something}".extractICUPlurals(), [:])
     }
-    
+
+    func testPlatformFormatMultiple() {
+        // As per documentation [^1]:
+        //
+        // > The meaning of the plural categories is language-dependent, and
+        // > not all languages have the same categories.
+        // > For example, the English language only requires the one and other
+        // > categories to represent plural forms, and zero is optional.
+        // > Arabic has different plural forms for the zero, one, two, few,
+        // > many, and other categories.
+        // > Although Russian also uses the many category, the rules for which
+        // > numbers are in the many category aren’t the same as the Arabic
+        // > rules.
+        //
+        // [^1]: https://developer.apple.com/documentation/xcode/localizing-strings-that-contain-plurals#Localize-the-strings-dictionary-file-in-the-development-language
+
+        XCTAssertEqual(try PlatformFormat.format(stringToRender: "There %1$#@{term1, plural, one {is %d person} other {are %d people}}@ sitting in %2$#@{term2, plural, one {%d table} two {a couple of tables} other {%d tables}}@ in this restaurant.",
+                                                 localeCode: "en",
+                                                 params: [Swizzler.PARAM_ARGUMENTS_KEY: [3,5]]),
+                       "There are 3 people sitting in 5 tables in this restaurant.")
+
+        XCTAssertEqual(try PlatformFormat.format(stringToRender: "There %1$#@{term1, plural, zero {is noone} one {is %d person} other {are %d people}}@ sitting in %2$#@{term2, plural, zero {any tables} one {%d table} other {%d tables}}@ in this restaurant",
+                                                 localeCode: "en",
+                                                 params: [Swizzler.PARAM_ARGUMENTS_KEY: [0,0]]),
+                       "There is noone sitting in any tables in this restaurant")
+
+        XCTAssertEqual(try PlatformFormat.format(stringToRender: "There %1$#@{term1, plural, zero {is noone} one {is %d person} other {are %d people}}@ sitting in %2$#@{term2, plural, one {%d table} other {%d tables}}@ in this restaurant",
+                                                 localeCode: "en",
+                                                 params: [Swizzler.PARAM_ARGUMENTS_KEY: [0,2]]),
+                       "There is noone sitting in 2 tables in this restaurant")
+
+        // Two rule works in Arabic locale, not in English
+        XCTAssertEqual(try PlatformFormat.format(stringToRender: "There %1$#@{term1, plural, zero {is noone} one {is %d person} other {are %d people}}@ sitting in %2$#@{term2, plural, one {%d table} two {a couple of tables} other {%d tables}}@ in this restaurant",
+                                                 localeCode: "ar",
+                                                 params: [Swizzler.PARAM_ARGUMENTS_KEY: [0,2]]),
+                       "There is noone sitting in a couple of tables in this restaurant")
+    }
+
+    func testPlatformFormat() {
+        XCTAssertEqual(try PlatformFormat.format(stringToRender: "{cnt, plural, one {One table} other {%d tables}}",
+                                             localeCode: "en",
+                                             params: [Swizzler.PARAM_ARGUMENTS_KEY: [1]]),
+                       "One table")
+    }
+
     func testTXNativeFetchTranslationsWithStatus() {
         let mockResponse1 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=translated")!,
                                          data: "{\"data\":{\"testkey1\":{\"string\":\"test string 1\"},\"testkey2\":{\"string\":\"test string 2\"}}}".data(using: .utf8))
@@ -872,14 +947,167 @@ final class TransifexTests: XCTestCase {
         
         XCTAssertEqual(pluralsResultOther, translatedStringPluralOther)
     }
+
+    func testXMLPluralParserDeviceVariation() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="device.applevision">This is Apple Vision</cds-unit><cds-unit id="device.applewatch">This is an Apple Watch</cds-unit><cds-unit id="device.iphone">This is an iPhone</cds-unit><cds-unit id="device.mac">This is a Mac</cds-unit><cds-unit id="device.other">This is a device</cds-unit></cds-root>
+""", deviceName: "mac")
+        XCTAssertEqual(parseResult, "This is a Mac")
+    }
+
+    func testXMLPluralParserDeviceVariationiPadFallbackiPhone() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="device.applevision">This is Apple Vision</cds-unit><cds-unit id="device.applewatch">This is an Apple Watch</cds-unit><cds-unit id="device.iphone">This is an iPhone</cds-unit><cds-unit id="device.mac">This is a Mac</cds-unit><cds-unit id="device.other">This is a device</cds-unit></cds-root>
+""", deviceName: "ipad")
+        XCTAssertEqual(parseResult, "This is an iPhone")
+    }
+
+    func testXMLPluralParserDeviceVariationiPadFallbackOther() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="device.applevision">This is Apple Vision</cds-unit><cds-unit id="device.applewatch">This is an Apple Watch</cds-unit><cds-unit id="device.ipod">This is an iPhone</cds-unit><cds-unit id="device.mac">This is a Mac</cds-unit><cds-unit id="device.other">This is a device</cds-unit></cds-root>
+""", deviceName: "ipad")
+        XCTAssertEqual(parseResult, "This is a device")
+    }
+
+    func testXMLPluralParserDevicePluralVariation() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="device.iphone.plural.one">iPhone has %d item</cds-unit><cds-unit id="device.iphone.plural.other">iPhone has %d items</cds-unit><cds-unit id="device.mac">Mac has %d items</cds-unit><cds-unit id="device.other">We have %d items</cds-unit></cds-root>
+""",
+                                                  deviceName: "iphone")
+        XCTAssertEqual(parseResult, "{???, plural, one {iPhone has %d item} other {iPhone has %d items}}")
+    }
+
+    func testXMLPluralParserSimpleSubstitutions() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="substitutions">Found %1$#@arg1@ having %2$#@arg2@</cds-unit><cds-unit id="substitutions.arg1.plural.one">%1$ld user</cds-unit><cds-unit id="substitutions.arg1.plural.other">%1$ld users</cds-unit><cds-unit id="substitutions.arg2.plural.one">%2$ld device</cds-unit><cds-unit id="substitutions.arg2.plural.other">%2$ld devices</cds-unit></cds-root>
+""")
+        XCTAssertEqual(parseResult, "Found %1$#@{arg1, plural, one {%ld user} other {%ld users}}@ having %2$#@{arg2, plural, one {%ld device} other {%ld devices}}@")
+
+        XCTAssertEqual(
+            parseResult!.extractICUPlurals(),
+            [
+                "{arg1, plural, one {%ld user} other {%ld users}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld user",
+                                    .other: "%ld users"
+                                ]),
+                "{arg2, plural, one {%ld device} other {%ld devices}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld device",
+                                    .other: "%ld devices"
+                                ])
+            ]
+        )
+    }
     
+    func testXMLPluralParserSimpleSubstitutionsStringsDict() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="substitutions">Found %#@arg1@ having %#@arg2@</cds-unit><cds-unit id="substitutions.arg1.plural.one">%ld user</cds-unit><cds-unit id="substitutions.arg1.plural.other">%ld users</cds-unit><cds-unit id="substitutions.arg2.plural.one">%ld device</cds-unit><cds-unit id="substitutions.arg2.plural.other">%ld devices</cds-unit></cds-root>
+""")
+        XCTAssertEqual(parseResult, "Found %1$#@{arg1, plural, one {%ld user} other {%ld users}}@ having %2$#@{arg2, plural, one {%ld device} other {%ld devices}}@")
+
+        XCTAssertEqual(
+            parseResult!.extractICUPlurals(),
+            [
+                "{arg1, plural, one {%ld user} other {%ld users}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld user",
+                                    .other: "%ld users"
+                                ]),
+                "{arg2, plural, one {%ld device} other {%ld devices}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld device",
+                                    .other: "%ld devices"
+                                ])
+            ]
+        )
+    }
+
+    func testXMLPluralParserSimpleSubstitutionsStringsDictAlt() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="substitutions">%#@num_people_in_room@ in %#@room@</cds-unit><cds-unit id="substitutions.num_people_in_room.plural.one">Only %d person</cds-unit><cds-unit id="substitutions.num_people_in_room.plural.other">Some people</cds-unit><cds-unit id="substitutions.num_people_in_room.plural.zero">No people</cds-unit><cds-unit id="substitutions.room.plural.one">%d room</cds-unit><cds-unit id="substitutions.room.plural.other">%d rooms</cds-unit><cds-unit id="substitutions.room.plural.zero">no room</cds-unit></cds-root>
+""")
+        XCTAssertEqual(parseResult, "%1$#@{num_people_in_room, plural, one {Only %d person} other {Some people} zero {No people}}@ in %2$#@{room, plural, one {%d room} other {%d rooms} zero {no room}}@")
+
+        XCTAssertEqual(
+            parseResult!.extractICUPlurals(),
+            [
+                "{num_people_in_room, plural, one {Only %d person} other {Some people} zero {No people}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "Only %d person",
+                                    .other: "Some people",
+                                    .zero: "No people"
+                                ]),
+                "{room, plural, one {%d room} other {%d rooms} zero {no room}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%d room",
+                                    .other: "%d rooms",
+                                    .zero: "no room"
+                                ])
+            ]
+        )
+    }
+
+    func testXMLPluralParserDeviceAndSubstitutions() {
+        let parseResult = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id="device.iphone">This iPhone contains %1$#@user_iphone@ with %2$#@folder_iphone@ </cds-unit><cds-unit id="device.mac">This Mac contains %1$#@user_mac@ with %2$#@folder_mac@ </cds-unit><cds-unit id="substitutions.folder_iphone.plural.one">%2$ld folder</cds-unit><cds-unit id="substitutions.folder_iphone.plural.other">%2$ld folders</cds-unit><cds-unit id="substitutions.folder_mac.plural.one">%2$ld folder</cds-unit><cds-unit id="substitutions.folder_mac.plural.other">%2$ld folders</cds-unit><cds-unit id="substitutions.user_iphone.plural.one">%1$ld user</cds-unit><cds-unit id="substitutions.user_iphone.plural.other">%1$ld users</cds-unit><cds-unit id="substitutions.user_mac.plural.one">%1$ld user</cds-unit><cds-unit id="substitutions.user_mac.plural.other">%1$ld users</cds-unit></cds-root>
+""",
+                                                  deviceName: "mac")
+        XCTAssertEqual(parseResult, "This Mac contains %1$#@{user_mac, plural, one {%ld user} other {%ld users}}@ with %2$#@{folder_mac, plural, one {%ld folder} other {%ld folders}}@ ")
+
+        XCTAssertEqual(
+            parseResult!.extractICUPlurals(),
+            [
+                "{user_mac, plural, one {%ld user} other {%ld users}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld user",
+                                    .other: "%ld users"
+                                ]),
+                "{folder_mac, plural, one {%ld folder} other {%ld folders}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld folder",
+                                    .other: "%ld folders"
+                                ])
+            ]
+        )
+    }
+
+    func testXMLDeviceSubstitutionSpecial() {
+        let parseResult1 = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id=\"device.iphone\">Device has %1$#@arg1_iphone@ in %2$ld folders</cds-unit><cds-unit id=\"device.other\">Device has %ld users in %ld folders</cds-unit><cds-unit id=\"substitutions.arg1_iphone.plural.one\">%1$ld user</cds-unit><cds-unit id=\"substitutions.arg1_iphone.plural.other\">%1$ld users</cds-unit></cds-root>
+""",
+                                                  deviceName: "mac")
+        XCTAssertEqual(parseResult1, "Device has %1$ld users in %2$ld folders")
+
+        let parseResult2 = XMLPluralParser.extract(pluralString: """
+<cds-root><cds-unit id=\"device.iphone\">Device has %1$#@arg1_iphone@ in %2$ld folders</cds-unit><cds-unit id=\"device.other\">Device has %ld users in %ld folders</cds-unit><cds-unit id=\"substitutions.arg1_iphone.plural.one\">%1$ld user</cds-unit><cds-unit id=\"substitutions.arg1_iphone.plural.other\">%1$ld users</cds-unit></cds-root>
+""",
+                                                  deviceName: "iphone")
+        let expectedResult2 = "Device has %1$#@{arg1_iphone, plural, one {%ld user} other {%ld users}}@ in %2$ld folders"
+        XCTAssertEqual(parseResult2, expectedResult2)
+
+        XCTAssertEqual(
+            expectedResult2.extractICUPlurals(),
+            [
+                "{arg1_iphone, plural, one {%ld user} other {%ld users}}" : ICUPluralResult(
+                                extractedPlurals: [
+                                    .one: "%ld user",
+                                    .other: "%ld users"
+                                ])
+            ]
+        )
+    }
+
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
         ("testCurrentLocaleProvider", testCurrentLocaleProvider),
         ("testEncodingSourceStringMeta", testEncodingSourceStringMeta),
         ("testEncodingSourceString", testEncodingSourceString),
         ("testEncodingSourceStringWithMeta", testEncodingSourceStringWithMeta),
+        ("testExtractMultipleICUPlurals", testExtractMultipleICUPlurals),
         ("testExtractICUPlurals", testExtractICUPlurals),
+        ("testPlatformFormatMultiple", testPlatformFormatMultiple),
+        ("testPlatformFormat", testPlatformFormat),
         ("testTXNativeFetchTranslationsWithStatus", testTXNativeFetchTranslationsWithStatus),
         ("testTXNativeFetchTranslationsWithTags", testTXNativeFetchTranslationsWithTags),
         ("testCDSHandlerFetchTranslationsWithStatus", testCDSHandlerFetchTranslationsWithStatus),
@@ -898,5 +1126,14 @@ final class TransifexTests: XCTestCase {
         ("testCurrentLocaleNotAnyPreference", testCurrentLocaleNotAnyPreference),
         ("testSourceLocalePosition", testSourceLocalePosition),
         ("testTranslateWithSourceStringsInCache", testTranslateWithSourceStringsInCache),
+        ("testXMLPluralParserDeviceVariation", testXMLPluralParserDeviceVariation),
+        ("testXMLPluralParserDeviceVariationiPadFallbackiPhone", testXMLPluralParserDeviceVariationiPadFallbackiPhone),
+        ("testXMLPluralParserDeviceVariationiPadFallbackOther", testXMLPluralParserDeviceVariationiPadFallbackOther),
+        ("testXMLPluralParserDevicePluralVariation", testXMLPluralParserDevicePluralVariation),
+        ("testXMLPluralParserSimpleSubstitutions", testXMLPluralParserSimpleSubstitutions),
+        ("testXMLPluralParserSimpleSubstitutionsStringsDict", testXMLPluralParserSimpleSubstitutionsStringsDict),
+        ("testXMLPluralParserSimpleSubstitutionsStringsDictAlt", testXMLPluralParserSimpleSubstitutionsStringsDictAlt),
+        ("testXMLPluralParserDeviceAndSubstitutions", testXMLPluralParserDeviceAndSubstitutions),
+        ("testXMLDeviceSubstitutionSpecial", testXMLDeviceSubstitutionSpecial),
     ]
 }
