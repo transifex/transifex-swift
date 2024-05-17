@@ -501,7 +501,14 @@ token: \(token)
         
         Swizzler.activate(bundles: [bundle])
     }
-    
+
+    /// Deactivates swizzling for the Bundle previously passed in the `activate(bundle:)` method.
+    /// - Parameter bundle: the bundle to be deactivated.
+    @objc
+    public static func deactivate(bundle: Bundle) {
+        Swizzler.deactivate(bundles: [bundle])
+    }
+
     /// Return the translation of the given source string on a certain locale.
     ///
     /// - Parameters:
@@ -599,9 +606,11 @@ token: \(token)
         tx?.forceCacheInvalidation(completionHandler: completionHandler)
     }
     
-    /// Destructs the TXNative singleton instance so that another one can be used.
+    /// Destructs the TXNative singleton instance so that another one can be used. Reverts swizzled
+    /// classes and methods.
     @objc
     public static func dispose() {
+        Swizzler.deactivate()
         tx = nil
     }
 }

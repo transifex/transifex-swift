@@ -40,7 +40,8 @@ class ICUMessageFormat : RenderingStrategyFormatter {
 
 /// The platform rendering strategy
 class PlatformFormat : RenderingStrategyFormatter {
-    
+    internal static let TRANSIFEX_STRINGSDICT_KEY = "Transifex.StringsDict.TestKey.%d"
+
     /// Returns the proper plural rule to use based on the given locale and arguments.
     ///
     /// In order to find the correct rule, it takes advantage of Apple's localization framework
@@ -50,7 +51,7 @@ class PlatformFormat : RenderingStrategyFormatter {
     /// business logic from scratch.
     static func extractPluralizationRule(locale: Locale,
                                          argument: CVarArg) -> PluralizationRule {
-        let key = NSLocalizedString("Transifex.StringsDict.TestKey.%d",
+        let key = NSLocalizedString(TRANSIFEX_STRINGSDICT_KEY,
                                     bundle: Bundle.module,
                                     comment: "")
         let pluralizationRule = String(format: key,

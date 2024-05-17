@@ -35,6 +35,7 @@ let package = Package(
         .testTarget(
             name: "TransifexObjCTests",
             dependencies: [
+                "Transifex",
                 "TransifexObjCRuntime",
             ]
         ),

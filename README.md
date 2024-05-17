@@ -378,10 +378,6 @@ Description strings) that are included in the `InfoPList.strings` file.
 * Localized entried found in the `Root.plist` of the `Settings.bundle` of an app that
 exposes its Settings to the iOS Settings app that are included in the `Root.strings` file.
 
-### SwiftUI
-
-The SDK does not currently support SwiftUI views.
-
 ### ICU support
 
 Also, currently SDK supports only supports the platform rendering strategy, so if the ICU
