@@ -173,7 +173,34 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
             return nil
         }
         
-        return storedTranslations
+        return filterXMLPlurals(storedTranslations)
+    }
+
+    // Process XML stored translations (device variations, substitutions, etc).
+    private static func filterXMLPlurals(_ translations: TXTranslations?) -> TXTranslations? {
+        guard var translations = translations else {
+            return nil
+        }
+        for (localeKey, localeStrings) in translations {
+            for (sourceStringKey, stringInfo) in localeStrings {
+                guard let sourceString = stringInfo[TXDecoratorCache.STRING_KEY] else {
+                    continue
+                }
+                // Detect if the string begins with the CDS root XML tag:
+                // `<cds-root>`
+                if (!sourceString.hasPrefix("<\(TXNative.CDS_XML_ROOT_TAG_NAME)>")) {
+                    continue
+                }
+                // Process it and synthesize the final rule.
+                guard let processedString = XMLPluralParser.extract(pluralString: sourceString) else {
+                    Logger.error("\(#function) Error attempting to extract source string with key \(sourceStringKey)")
+                    continue
+                }
+                // Replace the source string with the processed value
+                translations[localeKey]?[sourceStringKey]?[TXDecoratorCache.STRING_KEY] = processedString
+            }
+        }
+        return translations
     }
 
     public func getTranslations() -> TXTranslations? {
