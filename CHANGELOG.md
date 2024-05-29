@@ -109,3 +109,11 @@ bundled source locale translations, in case the target translations was not
 found, was trying to access the file by using the format that Transifex uses
 (e.g. `en_US`) instead of the one that iOS and Xcode use (e.g. `en-US`). The
 logic now normalizes the locale name to match the format that iOS accepts.
+
+## Transifex iOS SDK 2.0.2
+
+*May 29, 2024*
+
+- Adds full support for String Catalogs support.
+- Adds support for substitution phrases on old Strings Dictionary file format.
+- Updates unit tests.
