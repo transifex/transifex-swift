@@ -117,3 +117,9 @@ logic now normalizes the locale name to match the format that iOS accepts.
 - Adds full support for String Catalogs support.
 - Adds support for substitution phrases on old Strings Dictionary file format.
 - Updates unit tests.
+
+## Transifex iOS SDK 2.0.3
+
+*June 3, 2024*
+
+- Adds SwiftUI support via attributed string swizzling.
