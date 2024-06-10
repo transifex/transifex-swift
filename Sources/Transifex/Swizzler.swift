@@ -12,10 +12,34 @@ import TransifexObjCRuntime
 /// Swizzles all localizedString() calls made either by Storyboard files or by the use of NSLocalizedString()
 /// function in code.
 class SwizzledBundle : Bundle {
+    // NOTE:
+    // We can't override the `localizedAttributedString(forKey:value:table:)`
+    // method here, as it's not exposed in Swift.
+    // We can neither use swizzling in Swift for the same reason.
+    // In order to intercept this method (that SwiftUI uses for all its text
+    // components), we rely on the `TXNativeObjecSwizzler` to swizzle that
+    // method that is also going to work on runtime for Swift/SwiftUI.
     override func localizedString(forKey key: String,
                                   value: String?,
                                   table tableName: String?) -> String {
-        if Swizzler.activated && value != Swizzler.SKIP_SWIZZLING_VALUE {
+        // Apply the swizzled method only if:
+        // * Swizzler has been activated.
+        // * Swizzling was not disabled temporarily using the
+        //   `SKIP_SWIZZLING_VALUE` flag.
+        // * The key does not match the reserved Transifex StringsDict key that
+        //   is used to extract the proper pluralization rule.
+        //   NOTE: While running the Unit Test suite of the Transifex SDK, we
+        //   noticed that certain unit tests (e.g. `testPlatformFormat`,
+        //   `testPlatformFormatMultiple`) were triggering the Transifex module
+        //   bundle to load to due to the call of the `extractPluralizationRule`
+        //   method. Even though the loading of the module bundling was
+        //   happening after the Swizzler was activated, subsequent unit tests
+        //   had the bundle already loaded in the `Bundle.allBundles` array,
+        //   causing the bundle to also be swizzled, thus preventing the
+        //   `Localizable.stringsdict` to report the correct pluralization rule.
+        if Swizzler.activated
+            && value != Swizzler.SKIP_SWIZZLING_VALUE
+            && key != PlatformFormat.TRANSIFEX_STRINGSDICT_KEY {
             return Swizzler.localizedString(forKey: key,
                                             value: value,
                                             table: tableName)
@@ -55,20 +79,100 @@ class Swizzler {
         }
         
         self.translationProvider = translationProvider
-        
+
+        // Swizzle `NSBundle.localizedString(String,String?,String?)` method
+        // for Swift.
         activate(bundles: Bundle.allBundles)
-        
-        TXNativeObjcSwizzler.activate {
+
+        // Swizzle `-[NSString localizedStringWithFormat:]` method for
+        // Objective-C.
+        TXNativeObjcSwizzler.swizzleLocalizedString {
             return self.localizedString(format: $0,
                                         arguments: $1)
         }
+
+        // Swizzle `-[NSBundle localizedAttributedStringForKey:value:table:]`
+        // method for Objective-C, Swift and SwiftUI.
+        TXNativeObjcSwizzler.swizzleLocalizedAttributedString(self,
+                                                              selector: swizzledLocalizedAttributedStringSelector())
         
         activated = true
     }
-    
+
+    /// Deactivates Swizzler
+    internal static func deactivate() {
+        guard activated else {
+            return
+        }
+
+        // Deactivate swizzled bundles
+        deactivate(bundles: Bundle.allBundles)
+
+        // Deactivate swizzling in:
+        // * `-[NSString localizedStringWithFormat:]`
+        // * `-[NSBundle localizedAttributedStringForKey:value:table:]`
+        TXNativeObjcSwizzler.revertLocalizedString()
+        TXNativeObjcSwizzler.revertLocalizedAttributedString(self,
+                                                             selector: swizzledLocalizedAttributedStringSelector())
+
+        translationProvider = nil
+
+        activated = false
+    }
+
+    private static func swizzledLocalizedAttributedStringSelector() -> Selector {
+        return #selector(swizzledLocalizedAttributedString(forKey:value:table:))
+    }
+
+    @objc
+    private func swizzledLocalizedAttributedString(forKey key: String,
+                                                   value: String?,
+                                                   table tableName: String?) -> NSAttributedString {
+        let swizzledString = Swizzler.localizedString(forKey: key,
+                                                      value: value,
+                                                      table: tableName)
+        // On supported platforms, attempt to decode the attributed string as
+        // markdown in case it contains style decorators (e.g. *italic*,
+        // **bold** etc).
+#if os(iOS)
+        if #available(iOS 15, *) {
+            return Self.attributedString(with: swizzledString)
+        }
+#elseif os(watchOS)
+        if #available(watchOS 8, *) {
+            return Self.attributedString(with: swizzledString)
+        }
+#elseif os(tvOS)
+        if #available(tvOS 15, *) {
+            return Self.attributedString(with: swizzledString)
+        }
+#elseif os(macOS)
+        if #available(macOS 12, *) {
+            return Self.attributedString(with: swizzledString)
+        }
+#endif
+        // Otherwise, return a simple attributed string
+        return NSAttributedString(string: swizzledString)
+    }
+
+    @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+    private static func attributedString(with swizzledString: String) -> NSAttributedString {
+        var string: AttributedString
+        do {
+            string = try AttributedString(markdown: swizzledString)
+        }
+        catch {
+            // Fallback to the non-Markdown version in case of an error
+            // during Markdown parsing.
+            return NSAttributedString(string: swizzledString)
+        }
+        // If successful, return the Markdown-styled string
+        return NSAttributedString(string)
+    }
+
     /// Swizzles the passed bundles so that their localization methods are intercepted.
     ///
-    /// - Parameter bundles: The Bundle that will be swizzled
+    /// - Parameter bundles: The bundles to be swizzled
     internal static func activate(bundles: [Bundle]) {
         bundles.forEach({ (bundle) in
             guard !bundle.isKind(of: SwizzledBundle.self) else {
@@ -78,6 +182,18 @@ class Swizzler {
         })
     }
     
+    /// Reverts the class of the passed swizzled bundles to original `Bundle` class.
+    ///
+    /// - Parameter bundles: The bundles to be reverted.
+    internal static func deactivate(bundles: [Bundle]) {
+        bundles.forEach({ (bundle) in
+            guard bundle.isKind(of: SwizzledBundle.self) else {
+                return
+            }
+            object_setClass(bundle, Bundle.self)
+        })
+    }
+
     /// Centralized method that all swizzled or overriden localizedStringWithFormat: methods will call once
     /// Swizzler is activated.
     ///
@@ -85,8 +201,8 @@ class Swizzler {
     ///   - format: The format string
     ///   - arguments: An array of arguments of arbitrary type
     /// - Returns: The final string
-    static func localizedString(format: String,
-                                arguments: [Any]) -> String {
+    internal static func localizedString(format: String,
+                                         arguments: [Any]) -> String {
         guard let translationProvider = translationProvider else {
             return MISSING_PROVIDER
         }

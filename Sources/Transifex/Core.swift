@@ -361,7 +361,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.2"
+    internal static let version = "2.0.3"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -501,7 +501,14 @@ token: \(token)
         
         Swizzler.activate(bundles: [bundle])
     }
-    
+
+    /// Deactivates swizzling for the Bundle previously passed in the `activate(bundle:)` method.
+    /// - Parameter bundle: the bundle to be deactivated.
+    @objc
+    public static func deactivate(bundle: Bundle) {
+        Swizzler.deactivate(bundles: [bundle])
+    }
+
     /// Return the translation of the given source string on a certain locale.
     ///
     /// - Parameters:
@@ -599,9 +606,11 @@ token: \(token)
         tx?.forceCacheInvalidation(completionHandler: completionHandler)
     }
     
-    /// Destructs the TXNative singleton instance so that another one can be used.
+    /// Destructs the TXNative singleton instance so that another one can be used. Reverts swizzled
+    /// classes and methods.
     @objc
     public static func dispose() {
+        Swizzler.deactivate()
         tx = nil
     }
 }

@@ -140,17 +140,33 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
 
 @implementation TXNativeObjcSwizzler
 
-+ (void)activateWithClosure:(NSString* (^)(NSString *format,
-                                           NSArray <TXNativeObjcArgument *> *arguments))closure {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        TXNativeObjcSwizzlerClosure = closure;
-        
-        Class class = NSString.class;
-        Method m1 = class_getClassMethod(class, @selector(localizedStringWithFormat:));
-        Method m2 = class_getClassMethod(class, @selector(swizzledLocalizedStringWithFormat:));
-        method_exchangeImplementations(m1, m2);
-    });
++ (void)swizzleLocalizedStringWithClosure:(NSString* (^)(NSString *format,
+                                                         NSArray <TXNativeObjcArgument *> *arguments))closure {
+    TXNativeObjcSwizzlerClosure = closure;
+
+    Method m1 = class_getClassMethod(NSString.class, @selector(localizedStringWithFormat:));
+    Method m2 = class_getClassMethod(NSString.class, @selector(swizzledLocalizedStringWithFormat:));
+    method_exchangeImplementations(m1, m2);
+}
+
++ (void)revertLocalizedString {
+    TXNativeObjcSwizzlerClosure = nil;
+
+    Method m1 = class_getClassMethod(NSString.class, @selector(localizedStringWithFormat:));
+    Method m2 = class_getClassMethod(NSString.class, @selector(swizzledLocalizedStringWithFormat:));
+    method_exchangeImplementations(m2, m1);
+}
+
++ (void)swizzleLocalizedAttributedString:(Class)class selector:(SEL)selector {
+    Method m1 = class_getInstanceMethod(NSBundle.class, @selector(localizedAttributedStringForKey:value:table:));
+    Method m2 = class_getInstanceMethod(class, selector);
+    method_exchangeImplementations(m1, m2);
+}
+
++ (void)revertLocalizedAttributedString:(Class)class selector:(SEL)selector {
+    Method m1 = class_getInstanceMethod(NSBundle.class, @selector(localizedAttributedStringForKey:value:table:));
+    Method m2 = class_getInstanceMethod(class, selector);
+    method_exchangeImplementations(m2, m1);
 }
 
 @end

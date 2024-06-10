@@ -685,7 +685,32 @@ final class TransifexTests: XCTestCase {
             XCTAssertTrue(pushResult)
         }
     }
-    
+
+    func testNSLocalizedString() {
+        let existingTranslations: TXTranslations = [
+            "en": [
+                "a": [ "string": "a" ],
+            ],
+            "el": [
+                "a": [ "string": "α" ],
+            ]
+        ]
+
+        let localeState = TXLocaleState(sourceLocale: "en",
+                                        appLocales: ["el"],
+                                        currentLocaleProvider: MockLocaleProvider("el"))
+
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: existingTranslations)
+
+        TXNative.initialize(locales: localeState,
+                            token: Self.testToken,
+                            cache: memoryCache,
+                            renderingStrategy: .platform)
+        
+        XCTAssertEqual(NSLocalizedString("a", comment: ""), "α")
+    }
+
     func testReplaceAllPolicy() {
         let existingTranslations: TXTranslations = [
             "en": [
@@ -808,17 +833,12 @@ final class TransifexTests: XCTestCase {
     func testPlatformStrategyWithInvalidSourceString() {
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["fr"])
+
+        TXNative.initialize(locales: localeState,
+                            token: Self.testToken,
+                            renderingStrategy: .platform)
         
-        let core = NativeCore(locales: localeState,
-                              token: Self.testToken,
-                              secret: nil,
-                              cdsHost: nil,
-                              cache: nil,
-                              renderingStrategy: .platform)
-        
-        let result = core.render(sourceString: "test", stringToRender: nil, localeCode: "", params: [
-                        Swizzler.PARAM_ARGUMENTS_KEY: [1, 2] as [CVarArg]
-        ])
+        let result = TXNative.localizedString(format: "test", arguments: [1,2] as [CVarArg])
         
         XCTAssertNotNil(result)
         XCTAssertEqual(result, "test")
@@ -1116,6 +1136,7 @@ final class TransifexTests: XCTestCase {
         ("testFetchTranslationsNotReady", testFetchTranslationsNotReady),
         ("testPushTranslations", testPushTranslations),
         ("testPushTranslationsNotReady", testPushTranslationsNotReady),
+        ("testNSLocalizedString", testNSLocalizedString),
         ("testReplaceAllPolicy", testReplaceAllPolicy),
         ("testUpdateUsingTranslatePolicy", testUpdateUsingTranslatePolicy),
         ("testReadOnlyCache", testReadOnlyCache),

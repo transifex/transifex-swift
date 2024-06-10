@@ -41,8 +41,25 @@ typedef NS_ENUM(NSInteger, TXNativeObjcArgumentType) {
 ///
 /// @param closure A provided block that will be called when the localizedStringWithFormat: method
 /// is called.
-+ (void)activateWithClosure:(NSString* (^)(NSString *format,
-                                           NSArray <TXNativeObjcArgument *> *arguments))closure;
++ (void)swizzleLocalizedStringWithClosure:(NSString* (^)(NSString *format,
+                                                         NSArray <TXNativeObjcArgument *> *arguments))closure;
+
+/// Deactivate swizzling for Objective C NSString.localizedStringWithFormat: method.
++ (void)revertLocalizedString;
+
+/// Swizzle the `localizedAttributedStringForKey:value:table:` NSBundle method using
+/// the provided class and method from the caller.
+///
+/// @param class The caller class that contains the swizzled selector.
+/// @param selector The swizzled selector.
++ (void)swizzleLocalizedAttributedString:(Class)class selector:(SEL)selector;
+
+/// Deactivate swizzling for `localizedAttributedStringForKey:value:table:` NSBundle
+/// method.
+///
+/// @param class The caller class that contains the swizzled selector.
+/// @param selector The swizzled selector.
++ (void)revertLocalizedAttributedString:(Class)class selector:(SEL)selector;
 
 @end
 
