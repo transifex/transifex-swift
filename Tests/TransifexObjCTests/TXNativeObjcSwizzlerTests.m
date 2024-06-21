@@ -80,7 +80,7 @@
     [TXNativeObjcSwizzler revertLocalizedString];
 }
 
-- (void)testAttributed API_AVAILABLE(macos(12.0)) {
+- (void)testAttributed API_AVAILABLE(macos(12.0), ios(15.0), watchos(8.0), tvos(15.0)) {
     TXMemoryCache *memoryCache = [TXMemoryCache new];
     [memoryCache updateWithTranslations:@{
         @"en": @{
