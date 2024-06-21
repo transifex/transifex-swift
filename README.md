@@ -12,11 +12,10 @@ The SDK can fetch translations over the air (OTA), manages an internal cache of 
 and works seamlessly without requiring any changes in the source code of the app by the
 developer.
 
-Both Objective-C and Swift projects are supported and iOS 10+ is required.
+Both Objective-C and Swift projects are supported.
 
 The package is built using Swift 5.3, as it currently requires a bundled resource to be
-present in the package (which was introduced on version 5.3). An update that will require
-a lower Swift version is currently WIP.
+present in the package (feature introduced in version 5.3).
 
 Learn more about [Transifex Native](https://developers.transifex.com/docs/native).
 
@@ -24,9 +23,9 @@ The full SDK documentation is available at [https://transifex.github.io/transife
 
 ## Minimum Requirements
 
-| Swift           | Xcode           | Platforms                                         |
-|-----------------|-----------------|---------------------------------------------------|
-| Swift 5.3       | Xcode 12.3      | iOS 10.0  |
+| Swift           | Xcode            | Platforms                                            |
+|-----------------|------------------|------------------------------------------------------|
+| Swift 5.3       | Xcode 15.4       | iOS 12.0, watchOS 4.0, tvOS 12.0, macOS 10.13        |
 
 ## Usage
 
