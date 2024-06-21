@@ -1,0 +1,33 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 102,
+      "symbol": "TXPushConfiguration.init(purge:overrideTags:overrideOccurrences:keepTranslations:dryRun:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/Plurals.swift",
+      "line": 544,
+      "symbol": "XMLPluralParser.parser(_:didStartElement:namespaceURI:qualifiedName:attributes:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/Plurals.swift",
+      "line": 556,
+      "symbol": "XMLPluralParser.parser(_:didEndElement:namespaceURI:qualifiedName:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/Plurals.swift",
+      "line": 566,
+      "symbol": "XMLPluralParser.parser(_:foundCharacters:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/runner/work/transifex-swift/transifex-swift"
+}
