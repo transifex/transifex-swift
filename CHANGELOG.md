@@ -123,3 +123,9 @@ logic now normalizes the locale name to match the format that iOS accepts.
 *June 3, 2024*
 
 - Adds SwiftUI support via attributed string swizzling.
+
+## Transifex iOS SDK 2.0.4
+
+*June 21, 2024*
+
+- Updates minimum supported OS versions.
