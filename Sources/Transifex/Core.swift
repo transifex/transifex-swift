@@ -164,7 +164,8 @@ class NativeCore : TranslationProvider {
     /// - Parameter status: An optional status so that only strings matching translation status are
     /// fetched.
     /// - Parameter completionHandler: The completion handler that informs the caller with the
-    /// new translations and a list of possible errors that might have occured
+    /// new translations and a list of possible errors that might have occured. The completion handler is
+    /// called from a background thread.
     func fetchTranslations(_ localeCode: String? = nil,
                            tags: [String] = [],
                            status: String? = nil,
@@ -195,7 +196,8 @@ class NativeCore : TranslationProvider {
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
     /// an array that may or may not contain any errors produced during the push operation and an array of
-    /// non-blocking errors (warnings) that may have been generated during the push procedure.
+    /// non-blocking errors (warnings) that may have been generated during the push procedure. The
+    /// completion handler is called from a background thread.
     func pushTranslations(_ translations: [TXSourceString],
                           configuration: TXPushConfiguration = TXPushConfiguration(),
                           completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
@@ -213,7 +215,7 @@ class NativeCore : TranslationProvider {
     ///
     /// - Parameter completionHandler: A callback to be called when force cache invalidation is
     /// complete with a boolean argument that informs the caller that the operation was successful (true) or
-    /// not (false).
+    /// not (false).  The completion handler is called from a background thread.
     func forceCacheInvalidation(completionHandler: @escaping (Bool) -> Void) {
         cdsHandler.forceCacheInvalidation { [weak self] success in
             guard let _ = self else {
@@ -580,6 +582,7 @@ token: \(token)
     ///   - status: An optional status so that only strings matching translation status are fetched.
     ///   - completionHandler: The completion handler that informs the caller when the operation
     ///   is complete, reporting the new translations and a list of possible errors that might have occured.
+    ///   The completion handler is called from a background thread.
     @objc
     public static func fetchTranslations(_ localeCode: String? = nil,
                                          tags: [String]? = nil,
@@ -600,7 +603,8 @@ token: \(token)
     ///   - completionHandler: A callback to be called when the push operation is complete with a
     /// boolean argument that informs the caller that the operation was successful (true) or not (false) and
     /// an array that may or may not contain any errors produced during the push operation and an array of
-    /// non-blocking errors (warnings) that may have been generated during the push procedure.
+    /// non-blocking errors (warnings) that may have been generated during the push procedure. The
+    /// completion handler is called from a background thread.
     @objc
     public static func pushTranslations(_ translations: [TXSourceString],
                                         configuration: TXPushConfiguration = TXPushConfiguration(),
@@ -614,7 +618,7 @@ token: \(token)
     ///
     /// - Parameter completionHandler: A callback to be called when force cache invalidation is
     /// complete with a boolean argument that informs the caller that the operation was successful (true) or
-    /// not (false).
+    /// not (false).  The completion handler is called from a background thread.
     @objc
     public static func forceCacheInvalidation(completionHandler: @escaping (Bool) -> Void) {
         tx?.forceCacheInvalidation(completionHandler: completionHandler)
