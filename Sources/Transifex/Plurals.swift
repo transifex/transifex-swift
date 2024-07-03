@@ -496,24 +496,40 @@ final class XMLPluralParser: NSObject {
         return pluralRules.sorted { $0.key.rawValue < $1.key.rawValue }
     }
 
+    /// There is currently no native way of knowing whether the current iOS application runs on a Vision
+    /// device (something like `isiOSAppOnMac` but for Vision devices). So here's a (hacky) way of doing
+    /// that until Apple adds a helper method, by using a public class that is only available on VisionOS.
+    ///
+    /// - Returns: True if the iOS app runs on a Vision device, False otherwise.
+    private static func isiOSAppOnVision() -> Bool {
+        struct Static {
+            static var isOnVisionDevice: Bool = {
+                return NSClassFromString("UIWindowSceneGeometryPreferencesVision") != nil
+            }()
+        }
+        return Static.isOnVisionDevice
+    }
+
     /// Returns the current device name in the form used by the `.xcstrings` file type.
     ///
     /// - Returns: The current device name
     private class func currentDeviceName() -> String {
 #if os(iOS)
-        // For iOS, figure out whether the current device is an iPhone, an iPad
-        // or an iPod.
-    #if canImport(UIKit)
+        // For iOS applications running on a Mac or a Vision device (as
+        // 'Designed for iPhone' / 'Designed for iPad'), we need to respect the
+        // user interface idiom.
+        // The only exception is that if the user interface idiom is Pad (so
+        // the iOS app is running as 'Designed for iPad') and the current device
+        // is Vision Pro. In that case we need to set the current device name as
+        // 'applevision' instead of 'ipad'. For 'Designed for iPhone' iOS apps
+        // running in Vision Pro devices, we should return 'iphone'.
         let currentDevice = UIDevice.current
-        if currentDevice.userInterfaceIdiom == UIUserInterfaceIdiom.pad {
-            return DEVICE_NAME_IPAD
+        if currentDevice.userInterfaceIdiom == .pad {
+            return isiOSAppOnVision() ? DEVICE_NAME_VISION : DEVICE_NAME_IPAD
         }
         else {
             return currentDevice.model.hasPrefix("iPod") ? DEVICE_NAME_IPOD : DEVICE_NAME_IPHONE
         }
-    #else
-        return DEVICE_NAME_IPHONE
-    #endif
 #elseif os(macOS)
         return DEVICE_NAME_MAC
 #elseif os(watchOS)

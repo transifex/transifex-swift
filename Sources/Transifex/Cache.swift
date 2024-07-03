@@ -265,7 +265,11 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     public override func update(translations: TXTranslations) {
         super.update(translations: translations)
         
-        cacheQueue.async {
+        cacheQueue.async { [weak self] in
+            guard let self = self else {
+                return
+            }
+
             guard let fileURL = self.fileURL else {
                 return
             }

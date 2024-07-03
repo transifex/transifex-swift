@@ -129,3 +129,12 @@ logic now normalizes the locale name to match the format that iOS accepts.
 *June 21, 2024*
 
 - Updates minimum supported OS versions.
+
+## Transifex iOS SDK 2.0.5
+
+*July 3, 2024*
+
+* Ensures that callbacks won't capture `self` strongly.
+* Ensures Designed for iPhone/iPad apps use the proper device name.
+* Discloses that completion handlers are called from background threads.
+* Improves cache update after a `fetchTranslations` call.
