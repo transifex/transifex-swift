@@ -181,7 +181,21 @@ class NativeCore : TranslationProvider {
                 Logger.error("\(#function) Errors: \(errors)")
             }
 
-            self.cache.update(translations: translations)
+            // Only update the cache if the translations structure is not
+            // empty, avoiding cases where no translations were fetched due
+            // to errors (e.g. network offline etc).
+            // We do not check for errors here as some translations might
+            // have failed and some others might not. As long as the
+            // translations structure is not empty, we are OK to update the
+            // cache (and, by extension, the stored file).
+            if !translations.isEmpty {
+                // Update cache using the fetched translations in main thread
+                // to ensure proper cache updates for custom implemented caching
+                // solutions.
+                DispatchQueue.main.async {
+                    self.cache.update(translations: translations)
+                }
+            }
 
             completionHandler?(translations, errors)
         }
