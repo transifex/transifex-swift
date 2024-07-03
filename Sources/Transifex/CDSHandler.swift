@@ -119,94 +119,6 @@ TXPushConfiguration(purge: \(purge), overrideTags: \(overrideTags), overrideOccu
     }
 }
 
-/// Handles the logic of a pull HTTP request to CDS for a certain locale code
-class CDSPullRequest {
-    let code : String
-    let request : URLRequest
-    let session : URLSession
-    
-    private var retryCount = 0
-    
-    struct RequestData : Codable {
-        var data: TXLocaleStrings
-    }
-
-    init(with request : URLRequest, code : String, session : URLSession) {
-        self.code = code
-        self.request = request
-        self.session = session
-    }
-    
-    /// Performs the request to CDS and offers a completion handler when the request succeeds or fails.
-    ///
-    /// - Parameter completionHandler: The completion handler that includes the locale code,
-    /// the extracted LocaleStrings structure from the server response and the error object when the
-    /// request fails
-    func perform(with completionHandler: @escaping (String,
-                                                    TXLocaleStrings?,
-                                                    TXCDSError?) -> Void) {
-        session.dataTask(with: request) { (data, response, error) in
-            guard error == nil else {
-                completionHandler(self.code,
-                                  nil,
-                                  .requestFailed(error: error!))
-                return
-            }
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                completionHandler(self.code,
-                                  nil,
-                                  .invalidHTTPResponse)
-                return
-            }
-            
-            let statusCode = httpResponse.statusCode
-            
-            switch statusCode {
-            
-            case CDSHandler.HTTP_STATUS_CODE_OK:
-                if let data = data {
-                    let decoder = JSONDecoder()
-                    
-                    do {
-                        let request = try decoder.decode(RequestData.self,
-                                                         from: data)
-                        completionHandler(self.code,
-                                          request.data,
-                                          nil)
-                    }
-                    catch {
-                        completionHandler(self.code,
-                                          nil,
-                                          .requestFailed(error: error))
-                    }
-                }
-                else {
-                    completionHandler(self.code,
-                                      nil,
-                                      .nonParsableResponse)
-                }
-            case CDSHandler.HTTP_STATUS_CODE_ACCEPTED:
-                Logger.info("Received 202 response while fetching locale: \(self.code)")
-                
-                if self.retryCount < CDSHandler.MAX_RETRIES {
-                    self.retryCount += 1
-                    self.perform(with: completionHandler)
-                }
-                else {
-                    completionHandler(self.code,
-                                      nil,
-                                      .maxRetriesReached)
-                }
-            default:
-                completionHandler(self.code,
-                                  nil,
-                                  .serverError(statusCode: statusCode))
-            }
-        }.resume()
-    }
-}
-
 /// The struct used to configure the communication with CDS, passed into the CDSHander initializer.
 struct CDSConfiguration {
     /// A list of locale codes for the configured languages in the application
@@ -326,7 +238,13 @@ class CDSHandler {
         case completed
         case failed
     }
-    
+
+    private struct RequestData : Codable {
+        var data: TXLocaleStrings
+    }
+
+    private typealias CDSPullRequestResult = Result<TXLocaleStrings, TXCDSError>
+
     /// The url session to be used for the requests to the CDS, defaults to an ephemeral URLSession with
     /// a disabled URL cache.
     let session: URLSession
@@ -404,24 +322,28 @@ class CDSHandler {
         }
 
         var requestsFinished = 0
+        let totalRequests = requestsByLocale.count
         var translationsByLocale: TXTranslations = [:]
         var errors: [Error] = []
         
         for (code, requestByLocale) in requestsByLocale {
-            let cdsRequest = CDSPullRequest(with: requestByLocale,
-                                            code: code,
-                                            session: self.session)
-            cdsRequest.perform { (code, localeStrings, error) in
+            performFetch(retryCount: 0,
+                         code: code,
+                         request: requestByLocale) { [weak self] result in
+                guard let _ = self else {
+                    return
+                }
+
                 requestsFinished += 1
-                
-                if let error = error {
+
+                switch result {
+                case .success(let localeStrings):
+                    translationsByLocale[code] = localeStrings
+                case .failure(let error):
                     errors.append(error)
                 }
-                else {
-                    translationsByLocale[code] = localeStrings
-                }
-                
-                if requestsFinished == requestsByLocale.count {
+
+                if requestsFinished == totalRequests {
                     completionHandler(translationsByLocale, errors)
                 }
             }
@@ -446,7 +368,10 @@ class CDSHandler {
         request.httpMethod = "POST"
         request.allHTTPHeaderFields = getHeaders(withSecret: true)
 
-        session.dataTask(with: request) { (data, response, error) in
+        session.dataTask(with: request) { [weak self] (data, response, error) in
+            guard let _ = self else {
+                return
+            }
             guard error == nil else {
                 Logger.error("Error invalidating CDS cache: \(error!)")
                 completionHandler(false)
@@ -523,6 +448,71 @@ class CDSHandler {
         }
     }
 
+    // MARK: - Private
+
+    /// Performs the fetch (pull) request to CDS and offers a completion handler when the request succeeds
+    /// or fails, with the associated Result type (CDSPullRequestResult).
+    ///
+    /// - Parameters:
+    ///   - retryCount: The current retry count [0, CDSHandler.MAX_RETRIES]
+    ///   - code: The locale code that is pulled from CDS
+    ///   - request: The actual URLRequest
+    ///   - requestCompleted: The completion handler.
+    private func performFetch(retryCount: Int,
+                              code: String,
+                              request: URLRequest,
+                              requestCompleted: @escaping (CDSPullRequestResult) -> Void) {
+        session.dataTask(with: request) { [weak self]
+            (data, response, error) in
+            guard let self = self else {
+                return
+            }
+
+            if let error = error {
+                requestCompleted(.failure(.requestFailed(error: error)))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                requestCompleted(.failure(.invalidHTTPResponse))
+                return
+            }
+
+            let statusCode = httpResponse.statusCode
+
+            switch statusCode {
+
+            case CDSHandler.HTTP_STATUS_CODE_OK:
+                if let data = data {
+                    do {
+                        let request = try JSONDecoder().decode(RequestData.self,
+                                                               from: data)
+                        requestCompleted(.success(request.data))
+                    }
+                    catch {
+                        requestCompleted(.failure(.requestFailed(error: error)))
+                    }
+                }
+                else {
+                    requestCompleted(.failure(.nonParsableResponse))
+                }
+            case CDSHandler.HTTP_STATUS_CODE_ACCEPTED:
+                Logger.info("Received 202 response while fetching locale: \(code)")
+                if retryCount < CDSHandler.MAX_RETRIES {
+                    performFetch(retryCount: retryCount + 1,
+                                 code: code,
+                                 request: request,
+                                 requestCompleted: requestCompleted)
+                }
+                else {
+                    requestCompleted(.failure(.maxRetriesReached))
+                }
+            default:
+                requestCompleted(.failure(.serverError(statusCode: statusCode)))
+            }
+        }.resume()
+    }
+
     /// Pushes the generated JSON data containing the source strings and propagates any generated
     /// warnings to the final completion handler.
     ///
@@ -544,7 +534,10 @@ class CDSHandler {
         request.httpMethod = "POST"
         request.allHTTPHeaderFields = getHeaders(withSecret: true)
 
-        session.dataTask(with: request) { (data, response, error) in
+        session.dataTask(with: request) { [weak self] (data, response, error) in
+            guard let self = self else {
+                return
+            }
             if let error = error {
                 completionHandler(false, [.requestFailed(error: error)], warnings)
                 return
@@ -606,8 +599,11 @@ class CDSHandler {
         // have enough time to process the job.
         Thread.sleep(forTimeInterval: 1.0)
         
-        fetchJobStatus(jobURL: jobURL) {
+        fetchJobStatus(jobURL: jobURL) { [weak self]
             jobStatus, jobErrors, jobDetails in
+            guard let self = self else {
+                return
+            }
             guard let finalJobStatus = jobStatus else {
                 completionHandler(false, [.failedJobRequest], warnings)
                 return
@@ -683,7 +679,10 @@ failed: \(details.failed)
         request.httpMethod = "GET"
         request.allHTTPHeaderFields = getHeaders(withSecret: true)
 
-        session.dataTask(with: request) { (data, response, error) in
+        session.dataTask(with: request) { [weak self] (data, response, error) in
+            guard let _ = self else {
+                return
+            }
             guard error == nil else {
                 Logger.error("Error retrieving job status: \(error!)")
                 completionHandler(nil, nil, nil)

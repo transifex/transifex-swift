@@ -171,7 +171,11 @@ class NativeCore : TranslationProvider {
                            completionHandler: TXPullCompletionHandler? = nil) {
         cdsHandler.fetchTranslations(localeCode: localeCode,
                                      tags: tags,
-                                     status: status) { (translations, errors) in
+                                     status: status) { [weak self] (translations, errors) in
+            guard let self = self else {
+                return
+            }
+
             if errors.count > 0 {
                 Logger.error("\(#function) Errors: \(errors)")
             }
@@ -196,8 +200,13 @@ class NativeCore : TranslationProvider {
                           configuration: TXPushConfiguration = TXPushConfiguration(),
                           completionHandler: @escaping (Bool, [Error], [Error]) -> Void) {
         cdsHandler.pushTranslations(translations,
-                                    configuration: configuration,
-                                    completionHandler: completionHandler)
+                                    configuration: configuration) { [weak self]
+            success, errors, warnings in
+            guard let _ = self else {
+                return
+            }
+            completionHandler(success, errors, warnings)
+        }
     }
     
     /// Forces CDS cache invalidation.
@@ -206,7 +215,12 @@ class NativeCore : TranslationProvider {
     /// complete with a boolean argument that informs the caller that the operation was successful (true) or
     /// not (false).
     func forceCacheInvalidation(completionHandler: @escaping (Bool) -> Void) {
-        cdsHandler.forceCacheInvalidation(completionHandler: completionHandler)
+        cdsHandler.forceCacheInvalidation { [weak self] success in
+            guard let _ = self else {
+                return
+            }
+            completionHandler(success)
+        }
     }
     
     /// Used by the Swift localizedString(format:arguments:) methods found in the
