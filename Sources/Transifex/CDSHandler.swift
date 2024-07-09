@@ -98,6 +98,16 @@ public final class TXPushConfiguration : NSObject {
     @objc
     public let dryRun: Bool
 
+    /// Initialize the push configuration object with the provided parameters.
+    ///
+    /// Refer to the documentation of each property for default values and more information.
+    ///
+    /// - Parameters:
+    ///   - purge: The purge content boolean flag.
+    ///   - overrideTags: The override tags boolean flag.
+    ///   - overrideOccurrences: The override occurrences boolean flag.
+    ///   - keepTranslations: The keep translations boolean flag.
+    ///   - dryRun: The dry run boolean flag.
     @objc
     public init(purge: Bool = false,
                 overrideTags: Bool = false,

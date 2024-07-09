@@ -12,7 +12,7 @@ The SDK can fetch translations over the air (OTA), manages an internal cache of 
 and works seamlessly without requiring any changes in the source code of the app by the
 developer.
 
-Both Objective-C and Swift projects are supported.
+Both Objective-C and Swift projects are supported. SwiftUI is also supported as of v2.0.3.
 
 The package is built using Swift 5.3, as it currently requires a bundled resource to be
 present in the package (feature introduced in version 5.3).
