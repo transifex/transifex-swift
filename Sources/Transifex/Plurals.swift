@@ -557,7 +557,7 @@ final class XMLPluralParser: NSObject {
 }
 
 extension XMLPluralParser : XMLParserDelegate {
-    public func parser(_ parser: XMLParser, didStartElement elementName: String,
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
                 namespaceURI: String?, qualifiedName qName: String?,
                 attributes attributeDict: [String : String] = [:]) {
         guard elementName == TXNative.CDS_XML_TAG_NAME,
@@ -569,7 +569,7 @@ extension XMLPluralParser : XMLParserDelegate {
         pendingString = ""
     }
 
-    public func parser(_ parser: XMLParser, didEndElement elementName: String,
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
                 namespaceURI: String?, qualifiedName qName: String?) {
         guard let cdsUnitID = pendingCDSUnitID else {
             return
@@ -579,7 +579,7 @@ extension XMLPluralParser : XMLParserDelegate {
         pendingString = ""
     }
 
-    public func parser(_ parser: XMLParser, foundCharacters string: String) {
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard let _ = pendingCDSUnitID else {
             return
         }
