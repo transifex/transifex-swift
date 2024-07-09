@@ -138,3 +138,9 @@ logic now normalizes the locale name to match the format that iOS accepts.
 * Ensures Designed for iPhone/iPad apps use the proper device name.
 * Discloses that completion handlers are called from background threads.
 * Improves cache update after a `fetchTranslations` call.
+
+## Transifex iOS SDK 2.0.6
+
+*July 9, 2024*
+
+* Minor documentation updates.
