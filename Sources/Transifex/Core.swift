@@ -464,8 +464,8 @@ public final class TXNative : NSObject {
         
         Logger.verbose("""
 Initializing TXNative(
-locales: \(locales.debugDescription)
-token: \(token)
+  locales: \(locales.debugDescription)
+  token: \(token)
 )
 """)
         
