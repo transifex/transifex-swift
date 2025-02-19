@@ -12,32 +12,68 @@ import Foundation
 public typealias TXPullCompletionHandler = (TXTranslations, [Error]) -> Void
 
 /// All possible errors that may be produced during a fetch (pull) or a push operation
-public enum TXCDSError: Error {
-    /// The provided CDS url was invalid
+public enum TXCDSError: Error, CustomStringConvertible {
     case invalidCDSURL
-    /// No locale codes were provided to the fetch operation
     case noLocaleCodes
-    /// Translation strings to be pushed failed to be serialized
     case failedSerialization(error: Error)
-    /// The CDS request failed with a specific underlying error
-    case requestFailed(error : Error)
-    /// The HTTP response received by CDS was invalid
-    case invalidHTTPResponse
-    /// The server responded with a specific failure status code
-    case serverError(statusCode : Int)
-    /// The fetch / push operation exceeded the MAX_RETRIES (20)
-    case maxRetriesReached
-    /// The server response could not be parsed
-    case nonParsableResponse
-    /// No data was received from the server response
+    case requestFailed(error : Error, metadata: String? = nil)
+    case invalidHTTPResponse(metadata: String? = nil)
+    case serverError(statusCode : Int, metadata: String? = nil)
+    case maxRetriesReached(metadata: String? = nil)
+    case nonParsableResponse(metadata: String? = nil)
     case noData
-    /// The job status request failed
-    case failedJobRequest
-    /// There is no generated data to be sent to CDS
+    case failedJobRequest(metadata: String? = nil)
     case noDataToBeSent
-    /// A specific job error was returned by CDS
     case jobError(status: String, code: String, title: String,
-                  detail: String, source: [String : String])
+                  detail: String, source: [String : String],
+                  metadata: String? = nil)
+
+    // Human-readable error codes
+    public var description: String {
+        switch self {
+        case .invalidCDSURL:
+            return "The provided CDS url was invalid"
+        case .noLocaleCodes:
+            return "No locale codes were provided to the fetch operation"
+        case .failedSerialization(let error):
+            return "Translation strings to be pushed failed to be serialized (error: \(error))"
+        case .requestFailed(let error, let metadata):
+            return "CDS request failed with error: \(error)\(describe(metadata))"
+        case .invalidHTTPResponse(let metadata):
+            return "HTTP response received by CDS was invalid\(describe(metadata))"
+        case .serverError(let statusCode, let metadata):
+            return "CDS responded with \(statusCode) status code\(describe(metadata))"
+        case .maxRetriesReached(let metadata):
+            return "The operation exceeded max retries (\(CDSHandler.MAX_RETRIES))\(describe(metadata))"
+        case .nonParsableResponse(let metadata):
+            return "The server response could not be parsed\(describe(metadata))"
+        case .noData:
+            return "No data was received from the server response."
+        case .failedJobRequest(let metadata):
+            return "The job status request failed\(describe(metadata))"
+        case .noDataToBeSent:
+            return "There is no generated data to be sent to CDS"
+        case .jobError(let status, let code, let title, let detail, let source,
+                       let metadata):
+            return """
+A job error was returned by CDS\(describe(metadata)):
+status: \(status)
+code: \(code)
+title: \(title)
+detail: \(detail)
+source: \(source)
+"""
+        }
+    }
+
+    private func describe(_ metadata: String?) -> String {
+        if let metadata = metadata {
+            return " (\(metadata))"
+        }
+        else {
+            return ""
+        }
+    }
 }
 
 /// All possible warnings that may be produced when pushing strings to CDS.
@@ -479,12 +515,13 @@ class CDSHandler {
             }
 
             if let error = error {
-                requestCompleted(.failure(.requestFailed(error: error)))
+                requestCompleted(.failure(.requestFailed(error: error,
+                                                         metadata: code)))
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                requestCompleted(.failure(.invalidHTTPResponse))
+                requestCompleted(.failure(.invalidHTTPResponse(metadata: code)))
                 return
             }
 
@@ -500,11 +537,12 @@ class CDSHandler {
                         requestCompleted(.success(request.data))
                     }
                     catch {
-                        requestCompleted(.failure(.requestFailed(error: error)))
+                        requestCompleted(.failure(.requestFailed(error: error,
+                                                                 metadata: code)))
                     }
                 }
                 else {
-                    requestCompleted(.failure(.nonParsableResponse))
+                    requestCompleted(.failure(.nonParsableResponse(metadata: code)))
                 }
             case CDSHandler.HTTP_STATUS_CODE_ACCEPTED:
                 Logger.info("Received 202 response while fetching locale: \(code)")
@@ -515,10 +553,11 @@ class CDSHandler {
                                  requestCompleted: requestCompleted)
                 }
                 else {
-                    requestCompleted(.failure(.maxRetriesReached))
+                    requestCompleted(.failure(.maxRetriesReached(metadata: code)))
                 }
             default:
-                requestCompleted(.failure(.serverError(statusCode: statusCode)))
+                requestCompleted(.failure(.serverError(statusCode: statusCode,
+                                                       metadata: code)))
             }
         }.resume()
     }
@@ -554,7 +593,7 @@ class CDSHandler {
             }
             
             guard let httpResponse = response as? HTTPURLResponse else {
-                completionHandler(false, [.invalidHTTPResponse], warnings)
+                completionHandler(false, [.invalidHTTPResponse()], warnings)
                 return
             }
             
@@ -578,7 +617,7 @@ class CDSHandler {
             catch { }
             
             guard let finalResponse = response else {
-                completionHandler(false, [.nonParsableResponse], warnings)
+                completionHandler(false, [.nonParsableResponse()], warnings)
                 return
             }
             
@@ -615,7 +654,7 @@ class CDSHandler {
                 return
             }
             guard let finalJobStatus = jobStatus else {
-                completionHandler(false, [.failedJobRequest], warnings)
+                completionHandler(false, [.failedJobRequest(metadata: jobURL)], warnings)
                 return
             }
             
@@ -627,7 +666,8 @@ class CDSHandler {
                                                  code: error.code,
                                                  title: error.title,
                                                  detail: error.detail,
-                                                 source: error.source))
+                                                 source: error.source,
+                                                 metadata: jobURL))
                 }
             }
             
@@ -652,7 +692,7 @@ failed: \(details.failed)
                                            completionHandler: completionHandler)
                     }
                     else {
-                        completionHandler(false, [.maxRetriesReached], warnings)
+                        completionHandler(false, [.maxRetriesReached(metadata: jobURL)], warnings)
                     }
                 case .failed:
                     completionHandler(false, finalErrors, warnings)

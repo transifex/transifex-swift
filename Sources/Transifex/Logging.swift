@@ -61,7 +61,7 @@ public final class TXLogger: NSObject {
     ///
     /// - Parameter handler: The new log handler to be used
     @objc
-    public static func setHandler(handler: TXLogHandler) {
+    public static func setHandler(handler: TXLogHandler?) {
         Logger.handler = handler
     }
     
