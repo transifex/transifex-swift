@@ -144,3 +144,13 @@ logic now normalizes the locale name to match the format that iOS accepts.
 *July 9, 2024*
 
 * Minor documentation updates.
+
+## Transifex iOS SDK 2.0.6
+
+*February 19, 2025*
+
+* Allows `TXLogger.handler` to be reset.
+* Addresses compiler warning for `SwizzledBundle`.
+* Logging improvements.
+* `TXCDSError` enum improvements.
+* Addresses issue with attributed string creation.
