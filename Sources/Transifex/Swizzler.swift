@@ -11,7 +11,7 @@ import TransifexObjCRuntime
 
 /// Swizzles all localizedString() calls made either by Storyboard files or by the use of NSLocalizedString()
 /// function in code.
-class SwizzledBundle : Bundle {
+class SwizzledBundle : Bundle, @unchecked Sendable {
     // NOTE:
     // We can't override the `localizedAttributedString(forKey:value:table:)`
     // method here, as it's not exposed in Swift.
