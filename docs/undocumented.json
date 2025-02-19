@@ -1,0 +1,89 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 16,
+      "symbol": "TXCDSError.invalidCDSURL",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 17,
+      "symbol": "TXCDSError.noLocaleCodes",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 18,
+      "symbol": "TXCDSError.failedSerialization(error:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 19,
+      "symbol": "TXCDSError.requestFailed(error:metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 20,
+      "symbol": "TXCDSError.invalidHTTPResponse(metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 21,
+      "symbol": "TXCDSError.serverError(statusCode:metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 22,
+      "symbol": "TXCDSError.maxRetriesReached(metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 23,
+      "symbol": "TXCDSError.nonParsableResponse(metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 24,
+      "symbol": "TXCDSError.noData",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 25,
+      "symbol": "TXCDSError.failedJobRequest(metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 26,
+      "symbol": "TXCDSError.noDataToBeSent",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/runner/work/transifex-swift/transifex-swift/Sources/Transifex/CDSHandler.swift",
+      "line": 27,
+      "symbol": "TXCDSError.jobError(status:code:title:detail:source:metadata:)",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/runner/work/transifex-swift/transifex-swift"
+}

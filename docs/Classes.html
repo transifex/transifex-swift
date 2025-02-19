@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Classes  Reference</title>
+    <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/jazzy.js" defer></script>
+    
+    <script src="js/lunr.min.js" defer></script>
+    <script src="js/typeahead.jquery.js" defer></script>
+    <script src="js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Section/Classes" class="dashAnchor"></a>
+    <a title="Classes  Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="index.html">Transifex Docs</a> (92% documented)</p>
+        <p class="header-right"><a href="https://github.com/transifex/transifex-swift"><img src="img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
+          <form role="search" action="search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="index.html">Transifex</a>
+        <img id="carat" src="img/carat.png" alt=""/>
+        Classes  Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Classes/PluralUtils.html">PluralUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXCompositePolicy.html">TXCompositePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXFileOutputCacheDecorator.html">TXFileOutputCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXLocaleState.html">TXLocaleState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXLogger.html">TXLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXMemoryCache.html">TXMemoryCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXNative.html">TXNative</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXNoOpCache.html">TXNoOpCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXPreferredLocaleProvider.html">TXPreferredLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXProviderBasedCache.html">TXProviderBasedCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXPseudoTranslationPolicy.html">TXPseudoTranslationPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXPushConfiguration.html">TXPushConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXReadonlyCacheDecorator.html">TXReadonlyCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXRenderedSourceErrorPolicy.html">TXRenderedSourceErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXSourceString.html">TXSourceString</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXSourceStringPolicy.html">TXSourceStringPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXStandardCache.html">TXStandardCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXStandardLogHandler.html">TXStandardLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXStringUpdateFilterCache.html">TXStringUpdateFilterCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/TXWrappedStringPolicy.html">TXWrappedStringPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Enums/TXCDSError.html">TXCDSError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/TXCDSWarning.html">TXCDSWarning</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/TXLogLevel.html">TXLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/TXRenderingStategy.html">TXRenderingStategy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Functions.html#/s:9Transifex13txGenerateKey12sourceString7contextS2S_SSSgtF">txGenerateKey(sourceString:context:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Protocols/TXCache.html">TXCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/TXCacheProvider.html">TXCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/TXCurrentLocaleProvider.html">TXCurrentLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/TXErrorPolicy.html">TXErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/TXLogHandler.html">TXLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/TXMissingPolicy.html">TXMissingPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:9Transifex15TXLocaleStringsa">TXLocaleStrings</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:9Transifex12TXStringInfoa">TXStringInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:9Transifex14TXTranslationsa">TXTranslations</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Classes</h1>
+            <p>The following classes are available globally.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXPushConfiguration"></a>
+                    <a name="//apple_ref/swift/Class/TXPushConfiguration" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXPushConfiguration">TXPushConfiguration</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Class that holds the configuration of the <code>pushTranslations()</code> method that controls various aspect
+of the push to CDS.</p>
+
+                        <a href="Classes/TXPushConfiguration.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXPushConfiguration</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXDiskCacheProvider"></a>
+                    <a name="//apple_ref/swift/Class/TXDiskCacheProvider" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXDiskCacheProvider">TXDiskCacheProvider</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Cache provider that loads translations from disk</p>
+
+                        <a href="Classes/TXDiskCacheProvider.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXDiskCacheProvider</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXCacheProvider.html">TXCacheProvider</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXDecoratorCache"></a>
+                    <a name="//apple_ref/swift/Class/TXDecoratorCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXDecoratorCache">TXDecoratorCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Decorator class managing an internal class and propagating the get() and update() protocol method calls
+to said cache.</p>
+
+                        <a href="Classes/TXDecoratorCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">TXDecoratorCache</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXCache.html">TXCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXFileOutputCacheDecorator"></a>
+                    <a name="//apple_ref/swift/Class/TXFileOutputCacheDecorator" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXFileOutputCacheDecorator">TXFileOutputCacheDecorator</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Decorator class responsible for storing any updates of the translations to a file url specified in the
+constructor.</p>
+
+                        <a href="Classes/TXFileOutputCacheDecorator.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXFileOutputCacheDecorator</span> <span class="p">:</span> <span class="kt"><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXReadonlyCacheDecorator"></a>
+                    <a name="//apple_ref/swift/Class/TXReadonlyCacheDecorator" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXReadonlyCacheDecorator">TXReadonlyCacheDecorator</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Class that makes the internal cache read-only so that no update operations are allowed.</p>
+
+                        <a href="Classes/TXReadonlyCacheDecorator.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXReadonlyCacheDecorator</span> <span class="p">:</span> <span class="kt"><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXProviderBasedCache"></a>
+                    <a name="//apple_ref/swift/Class/TXProviderBasedCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXProviderBasedCache">TXProviderBasedCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Composite class that accepts a number of cache providers and an internal cache.
+The providers are then used to update the internal class in the order they are added in the providers list.</p>
+
+<p>Example usage:</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">cache</span> <span class="o">=</span> <span class="kt">TXProviderBasedCache</span><span class="p">(</span>
+    <span class="nv">providers</span><span class="p">:</span> <span class="p">[</span>
+        <span class="kt">TXDiskCacheProvider</span><span class="p">(</span><span class="nv">fileURL</span><span class="p">:</span> <span class="n">firstFileURL</span><span class="p">),</span>
+        <span class="kt">TXDiskCacheProvider</span><span class="p">(</span><span class="nv">fileURL</span><span class="p">:</span> <span class="n">secondFileURL</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="nv">internalCache</span><span class="p">:</span> <span class="kt">TXMemoryCache</span><span class="p">()</span>
+<span class="p">)</span>
+</code></pre>
+
+                        <a href="Classes/TXProviderBasedCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXProviderBasedCache</span> <span class="p">:</span> <span class="kt"><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXStringUpdateFilterCache"></a>
+                    <a name="//apple_ref/swift/Class/TXStringUpdateFilterCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXStringUpdateFilterCache">TXStringUpdateFilterCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Class responsible for updating the passed internalCache using a certain update policy defined
+in the <code><a href="Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a></code> enum. This is done by filtering any translations that are passed
+via the <code>update(translations:)</code> call using an update policy that checks both the passed
+translations and the internal cache state to decide whether a translation should update the internal cache
+or not.</p>
+
+                        <a href="Classes/TXStringUpdateFilterCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXStringUpdateFilterCache</span> <span class="p">:</span> <span class="kt"><a href="Classes/TXDecoratorCache.html">TXDecoratorCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXStandardCache"></a>
+                    <a name="//apple_ref/swift/Class/TXStandardCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXStandardCache">TXStandardCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The standard cache that the TXNative SDK is initialized with, if no other cache is provided.</p>
+
+<p>The cache gets initialized using the decorators implemented in the Caches.swift file of the SDK so that it
+reads from any existing translation files either from the app bundle or the app sandbox. The cache is also
+responsible for creating or updating the sandbox file with new translations when they will become available
+and it offers  a memory cache for retrieving such translations so that they can be displayed in the UI.</p>
+
+                        <a href="Classes/TXStandardCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXStandardCache</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXMemoryCache"></a>
+                    <a name="//apple_ref/swift/Class/TXMemoryCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXMemoryCache">TXMemoryCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A simple in-memory cache that updates its contents and returns the proper translation.</p>
+
+<p>This class is not thread-safe, so be sure that you are calling the update / get methods from a serial queue.</p>
+
+                        <a href="Classes/TXMemoryCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXMemoryCache</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">TXMemoryCache</span><span class="p">:</span> <span class="kt"><a href="Protocols/TXCache.html">TXCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNoOpCache"></a>
+                    <a name="//apple_ref/swift/Class/TXNoOpCache" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNoOpCache">TXNoOpCache</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A no-op cache that doesn&rsquo;t support storing the values in-memory. Useful when the library needs to be
+initialized without a cache (e.g. for the CLI tool).</p>
+
+                        <a href="Classes/TXNoOpCache.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXNoOpCache</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXCache.html">TXCache</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative"></a>
+                    <a name="//apple_ref/swift/Class/TXNative" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative">TXNative</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.</p>
+
+                        <a href="Classes/TXNative.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXNative</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXPreferredLocaleProvider"></a>
+                    <a name="//apple_ref/swift/Class/TXPreferredLocaleProvider" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXPreferredLocaleProvider">TXPreferredLocaleProvider</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Class that returns the active language code that can be used for localization, based on the current user&rsquo;s
+language preferences and the locales that the application supports. The class falls back to &ldquo;en&rdquo; if the
+language code cannot be found.</p>
+
+                        <a href="Classes/TXPreferredLocaleProvider.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXPreferredLocaleProvider</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">TXPreferredLocaleProvider</span> <span class="p">:</span> <span class="kt"><a href="Protocols/TXCurrentLocaleProvider.html">TXCurrentLocaleProvider</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXLocaleState"></a>
+                    <a name="//apple_ref/swift/Class/TXLocaleState" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXLocaleState">TXLocaleState</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Keeps track of the locale-related information for the application,
+such as supported locales, source and current locale.</p>
+
+                        <a href="Classes/TXLocaleState.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXLocaleState</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXLogger"></a>
+                    <a name="//apple_ref/swift/Class/TXLogger" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXLogger">TXLogger</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Class responsible for control logging in the SDK, allowing external log handlers
+to be updated by SDK clients via the <code><a href="Protocols/TXLogHandler.html">TXLogHandler</a></code> protocol.</p>
+
+<p>By default, TXLogger is initialized with a TXStandardLogHandler instance set to log
+only warning and error log messages.</p>
+
+                        <a href="Classes/TXLogger.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXLogger</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXStandardLogHandler"></a>
+                    <a name="//apple_ref/swift/Class/TXStandardLogHandler" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXStandardLogHandler">TXStandardLogHandler</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Helper log handler that accepts a minimum allowed log level.</p>
+
+<p>If the SDK tries to log a level lower that the one passed in the initialization,
+then the message is not logged.</p>
+
+                        <a href="Classes/TXStandardLogHandler.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">class</span> <span class="kt">TXStandardLogHandler</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">TXStandardLogHandler</span><span class="p">:</span> <span class="kt"><a href="Protocols/TXLogHandler.html">TXLogHandler</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex11PluralUtilsC"></a>
+                    <a name="//apple_ref/swift/Class/PluralUtils" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex11PluralUtilsC">PluralUtils</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Utility class that allows SDK clients to leverage the logic used for pluralization rules.</p>
+
+                        <a href="Classes/PluralUtils.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">PluralUtils</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXSourceStringPolicy"></a>
+                    <a name="//apple_ref/swift/Class/TXSourceStringPolicy" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXSourceStringPolicy">TXSourceStringPolicy</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the source string when the translation string is missing.</p>
+
+                        <a href="Classes/TXSourceStringPolicy.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXSourceStringPolicy</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXPseudoTranslationPolicy"></a>
+                    <a name="//apple_ref/swift/Class/TXPseudoTranslationPolicy" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXPseudoTranslationPolicy">TXPseudoTranslationPolicy</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns a string that looks like the source string but contains accented characters.</p>
+
+<p>Example:
+<code>PseudoTranslationPolicy().get(&quot;The quick brown fox&quot;)</code>
+Returns:
+<code>Ťȟê ʠüıċǩ ƀȓøẁñ ƒøẋ</code></p>
+
+                        <a href="Classes/TXPseudoTranslationPolicy.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXPseudoTranslationPolicy</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXWrappedStringPolicy"></a>
+                    <a name="//apple_ref/swift/Class/TXWrappedStringPolicy" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXWrappedStringPolicy">TXWrappedStringPolicy</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Wraps the returned string with a custom format.</p>
+
+<p>Example:
+<code>WrappedStringPolicy(&quot;&gt;&gt;&quot;, &quot;&lt;&lt;&quot;).get(&quot;Click here&quot;)</code>
+Returns:
+<code>&gt;&gt;Click here&lt;&lt;</code></p>
+
+                        <a href="Classes/TXWrappedStringPolicy.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXWrappedStringPolicy</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXCompositePolicy"></a>
+                    <a name="//apple_ref/swift/Class/TXCompositePolicy" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXCompositePolicy">TXCompositePolicy</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Combines multiple policies to create a complex result.</p>
+
+<p>The result of each policy if fed to the next as source.</p>
+
+                        <a href="Classes/TXCompositePolicy.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXCompositePolicy</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt"><a href="Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex27TXRenderedSourceErrorPolicyC"></a>
+                    <a name="//apple_ref/swift/Class/TXRenderedSourceErrorPolicy" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex27TXRenderedSourceErrorPolicyC">TXRenderedSourceErrorPolicy</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>An error policy that simply returns the string that is going to be rendered in the UI instead of the translation.</p>
+
+                        <a href="Classes/TXRenderedSourceErrorPolicy.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXRenderedSourceErrorPolicy</span> <span class="p">:</span> <span class="kt"><a href="Protocols/TXErrorPolicy.html">TXErrorPolicy</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXSourceString"></a>
+                    <a name="//apple_ref/swift/Class/TXSourceString" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXSourceString">TXSourceString</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Publicly exposed class that holds all the information for the translation units that will be pushed to CDS.</p>
+
+<p>This class mirrors the internal SourceString struct and offers a flat structure of the required and optional
+properties of the struct while also being able to be used both by Swift and Objective-C applications.</p>
+
+                        <a href="Classes/TXSourceString.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXSourceString</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-02-19)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>

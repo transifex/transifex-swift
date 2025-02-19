@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>PluralUtils Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/PluralUtils" class="dashAnchor"></a>
+    <a title="PluralUtils Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">Transifex Docs</a> (92% documented)</p>
+        <p class="header-right"><a href="https://github.com/transifex/transifex-swift"><img src="../img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">Transifex</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Classes.html">Classes</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        PluralUtils Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/PluralUtils.html">PluralUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXCompositePolicy.html">TXCompositePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDecoratorCache.html">TXDecoratorCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXFileOutputCacheDecorator.html">TXFileOutputCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLocaleState.html">TXLocaleState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLogger.html">TXLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXMemoryCache.html">TXMemoryCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNative.html">TXNative</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNoOpCache.html">TXNoOpCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPreferredLocaleProvider.html">TXPreferredLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXProviderBasedCache.html">TXProviderBasedCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPseudoTranslationPolicy.html">TXPseudoTranslationPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXReadonlyCacheDecorator.html">TXReadonlyCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXRenderedSourceErrorPolicy.html">TXRenderedSourceErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceString.html">TXSourceString</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceStringPolicy.html">TXSourceStringPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardCache.html">TXStandardCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardLogHandler.html">TXStandardLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStringUpdateFilterCache.html">TXStringUpdateFilterCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXWrappedStringPolicy.html">TXWrappedStringPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSError.html">TXCDSError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSWarning.html">TXCDSWarning</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXLogLevel.html">TXLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:9Transifex13txGenerateKey12sourceString7contextS2S_SSSgtF">txGenerateKey(sourceString:context:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCache.html">TXCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCacheProvider.html">TXCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCurrentLocaleProvider.html">TXCurrentLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXErrorPolicy.html">TXErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXLogHandler.html">TXLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXMissingPolicy.html">TXMissingPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex15TXLocaleStringsa">TXLocaleStrings</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex12TXStringInfoa">TXStringInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex14TXTranslationsa">TXTranslations</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>PluralUtils</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">PluralUtils</span></code></pre>
+
+                </div>
+              </div>
+            <p>Utility class that allows SDK clients to leverage the logic used for pluralization rules.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex11PluralUtilsC13extractTokens4fromSaySS_S2StGSS_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/extractTokens(from:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex11PluralUtilsC13extractTokens4fromSaySS_S2StGSS_tFZ">extractTokens(from:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>For a given substitutions phrase, it returns an array with the parsed tokens.</p>
+<h2 id='string-catalogs-code-xcstrings-code' class='heading'>String Catalogs (<code>.xcstrings</code>)</h2>
+<pre class="highlight swift"><code><span class="kt">This</span> <span class="n">iPhone</span> <span class="n">contains</span> <span class="o">%</span><span class="mi">1</span><span class="err">$#</span><span class="kd">@token1</span><span class="err">@</span> <span class="n">with</span> <span class="o">%</span><span class="mi">2</span><span class="err">$#</span><span class="kd">@token2</span><span class="err">@</span>
+</code></pre>
+
+<p>The extracted tokens will be:</p>
+
+<ul>
+<li><code>(&quot;%1$#@token1@&quot;, &quot;1$&quot;, &quot;token1&quot;)</code></li>
+<li><code>(&quot;%2$#@token2@&quot;, &quot;2$&quot;, &quot;token2&quot;)</code></li>
+</ul>
+<h2 id='strings-dictionary-files-code-stringsdict-code' class='heading'>Strings Dictionary Files (<code>.stringsdict</code>)</h2>
+<pre class="highlight swift"><code><span class="kt">This</span> <span class="n">iPhone</span> <span class="n">contains</span> <span class="o">%</span><span class="err">#</span><span class="kd">@token1</span><span class="err">@</span> <span class="n">with</span> <span class="o">%</span><span class="err">#</span><span class="kd">@token2</span><span class="err">@</span>
+</code></pre>
+
+<p>The extracted tokens will be: </p>
+
+<ul>
+<li><code>(&quot;%#@token1@&quot;, &quot;&quot;, &quot;token1&quot;)</code></li>
+<li><p><code>(&quot;%#@token2@&quot;, &quot;&quot;, &quot;token2&quot;)</code></p></li>
+</ul>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">class</span> <span class="kd">func</span> <span class="nf">extractTokens</span><span class="p">(</span><span class="n">from</span> <span class="nv">substitutionsPhrase</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">String</span><span class="p">)]</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>substitutionsPhrase</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The substitutions phrase</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The array of extracted token tuples. A tuple of three elements: The first one is the
+original token, the second is the exported prefix (positional specifier) and the cleaned up version of
+the token without the specifiers and the delimiters.</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-02-19)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>

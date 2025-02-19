@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>TXNative Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/TXNative" class="dashAnchor"></a>
+    <a title="TXNative Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">Transifex Docs</a> (92% documented)</p>
+        <p class="header-right"><a href="https://github.com/transifex/transifex-swift"><img src="../img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">Transifex</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Classes.html">Classes</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        TXNative Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/PluralUtils.html">PluralUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXCompositePolicy.html">TXCompositePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDecoratorCache.html">TXDecoratorCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXFileOutputCacheDecorator.html">TXFileOutputCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLocaleState.html">TXLocaleState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLogger.html">TXLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXMemoryCache.html">TXMemoryCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNative.html">TXNative</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNoOpCache.html">TXNoOpCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPreferredLocaleProvider.html">TXPreferredLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXProviderBasedCache.html">TXProviderBasedCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPseudoTranslationPolicy.html">TXPseudoTranslationPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXReadonlyCacheDecorator.html">TXReadonlyCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXRenderedSourceErrorPolicy.html">TXRenderedSourceErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceString.html">TXSourceString</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceStringPolicy.html">TXSourceStringPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardCache.html">TXStandardCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardLogHandler.html">TXStandardLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStringUpdateFilterCache.html">TXStringUpdateFilterCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXWrappedStringPolicy.html">TXWrappedStringPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSError.html">TXCDSError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSWarning.html">TXCDSWarning</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXLogLevel.html">TXLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:9Transifex13txGenerateKey12sourceString7contextS2S_SSSgtF">txGenerateKey(sourceString:context:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCache.html">TXCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCacheProvider.html">TXCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCurrentLocaleProvider.html">TXCurrentLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXErrorPolicy.html">TXErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXLogHandler.html">TXLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXMissingPolicy.html">TXMissingPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex15TXLocaleStringsa">TXLocaleStrings</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex12TXStringInfoa">TXStringInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex14TXTranslationsa">TXTranslations</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>TXNative</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TXNative</span> <span class="p">:</span> <span class="kt">NSObject</span></code></pre>
+
+                </div>
+              </div>
+            <p>A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC16STRINGS_FILENAMESSvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/STRINGS_FILENAME" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC16STRINGS_FILENAMESSvpZ">STRINGS_FILENAME</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The filename of the file that holds the translated strings and it&rsquo;s bundled inside the app.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">STRINGS_FILENAME</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC21CDS_XML_ROOT_TAG_NAMESSvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/CDS_XML_ROOT_TAG_NAME" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC21CDS_XML_ROOT_TAG_NAMESSvpZ">CDS_XML_ROOT_TAG_NAME</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>XML name to be used for the root XML element when the pluralization rule is not supported by CDS
+and has to be uploaded as XML instead of the ICU format.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">CDS_XML_ROOT_TAG_NAME</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC16CDS_XML_TAG_NAMESSvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/CDS_XML_TAG_NAME" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC16CDS_XML_TAG_NAMESSvpZ">CDS_XML_TAG_NAME</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>XML name to be used for the child XML elements when the pluralization rule is not supported by
+CDS and has to be uploaded as XML instead of the ICU format.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">CDS_XML_TAG_NAME</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC20CDS_XML_ID_ATTRIBUTESSvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/CDS_XML_ID_ATTRIBUTE" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC20CDS_XML_ID_ATTRIBUTESSvpZ">CDS_XML_ID_ATTRIBUTE</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>XML attribute to be used in the CDS_XML_TAG_NAME elements when the pluralization rule is not
+supported by CDS and has to be uploaded as XML instead of the ICU format.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">CDS_XML_ID_ATTRIBUTE</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cpy)locales"></a>
+                    <a name="//apple_ref/swift/Variable/locales" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cpy)locales">locales</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The available and current locales</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">locales</span><span class="p">:</span> <span class="kt"><a href="../Classes/TXLocaleState.html">TXLocaleState</a></span><span class="p">?</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:"></a>
+                    <a name="//apple_ref/swift/Method/initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:filterTags:filterStatus:">initialize(locales:<wbr>token:<wbr>secret:<wbr>cdsHost:<wbr>session:<wbr>cache:<wbr>missingPolicy:<wbr>errorPolicy:<wbr>renderingStrategy:<wbr>filterTags:<wbr>filterStatus:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Designated initializer of the TXNative SDK.</p>
+
+<p>Do not call initialize() twice without calling dispose() first to deconstruct the previous singleton
+instance.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">initialize</span><span class="p">(</span>
+    <span class="nv">locales</span><span class="p">:</span> <span class="kt"><a href="../Classes/TXLocaleState.html">TXLocaleState</a></span><span class="p">,</span>
+    <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">secret</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">cdsHost</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">session</span><span class="p">:</span> <span class="kt">URLSession</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">cache</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXCache.html">TXCache</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">missingPolicy</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXMissingPolicy.html">TXMissingPolicy</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">errorPolicy</span><span class="p">:</span> <span class="kt"><a href="../Protocols/TXErrorPolicy.html">TXErrorPolicy</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">renderingStrategy</span><span class="p">:</span> <span class="kt"><a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a></span> <span class="o">=</span> <span class="o">.</span><span class="n">platform</span><span class="p">,</span>
+    <span class="nv">filterTags</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">filterStatus</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>locales</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>keeps track of the available and current locales</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>token</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the Transifex token that can be used for retrieving translations from CDS</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>secret</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the Transifex secret that can be used for pushing source strings to CDS</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>cdsHost</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the host of the CDS service; defaults to a production CDS service hosted by
+Transifex</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>session</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional URLSession to be used for all the requests made to the CDS service. If
+no session is provided, an ephemeral URLSession with no cache will be created and used.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>cache</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>holds the available translations in various locales. If nil (default) the internal cache
+mechanism will be activated, otherwise the provided cache will be used.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>missingPolicy</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>determines how to handle translations that are not available</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>errorPolicy</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>determines how to handle exceptions when rendering a problematic
+translation (used for ICU rendering strategy)</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>renderingStrategy</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>determines which strategy to be used when rendering the final
+string; defaults to platform strategy</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filterTags</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional list of tags so that only strings that have all of the given tags are
+fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filterStatus</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional status so that only strings matching translation status are
+fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:"></a>
+                    <a name="//apple_ref/swift/Method/initialize(locales:token:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)initializeWithLocales:token:">initialize(locales:<wbr>token:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Designated initializer of the Transifex SDK using the platform rendering strategy and only the
+required fields (locale state and token).</p>
+
+<p>For a more involved SDK initialization, you can use the
+<code>initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:)</code>
+method.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">initialize</span><span class="p">(</span>
+    <span class="nv">locales</span><span class="p">:</span> <span class="kt"><a href="../Classes/TXLocaleState.html">TXLocaleState</a></span><span class="p">,</span>
+    <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>locales</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>keeps track of the available and current locales</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>token</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the Transifex token that can be used for retrieving translations from CDS</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)activateWithBundle:"></a>
+                    <a name="//apple_ref/swift/Method/activate(bundle:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)activateWithBundle:">activate(bundle:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Activate the SDK for a certain Bundle. Use this method to activate the SDK for a Swift package in
+case multiple Swift packages are used as modules for an application.</p>
+
+<p>Only call this method from each module, and not from the main application, by passing the
+<code>Bundle.module</code> as the argument:</p>
+<pre class="highlight swift"><code><span class="kt">TXNative</span><span class="o">.</span><span class="nf">activate</span><span class="p">(</span><span class="nv">bundle</span><span class="p">:</span> <span class="o">.</span><span class="n">module</span><span class="p">)</span>
+</code></pre>
+
+<p>Make sure that this method is called after the SDK has been initialized.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">activate</span><span class="p">(</span><span class="nv">bundle</span><span class="p">:</span> <span class="kt">Bundle</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>bundle</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the bundle to be activated. Pass <code>.bundle</code> when calling this method
+from a Swift package.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)deactivateWithBundle:"></a>
+                    <a name="//apple_ref/swift/Method/deactivate(bundle:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)deactivateWithBundle:">deactivate(bundle:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Deactivates swizzling for the Bundle previously passed in the <code><a href="../Classes/TXNative.html#/c:@M@Transifex@objc(cs)TXNative(cm)activateWithBundle:">activate(bundle:)</a></code> method.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">deactivate</span><span class="p">(</span><span class="nv">bundle</span><span class="p">:</span> <span class="kt">Bundle</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>bundle</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the bundle to be deactivated.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)translateWithSourceString:localeCode:params:context:"></a>
+                    <a name="//apple_ref/swift/Method/translate(sourceString:localeCode:params:context:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)translateWithSourceString:localeCode:params:context:">translate(sourceString:<wbr>localeCode:<wbr>params:<wbr>context:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Return the translation of the given source string on a certain locale.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">translate</span><span class="p">(</span><span class="nv">sourceString</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+                             <span class="nv">localeCode</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+                             <span class="nv">params</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">],</span>
+                             <span class="nv">context</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sourceString</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>the string in the source locale</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>localeCode</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>an optional locale to translate to; defaults to the current app locale</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>params</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>a dictionary with optional parameters to use for rendering a string
+e.g. variable placeholders, character limit, etc</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>an optional context that describes the source string (comma separated strings)</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>the final string to display to the user</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC1tyS2SFZ"></a>
+                    <a name="//apple_ref/swift/Method/t(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC1tyS2SFZ">t(_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Helper method used when translation is not possible (e.g. in SwiftUI views).</p>
+
+<p>This method applies the translation using the currently selected locale. For pluralization use the
+<code><a href="../Classes/TXNative.html#/s:9Transifex8TXNativeC15localizedString6format9argumentsSSSgSS_SayypGtFZ">localizedString(format:arguments:)</a></code> method.</p>
+
+<p>Make sure that this method is called after the SDK has been initialized, otherwise
+&ldquo;<SDK NOT INITIALIZED>&rdquo; string will be shown instead.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">t</span><span class="p">(</span><span class="n">_</span> <span class="nv">sourceString</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sourceString</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The source string to be translated</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The translated string</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9Transifex8TXNativeC15localizedString6format9argumentsSSSgSS_SayypGtFZ"></a>
+                    <a name="//apple_ref/swift/Method/localizedString(format:arguments:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9Transifex8TXNativeC15localizedString6format9argumentsSSSgSS_SayypGtFZ">localizedString(format:<wbr>arguments:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used by the Swift localizedString(format:arguments:) methods found in the
+TXExtensions.swift file.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">localizedString</span><span class="p">(</span><span class="nv">format</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+                                   <span class="nv">arguments</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:status:completionHandler:"></a>
+                    <a name="//apple_ref/swift/Method/fetchTranslations(_:tags:status:completionHandler:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)fetchTranslations:tags:status:completionHandler:">fetchTranslations(_:<wbr>tags:<wbr>status:<wbr>completionHandler:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Fetches the translations from CDS.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">fetchTranslations</span><span class="p">(</span><span class="n">_</span> <span class="nv">localeCode</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+                                     <span class="nv">tags</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+                                     <span class="nv">status</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+                                     <span class="nv">completionHandler</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>localeCode</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If not provided, it will fetch translations for all locales defined in the app
+configuration.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>tags</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional list of tags so that only strings that have all of the given tags are fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>status</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional status so that only strings matching translation status are fetched.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>completionHandler</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The completion handler that informs the caller when the operation
+is complete, reporting the new translations and a list of possible errors that might have occured.
+The completion handler is called from a background thread.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)pushTranslations:configuration:completionHandler:"></a>
+                    <a name="//apple_ref/swift/Method/pushTranslations(_:configuration:completionHandler:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)pushTranslations:configuration:completionHandler:">pushTranslations(_:<wbr>configuration:<wbr>completionHandler:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Pushes the base translations to CDS.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">pushTranslations</span><span class="p">(</span><span class="n">_</span> <span class="nv">translations</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/TXSourceString.html">TXSourceString</a></span><span class="p">],</span>
+                                    <span class="nv">configuration</span><span class="p">:</span> <span class="kt"><a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a></span> <span class="o">=</span> <span class="kt"><a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a></span><span class="p">(),</span>
+                                    <span class="nv">completionHandler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Bool</span><span class="p">,</span> <span class="p">[</span><span class="kt">Error</span><span class="p">],</span> <span class="p">[</span><span class="kt">Error</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>translations</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A list of <code><a href="../Classes/TXSourceString.html">TXSourceString</a></code> objects.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>configuration</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A configuration object containing all the options that will be used alongside
+the push operation (see <code><a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a></code>).</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>completionHandler</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A callback to be called when the push operation is complete with a
+boolean argument that informs the caller that the operation was successful (true) or not (false) and
+an array that may or may not contain any errors produced during the push operation and an array of
+non-blocking errors (warnings) that may have been generated during the push procedure. The
+completion handler is called from a background thread.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)forceCacheInvalidationWithCompletionHandler:"></a>
+                    <a name="//apple_ref/swift/Method/forceCacheInvalidation(completionHandler:)" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)forceCacheInvalidationWithCompletionHandler:">forceCacheInvalidation(completionHandler:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Forces CDS cache invalidation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">forceCacheInvalidation</span><span class="p">(</span><span class="nv">completionHandler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>completionHandler</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A callback to be called when force cache invalidation is
+complete with a boolean argument that informs the caller that the operation was successful (true) or
+not (false).  The completion handler is called from a background thread.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(cs)TXNative(cm)dispose"></a>
+                    <a name="//apple_ref/swift/Method/dispose()" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(cs)TXNative(cm)dispose">dispose()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Destructs the TXNative singleton instance so that another one can be used. Reverts swizzled
+classes and methods.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">dispose</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-02-19)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>

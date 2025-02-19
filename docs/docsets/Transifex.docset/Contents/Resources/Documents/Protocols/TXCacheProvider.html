@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>TXCacheProvider Protocol Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Protocol/TXCacheProvider" class="dashAnchor"></a>
+    <a title="TXCacheProvider Protocol Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">Transifex Docs</a> (92% documented)</p>
+        <p class="header-right"><a href="https://github.com/transifex/transifex-swift"><img src="../img/gh.png" alt="GitHub"/>View on GitHub</a></p>
+        <div class="header-right">
+          <form role="search" action="../search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </div>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">Transifex</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        <a href="../Protocols.html">Protocols</a>
+        <img id="carat" src="../img/carat.png" alt=""/>
+        TXCacheProvider Protocol Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/PluralUtils.html">PluralUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXCompositePolicy.html">TXCompositePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDecoratorCache.html">TXDecoratorCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXDiskCacheProvider.html">TXDiskCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXFileOutputCacheDecorator.html">TXFileOutputCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLocaleState.html">TXLocaleState</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXLogger.html">TXLogger</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXMemoryCache.html">TXMemoryCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNative.html">TXNative</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXNoOpCache.html">TXNoOpCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPreferredLocaleProvider.html">TXPreferredLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXProviderBasedCache.html">TXProviderBasedCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPseudoTranslationPolicy.html">TXPseudoTranslationPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXPushConfiguration.html">TXPushConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXReadonlyCacheDecorator.html">TXReadonlyCacheDecorator</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXRenderedSourceErrorPolicy.html">TXRenderedSourceErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceString.html">TXSourceString</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXSourceStringPolicy.html">TXSourceStringPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardCache.html">TXStandardCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStandardLogHandler.html">TXStandardLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXStringUpdateFilterCache.html">TXStringUpdateFilterCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/TXWrappedStringPolicy.html">TXWrappedStringPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSError.html">TXCDSError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCDSWarning.html">TXCDSWarning</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXCacheUpdatePolicy.html">TXCacheUpdatePolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXLogLevel.html">TXLogLevel</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/TXRenderingStategy.html">TXRenderingStategy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:9Transifex13txGenerateKey12sourceString7contextS2S_SSSgtF">txGenerateKey(sourceString:context:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCache.html">TXCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCacheProvider.html">TXCacheProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXCurrentLocaleProvider.html">TXCurrentLocaleProvider</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXErrorPolicy.html">TXErrorPolicy</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXLogHandler.html">TXLogHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/TXMissingPolicy.html">TXMissingPolicy</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex15TXLocaleStringsa">TXLocaleStrings</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex23TXPullCompletionHandlera">TXPullCompletionHandler</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex12TXStringInfoa">TXStringInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:9Transifex14TXTranslationsa">TXTranslations</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>TXCacheProvider</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">@objc</span>
+<span class="kd">public</span> <span class="kd">protocol</span> <span class="kt">TXCacheProvider</span></code></pre>
+
+                </div>
+              </div>
+            <p>A protocol for classes that act as providers of cached translations (e.g. extracting them from a file)</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/c:@M@Transifex@objc(pl)TXCacheProvider(im)getTranslations"></a>
+                    <a name="//apple_ref/swift/Method/getTranslations()" class="dashAnchor"></a>
+                    <a class="token" href="#/c:@M@Transifex@objc(pl)TXCacheProvider(im)getTranslations">getTranslations()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the translations from the current cache provider.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getTranslations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Typealiases.html#/s:9Transifex14TXTranslationsa">TXTranslations</a></span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2025 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2025-02-19)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</html>
