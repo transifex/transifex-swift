@@ -155,7 +155,7 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
             fileData = try Data(contentsOf: fileURL)
         }
         catch {
-            Logger.warning("\(#function) fileURL: \(fileURL) Data error: \(error)")
+            Logger.warning("fileURL: \(fileURL) Data error: \(error)")
         }
         
         guard let data = fileData else {
@@ -169,7 +169,7 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
                                                           from: data)
         }
         catch {
-            Logger.error("\(#function) fileURL: \(fileURL) Decode Error: \(error)")
+            Logger.error("fileURL: \(fileURL) Decode Error: \(error)")
             return nil
         }
         
@@ -193,7 +193,7 @@ public final class TXDiskCacheProvider: NSObject, TXCacheProvider {
                 }
                 // Process it and synthesize the final rule.
                 guard let processedString = XMLPluralParser.extract(pluralString: sourceString) else {
-                    Logger.error("\(#function) Error attempting to extract source string with key \(sourceStringKey)")
+                    Logger.error("Error attempting to extract source string with key \(sourceStringKey)")
                     continue
                 }
                 // Replace the source string with the processed value
@@ -279,7 +279,7 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
                                            fileURL: fileURL)
             }
             catch {
-                Logger.error("\(#function) Error: \(error)")
+                Logger.error("Error storing translations: \(error)")
             }
         }
     }

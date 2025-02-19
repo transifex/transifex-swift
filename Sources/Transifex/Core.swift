@@ -178,7 +178,7 @@ class NativeCore : TranslationProvider {
             }
 
             if errors.count > 0 {
-                Logger.error("\(#function) Errors: \(errors)")
+                Logger.error("Errors while fetching translations from CDS: [\n\(errors.map { "  \($0)" }.joined(separator: "\n"))\n]")
             }
 
             // Only update the cache if the translations structure is not
