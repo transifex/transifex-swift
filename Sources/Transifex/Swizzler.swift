@@ -157,9 +157,17 @@ class Swizzler {
 
     @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
     private static func attributedString(with swizzledString: String) -> NSAttributedString {
+        // Use the .inlineOnlyPreservingWhitespace to prevent the Markdown
+        // engine from trimming whitespace characters, respecting the original
+        // string value whilst applying any Markdown renderning.
+        // In SwiftUI the `Text()` element will produce the same effect either
+        // with .inlineOnly or .inlineOnlyPreservingWhitespace but we opt in
+        // always preserving whitespace where possible.
+        let markdownOptions = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var string: AttributedString
         do {
-            string = try AttributedString(markdown: swizzledString)
+            string = try AttributedString(markdown: swizzledString,
+                                          options: markdownOptions)
         }
         catch {
             // Fallback to the non-Markdown version in case of an error
