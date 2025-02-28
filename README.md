@@ -367,6 +367,25 @@ public `TXStandardLogHandler` class to control the log level printed to the cons
 
 ## Limitations
 
+### `String(localized:)` initializers
+
+The family of `String(localized:)` initializers ([^1] [^2] [^3] [^4] [^5] [^6]) is not
+currently supported. Please use any of the following supported methods instead:
+
+* `NSLocalizedString(_ key:tableName:bundle:value:comment:)`
+* `String.localizedStringWithFormat(_ format:, _ args:)`
+* `-[NSString localizedStringWithFormat:]`
+* `NSBundle.localizedString(forKey:value:table:)`
+* `-[NSBundle localizedAttributedStringForKey:value:table:]`
+* Any SwiftUI view initializer that accepts a `LocalizedStringKey` struct.
+
+[^1]: https://developer.apple.com/documentation/swift/string/init(localized:)
+[^2]: https://developer.apple.com/documentation/swift/string/init(localized:options:)
+[^3]: https://developer.apple.com/documentation/swift/string/init(localized:defaultvalue:table:bundle:locale:comment:)
+[^4]: https://developer.apple.com/documentation/swift/string/init(localized:defaultvalue:options:table:bundle:locale:comment:)
+[^5]: https://developer.apple.com/documentation/swift/string/init(localized:table:bundle:locale:comment:)
+[^6]: https://developer.apple.com/documentation/swift/string/init(localized:options:table:bundle:locale:comment:)
+
 ### Special cases
 
 Localized strings that are being managed by the OS are not supported by the Transifex
