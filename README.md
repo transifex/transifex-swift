@@ -97,8 +97,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 For Swift projects, you  will also need to copy the `TXNativeExtensions.swift` file in
 your project and include it in all of the targets that call any of the following Swift methods:
 
-* `String.localizedStringWithFormat(format:...)`
-* `NSString.localizedStringWithFormat(format:...)`
+* `NSString.localizedStringWithFormat(_ format:, _ args:)`
+* `String.localizedStringWithFormat(_ format:, _ arguments:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:options:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:defaultValue:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:defaultValue:options:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:options:table:bundle:locale:comment:)`
 
 If none of your application targets call any of the above methods, then you don't need to
 add this file to your project.
@@ -170,6 +176,36 @@ TXNative.initialize(
 [TXNative initializeWithLocales:localeState
                           token:@"<transifex_token>"];
 ```
+
+### Supported localization methods
+
+On runtime, Transifex SDK overrides / swizzles the following localization
+methods and structures in order to ensure that the application source code does
+not require any changes:
+
+* `NSLocalizedString(_ key:tableName:bundle:value:comment:)`
+* `NSString.localizedStringWithFormat(_ format:, _ args:)`
+* `String.localizedStringWithFormat(_ format:, _ arguments:)`
+* `-[NSString localizedStringWithFormat:]`
+* `NSBundle.localizedString(forKey:value:table:)`
+* `-[NSBundle localizedAttributedStringForKey:value:table:]`
+* Any SwiftUI view initializer that accepts a `LocalizedStringKey` struct.
+* [⚠️](#stringlocalized-initializers) `String.init(localized:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:options:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:defaultValue:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:defaultValue:options:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:table:bundle:locale:comment:)`
+* [⚠️](#stringlocalized-initializers) `String.init(localized:options:table:bundle:locale:comment:)`
+
+Developers are also able to use the public methods of `TXNative` class if they
+want to (`t(_:)`, `localizedString(format:arguments:)`, `translate(...)`.
+
+> [!WARNING]
+>
+> Please note that if the 'Use Compiler to Extract Swift Strings' build settting
+> is enabled (`SWIFT_EMIT_LOC_STRINGS`) and you use any of the `TXNative` publicly
+> provided methods, the strings will not be automatically collected when building
+> the application.
 
 ### Fetching translations
 
@@ -366,6 +402,47 @@ protocol so that they can control the logging mechanism of the SDK or make use o
 public `TXStandardLogHandler` class to control the log level printed to the console.
 
 ## Limitations
+
+### `String(localized:)` initializers
+
+While the `String(localized:)` family of initializers ([^1] [^2] [^3] [^4] [^5] [^6])
+is supported through the `TXNativeExtensions.swift` file, we do not recommend using
+them due to their reliance on reflection and regular expressions to extract the
+`LocalizationValue` properties.
+
+Developers can choose to switch between the Reflection and the Regular Expression
+extraction logic via the `extractionType` argument of the `TXNative.translate(...)`
+methods used in the `TXNativeExtensions.swift` file.
+
+> [!WARNING]
+>
+> **Risk of Breaking Changes**
+>
+> Apple may change the internal representation of the `LocalizationValue`
+> struct at any time, which would break the implemented logic.
+
+We strongly recommend using any of the following supported methods instead of
+the `String(localized:)` initializers:
+
+* `NSLocalizedString(_ key:tableName:bundle:value:comment:)`
+* `NSString.localizedStringWithFormat(_ format:, _ args:)`
+* `String.localizedStringWithFormat(_ format:, _ arguments:)`
+* `-[NSString localizedStringWithFormat:]`
+* `NSBundle.localizedString(forKey:value:table:)`
+* `-[NSBundle localizedAttributedStringForKey:value:table:]`
+* Any SwiftUI view initializer that accepts a `LocalizedStringKey` struct.
+
+If you understand the risks, you may uncomment the relevant section in
+`TXNativeExtensions.swift` after adding the file to your application’s
+target(s). However, we strongly advise using the recommended
+alternatives whenever possible.
+
+[^1]: https://developer.apple.com/documentation/swift/string/init(localized:)
+[^2]: https://developer.apple.com/documentation/swift/string/init(localized:options:)
+[^3]: https://developer.apple.com/documentation/swift/string/init(localized:defaultvalue:table:bundle:locale:comment:)
+[^4]: https://developer.apple.com/documentation/swift/string/init(localized:defaultvalue:options:table:bundle:locale:comment:)
+[^5]: https://developer.apple.com/documentation/swift/string/init(localized:table:bundle:locale:comment:)
+[^6]: https://developer.apple.com/documentation/swift/string/init(localized:options:table:bundle:locale:comment:)
 
 ### Special cases
 
