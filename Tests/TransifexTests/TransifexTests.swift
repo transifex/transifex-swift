@@ -3,7 +3,7 @@ import XCTest
 
 /// Partially mocked URLSessionDataTask and URLSession classes so that we can test how
 /// Transifex behaves on certain server responses.
-class URLSessionDataTaskMock: URLSessionDataTask {
+class URLSessionDataTaskMock: URLSessionDataTask, @unchecked Sendable {
     private let closure: () -> Void
 
     init(closure: @escaping () -> Void) {
@@ -22,7 +22,7 @@ struct MockResponse {
     var error : Error?
 }
 
-class URLSessionMock: URLSession {
+class URLSessionMock: URLSession, @unchecked Sendable {
     typealias CompletionHandler = (Data?, URLResponse?, Error?) -> Void
 
     var mockResponses : [MockResponse]?
@@ -1117,6 +1117,51 @@ final class TransifexTests: XCTestCase {
             ]
         )
     }
+    
+    func testLocalizationValueExtraction() {
+        let localizationValue: String.LocalizationValue = "test"
+        let extracted1Reflection = localizationValue.extract(.reflection)
+        let extracted1Regex = localizationValue.extract(.regex)
+
+        XCTAssertEqual(extracted1Reflection.key, "test")
+        XCTAssertEqual(extracted1Reflection.key, extracted1Regex.key)
+
+        let localizationValueWithArgs: String.LocalizationValue = "test \(1) \("string")"
+        let extracted2Reflection = localizationValueWithArgs.extract(.reflection)
+        let extracted2Regex = localizationValueWithArgs.extract(.regex)
+
+        XCTAssertEqual(extracted2Reflection.key, "test %lld %@")
+        XCTAssertEqual(extracted2Reflection.key, extracted2Regex.key)
+        XCTAssertEqual(extracted2Reflection.args.count, 2)
+        XCTAssertEqual(extracted2Reflection.args.count, extracted2Regex.args.count)
+        XCTAssertEqual(extracted2Reflection.args[0] as! Int64, 1)
+        // Reflection returns Int64 types for numbers while regular expression
+        // returns Int
+        XCTAssertTrue(extracted2Reflection.args[0] as! Int64 == extracted2Regex.args[0] as! Int)
+        XCTAssertEqual(extracted2Reflection.args[1] as! String, "string")
+        XCTAssertEqual(extracted2Reflection.args[1] as! String, extracted2Regex.args[1] as! String)
+
+        let localizationValueWithArgsAndPlaceholder: String.LocalizationValue = "test \(1) \(placeholder: .int) \("test")"
+        let extracted3Reflection = localizationValueWithArgsAndPlaceholder.extract(.reflection)
+        let extracted3Regex = localizationValueWithArgsAndPlaceholder.extract(.regex)
+
+        var options = String.LocalizationOptions()
+        options.replacements = [12]
+
+        let argsReflection = extracted3Reflection.combinedArgs(with: options)
+        let argsRegex = extracted3Regex.combinedArgs(with: options)
+
+        XCTAssertEqual(argsReflection.count, 3)
+        XCTAssertEqual(argsReflection.count, argsRegex.count)
+        XCTAssertEqual(argsReflection[0] as! Int64, 1)
+        // Reflection returns Int64 types for numbers while regular expression
+        // returns Int
+        XCTAssertTrue(argsReflection[0] as! Int64 == argsRegex[0] as! Int)
+        XCTAssertEqual(argsReflection[1] as! Int, 12)
+        XCTAssertEqual(argsReflection[1] as! Int, argsRegex[1] as! Int)
+        XCTAssertEqual(argsReflection[2] as! String, "test")
+        XCTAssertEqual(argsReflection[2] as! String, argsRegex[2] as! String)
+    }
 
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
@@ -1156,5 +1201,6 @@ final class TransifexTests: XCTestCase {
         ("testXMLPluralParserSimpleSubstitutionsStringsDictAlt", testXMLPluralParserSimpleSubstitutionsStringsDictAlt),
         ("testXMLPluralParserDeviceAndSubstitutions", testXMLPluralParserDeviceAndSubstitutions),
         ("testXMLDeviceSubstitutionSpecial", testXMLDeviceSubstitutionSpecial),
+        ("testLocalizationValueExtraction", testLocalizationValueExtraction),
     ]
 }

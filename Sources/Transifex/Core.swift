@@ -54,21 +54,73 @@ final class BypassLocalizer {
 
         self.bundle = Bundle(path: bundlePath)
     }
-    
+
+    /// Initializer bypass localizer with a certain bundle.
+    ///
+    /// - Parameter bundle: The bundle to be used.
+    init(with bundle: Bundle) {
+        self.bundle = bundle
+    }
+
+    /// Convenience initializer that uses the provided `Bundle` instance and if that is `nil` looks up
+    /// the bundle via the provided locale identifier.
+    ///
+    /// - Parameters:
+    ///   - bundle: The optional Bundle instance to be used
+    ///   - localeCode: The locale identifier.
+    private convenience init(with bundle: Bundle?,
+                             localeCode: String) {
+        if let bundle = bundle {
+            self.init(with: bundle)
+        }
+        else {
+            self.init(with: localeCode)
+        }
+    }
+
+    /// Creates a temporary BypassLocalizer instance using the provided bundle or the locale (if the bundle
+    /// instance is nil) and then attempts to extract the bundled `sourceString` using the provided
+    /// `params` dictionary.
+    ///
+    /// - Parameters:
+    ///   - sourceString: The source string to extract from the bundled translations.
+    ///   - bundle: The bundle to look into.
+    ///   - locale: The locale code to be used to look up the bundle if the `bundle` argument is `nil`
+    ///   - params: The params dictionary
+    /// - Returns: The bundled string or the `sourceString` if the bundle string cannot be extracted.
+    static func get(sourceString: String,
+                    bundle: Bundle?,
+                    locale: Locale, params: [String: Any]) -> String {
+        return Self
+            .init(with: bundle,
+                  localeCode: locale.identifier)
+            .get(sourceString: sourceString,
+                 params: params)
+    }
+
     private func extractBundledString(sourceString: String,
                                       params: [String: Any]) -> String? {
-        guard let bundle = bundle else {
-            return nil
+        // Bundle.main is the fallback if no bundle is provided.
+        var currentBundle = Bundle.main
+
+        // If a bundle has been provided in the params dictionary, use that
+        // instead of the one that the instance has been instantiated with.
+        if let bundleInstance = params[Swizzler.PARAM_BUNDLE_KEY] as? Bundle {
+            currentBundle = bundleInstance
         }
-        
+        // Otherwise if the instance bundle is not nil, use that.
+        else if let bundle = bundle {
+            currentBundle = bundle
+        }
+
         let tableName = params[Swizzler.PARAM_TABLE_KEY] as? String
         
         // We use the SKIP_SWIZZLING_VALUE constant to skip swizzling for this
         // call, so that the actual value can be retrieved, if it exists in the
         // application bundle.
-        let localizedString = bundle.localizedString(forKey: sourceString,
-                                                     value: Swizzler.SKIP_SWIZZLING_VALUE,
-                                                     table: tableName)
+        let localizedString = currentBundle.localizedString(forKey: sourceString,
+                                                            value: Swizzler.SKIP_SWIZZLING_VALUE,
+                                                            table: tableName)
         
         if  localizedString != Swizzler.SKIP_SWIZZLING_VALUE {
             return localizedString
@@ -391,7 +443,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.7"
+    internal static let version = "2.0.8"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -561,7 +613,315 @@ Initializing TXNative(
             context: context
         )
     }
-    
+
+    /// Translate a string from the
+    /// `String.init(localized:options:table:bundle:locale:comment:)` initializer.
+    ///
+    /// Warning: This method uses reflection to extract the properties of the `localizationValue`
+    /// argument. Proceed with caution.
+    ///
+    /// - Parameters:
+    ///   - localizationValue: A localization value instance that provides the localization key to
+    ///   look up. This parameter also serves as the default value if the system can’t find a localized string.
+    ///   - options: A localization options instance that specifies localization options to apply, such as
+    ///   replacement values for formatted strings.
+    ///   - table: The bundle’s string table to search. If table is nil or is an empty string, the method
+    ///   attempts to use the table named Localizable. The default is nil.
+    ///   - bundle: The bundle to use for looking up strings. If nil, an app searches its main bundle.
+    ///   The default is nil.
+    ///   - locale: The locale to use when localizing interpolated values, such as numbers. This
+    ///   doesn’t change which locale the system uses to look up the localized string. If nil, this initializer
+    ///   uses the current locale. The default is nil.
+    ///   - extractionType: The extraction type to be used when trying to extract the properties of
+    ///   the `LocalizationValue` struct. The value is set to .reflection by default.
+    /// - Returns: The final string to be displayed to the user or the bundled string if the Transifex SDK
+    /// is not available or if the string is not found in the Transifex SDK cache.
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    public static func translate(localizationValue: String.LocalizationValue,
+                                 options: String.LocalizationOptions,
+                                 table: String? = nil,
+                                 bundle: Bundle? = nil,
+                                 locale: Locale = .current,
+                                 extractionType: String.LocalizationValue.ExtractionType = .reflection) -> String {
+        let extracted = localizationValue.extract(extractionType)
+
+        let sourceString = extracted.key
+        let args = extracted.combinedArgs(with: options)
+
+        var params: [String: Any] = [:]
+        
+        if args.count > 0 {
+            params[Swizzler.PARAM_ARGUMENTS_KEY] = args
+        }
+
+        if let table = table {
+            params[Swizzler.PARAM_TABLE_KEY] = table
+        }
+        
+        if let bundle = bundle {
+            params[Swizzler.PARAM_BUNDLE_KEY] = bundle
+        }
+
+        if let tx = tx {
+            return tx.translate(sourceString: sourceString,
+                                params: params,
+                                context: nil)
+        }
+        else {
+            return BypassLocalizer.get(sourceString: sourceString,
+                                       bundle: bundle,
+                                       locale: locale,
+                                       params: params)
+        }
+    }
+
+    /// Translate a string from the
+    /// `String.init(localized:defaultValue:options:table:bundle:locale:comment:)`
+    /// initializer.
+    ///
+    /// Warning: This method uses reflection to extract the properties of the `defaultValue`
+    /// argument. Proceed with caution.
+    ///
+    /// - Parameters:
+    ///   - staticString: An arbitrary static string key.
+    ///   - defaultValue: A default value to use if looking up a localized string from the bundle fails.
+    ///   This is typically the localizable string in the development language.
+    ///   - options: A localization options instance that specifies localization options to apply, such as
+    ///   replacement values for formatted strings.
+    ///   - table: The bundle’s string table to search. If table is nil or is an empty string, the method
+    ///   attempts to use the table named Localizable. The default is nil.
+    ///   - bundle: The bundle to use for looking up strings. If nil, an app searches its main bundle.
+    ///   The default is nil.
+    ///   - locale: The locale to use when localizing interpolated values, such as numbers. This
+    ///   doesn’t change which locale the system uses to look up the localized string. If nil, this initializer
+    ///   uses the current locale. The default is nil.
+    ///   - extractionType: The extraction type to be used when trying to extract the properties of
+    ///   the `LocalizationValue` struct. The value is set to .reflection by default.
+    /// - Returns: The final string to be displayed to the user or the bundled string if the Transifex SDK
+    /// is not available or if the string is not found in the Transifex SDK cache.
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    public static func translate(staticString: StaticString,
+                                 defaultValue: String.LocalizationValue,
+                                 options: String.LocalizationOptions,
+                                 table: String? = nil,
+                                 bundle: Bundle? = nil,
+                                 locale: Locale = .current,
+                                 extractionType: String.LocalizationValue.ExtractionType = .reflection) -> String {
+        let sourceString = staticString.withUTF8Buffer {
+            String(decoding: $0, as: UTF8.self)
+        }
+
+        let extracted = defaultValue.extract(extractionType)
+
+        let args = extracted.combinedArgs(with: options)
+
+        var params: [String: Any] = [
+            Swizzler.PARAM_VALUE_KEY: extracted.key
+        ]
+
+        if args.count > 0 {
+            params[Swizzler.PARAM_ARGUMENTS_KEY] = args
+        }
+
+        if let table = table {
+            params[Swizzler.PARAM_TABLE_KEY] = table
+        }
+
+        if let bundle = bundle {
+            params[Swizzler.PARAM_BUNDLE_KEY] = bundle
+        }
+
+        if let tx = tx {
+            return tx.translate(sourceString: sourceString,
+                                params: params,
+                                context: nil)
+        }
+        else {
+            return BypassLocalizer.get(sourceString: sourceString,
+                                       bundle: bundle,
+                                       locale: locale,
+                                       params: params)
+        }
+    }
+
+    /// Translate a string from the following initializers:
+    /// * `String.init(localized:)`
+    /// * `String.init(localized:options:)`
+    ///
+    /// Warning: This method uses reflection to extract the properties of the `resource.defaultValue`
+    /// argument. Proceed with caution.
+    ///
+    /// - Parameters:
+    ///   - resource: A LocalizedStringResource that provides the localization key, table, bundle, and
+    ///   locale.
+    ///   - options: A localization options instance that specifies localization options to apply, such as
+    ///   replacement values for formatted strings.
+    ///   - extractionType: The extraction type to be used when trying to extract the properties of
+    ///   the `LocalizationValue` struct. The value is set to .reflection by default.
+    /// - Returns: The final string to be displayed to the user or the bundled string if the Transifex SDK
+    /// is not available or if the string is not found in the Transifex SDK cache.
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    public static func translate(resource: LocalizedStringResource,
+                                 options: String.LocalizationOptions? = nil,
+                                 extractionType: String.LocalizationValue.ExtractionType = .reflection) -> String {
+        let sourceString = resource.key
+
+        let extracted = resource.defaultValue.extract(extractionType)
+
+        let args = extracted.combinedArgs(with: options)
+
+        var params: [String: Any] = [
+            Swizzler.PARAM_VALUE_KEY: extracted.key
+        ]
+
+        if args.count > 0 {
+            params[Swizzler.PARAM_ARGUMENTS_KEY] = args
+        }
+
+        if let table = resource.table {
+            params[Swizzler.PARAM_TABLE_KEY] = table
+        }
+
+        let bundle = Bundle.from(description: resource.bundle)
+
+        if let bundle = bundle {
+            params[Swizzler.PARAM_BUNDLE_KEY] = bundle
+        }
+
+        if let tx = tx {
+            return tx.translate(sourceString: sourceString,
+                                params: params,
+                                context: nil)
+        }
+        else {
+            return BypassLocalizer.get(sourceString: sourceString,
+                                       bundle: bundle,
+                                       locale: resource.locale,
+                                       params: params)
+        }
+    }
+
+    /// Translate a string from the `String.init(localized:table:bundle:locale:comment:)`
+    /// initializer.
+    ///
+    /// Warning: This method uses reflection to extract the properties of the `localizationValue`
+    /// argument. Proceed with caution.
+    ///
+    /// - Parameters:
+    ///   - localizationValue: A String.LocalizationValue that provides the localization key to look
+    ///   up. This parameter also serves as the default value if the system can’t find a localized string.
+    ///   - table: The bundle’s string table to search. If table is nil or is an empty string, the method
+    ///   attempts to use the table named Localizable. The default is nil.
+    ///   - bundle: The bundle to use for looking up strings. If nil, an app searches its main bundle.
+    ///   The default is nil.
+    ///   - locale: The locale to use when localizing interpolated values, such as numbers. This
+    ///   doesn’t change which locale the system uses to look up the localized string. If nil, this initializer
+    ///   uses the current locale. The default is nil.
+    ///   - extractionType: The extraction type to be used when trying to extract the properties of
+    ///   the `LocalizationValue` struct. The value is set to .reflection by default.
+    /// - Returns: The final string to be displayed to the user or the bundled string if the Transifex SDK
+    /// is not available or if the string is not found in the Transifex SDK cache.
+    @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+    public static func translate(localizationValue: String.LocalizationValue,
+                                 table: String? = nil,
+                                 bundle: Bundle? = nil,
+                                 locale: Locale = .current,
+                                 extractionType: String.LocalizationValue.ExtractionType = .reflection) -> String {
+        let extracted = localizationValue.extract(extractionType)
+
+        let sourceString = extracted.key
+
+        var params: [String: Any] = [:]
+
+        if extracted.args.count > 0 {
+            params[Swizzler.PARAM_ARGUMENTS_KEY] = extracted.args
+        }
+
+        if let table = table {
+            params[Swizzler.PARAM_TABLE_KEY] = table
+        }
+
+        if let bundle = bundle {
+            params[Swizzler.PARAM_BUNDLE_KEY] = bundle
+        }
+
+        if let tx = tx {
+            return tx.translate(sourceString: sourceString,
+                                params: params,
+                                context: nil)
+        }
+        else {
+            return BypassLocalizer.get(sourceString: sourceString,
+                                       bundle: bundle,
+                                       locale: locale,
+                                       params: params)
+        }
+    }
+
+    /// Translate a string from the
+    /// `String.init(localized:defaultValue:table:bundle:locale:comment:)`
+    /// initializer.
+    ///
+    /// Warning: This method uses reflection to extract the properties of the `defaultValue`
+    /// argument. Proceed with caution.
+    ///
+    /// - Parameters:
+    ///   - staticString: An arbitrary static string key.
+    ///   - defaultValue: A default value to use if looking up a localized string from the bundle fails.
+    ///   This is typically the localizable string in the development language.
+    ///   - table: The bundle’s string table to search. If table is nil or is an empty string, the method
+    ///   attempts to use the table named Localizable. The default is nil.
+    ///   - bundle: The bundle to use for looking up strings. If nil, an app searches its main bundle.
+    ///   The default is nil.
+    ///   - locale: The locale to use when localizing interpolated values, such as numbers. This
+    ///   doesn’t change which locale the system uses to look up the localized string. If nil, this initializer
+    ///   uses the current locale. The default is nil.
+    ///   - extractionType: The extraction type to be used when trying to extract the properties of
+    ///   the `LocalizationValue` struct. The value is set to .reflection by default.
+    /// - Returns: The final string to be displayed to the user or the bundled string if the Transifex SDK
+    /// is not available or if the string is not found in the Transifex SDK cache.
+    @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+    public static func translate(staticString: StaticString,
+                                 defaultValue: String.LocalizationValue,
+                                 table: String? = nil,
+                                 bundle: Bundle? = nil,
+                                 locale: Locale = .current,
+                                 extractionType: String.LocalizationValue.ExtractionType = .reflection) -> String {
+        let sourceString = staticString.withUTF8Buffer {
+            String(decoding: $0, as: UTF8.self)
+        }
+
+        let extracted = defaultValue.extract(extractionType)
+
+        var params: [String: Any] = [
+            Swizzler.PARAM_VALUE_KEY: extracted.key
+        ]
+
+        if extracted.args.count > 0 {
+            params[Swizzler.PARAM_ARGUMENTS_KEY] = extracted.args
+        }
+
+        if let table = table {
+            params[Swizzler.PARAM_TABLE_KEY] = table
+        }
+
+        if let bundle = bundle {
+            params[Swizzler.PARAM_BUNDLE_KEY] = bundle
+        }
+
+        if let tx = tx {
+            return tx.translate(sourceString: sourceString,
+                                params: params,
+                                context: nil)
+        }
+        else {
+            return BypassLocalizer.get(sourceString: sourceString,
+                                       bundle: bundle,
+                                       locale: locale,
+                                       params: params)
+        }
+    }
+
     /// Helper method used when translation is not possible (e.g. in SwiftUI views).
     ///
     /// This method applies the translation using the currently selected locale. For pluralization use the

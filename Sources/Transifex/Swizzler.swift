@@ -61,6 +61,7 @@ class Swizzler {
     internal static let PARAM_VALUE_KEY = "_value"
     internal static let PARAM_TABLE_KEY = "_table"
     internal static let PARAM_ARGUMENTS_KEY = "_arguments"
+    internal static let PARAM_BUNDLE_KEY = "_bundle"
     
     /// String to be returned when no translation provider is provided
     private static let MISSING_PROVIDER = "MISSING TRANSLATION PROVIDER"

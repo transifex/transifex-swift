@@ -8,10 +8,20 @@
 
 // Note:
 // Please copy this file to your project and add it to all of the app's targets
-// if you are making use of either of the following Swift methods:
+// if you are making use of the following Swift methods:
 //
-// * NSString.localizedStringWithFormat()
-// * String.localizedStringWithFormat()
+// * NSString.localizedStringWithFormat(_ format:, _ args:)
+// * String.localizedStringWithFormat(_ format:, _ arguments:)
+//
+// For the String.init(localized:...) initializers below, please consult the
+// 'Limitations' section of README.md before un-commenting that section of the
+// code:
+// * String.init(localized:)
+// * String.init(localized:options:)
+// * String.init(localized:defaultValue:table:bundle:locale:comment:)
+// * String.init(localized:defaultValue:options:table:bundle:locale:comment:)
+// * String.init(localized:table:bundle:locale:comment:)
+// * String.init(localized:options:table:bundle:locale:comment:)
 //
 // If your code makes use of the Objective-C's
 // [NSString localizedStringWithFormat:...] method, you don't need to copy this
@@ -51,3 +61,62 @@ public extension NSString {
         return localized
     }
 }
+/**
+/// Replace String(localized:) initializers.
+///
+/// Please consult the 'Limitations' section of README.md for more information.
+public extension String {
+    @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+    init(localized key: StaticString, defaultValue: String.LocalizationValue,
+         table: String? = nil, bundle: Bundle? = nil, locale: Locale = .current,
+         comment: StaticString? = nil) {
+        self = TXNative.translate(staticString: key, defaultValue: defaultValue,
+                                  table: table, bundle: bundle, locale: locale,
+                                  extractionType: .reflection)
+    }
+
+    @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+    init(localized keyAndValue: String.LocalizationValue, table: String? = nil,
+         bundle: Bundle? = nil, locale: Locale = .current,
+         comment: StaticString? = nil) {
+        self = TXNative.translate(localizationValue: keyAndValue, table: table,
+                                  bundle: bundle, locale: locale,
+                                  extractionType: .reflection)
+    }
+
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    init(localized resource: LocalizedStringResource) {
+        self = TXNative.translate(resource: resource,
+                                  extractionType: .reflection)
+    }
+
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    init(localized resource: LocalizedStringResource,
+         options: String.LocalizationOptions) {
+        self = TXNative.translate(resource: resource, options: options,
+                                  extractionType: .reflection)
+    }
+
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    init(localized key: StaticString, defaultValue: String.LocalizationValue,
+         options: String.LocalizationOptions, table: String? = nil,
+         bundle: Bundle? = nil, locale: Locale = .current,
+         comment: StaticString? = nil) {
+        self = TXNative.translate(staticString: key, defaultValue: defaultValue,
+                                  options: options, table: table,
+                                  bundle: bundle, locale: locale,
+                                  extractionType: .reflection)
+    }
+
+    @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
+    init(localized keyAndValue: String.LocalizationValue,
+         options: String.LocalizationOptions, table: String? = nil,
+         bundle: Bundle? = nil, locale: Locale = .current,
+         comment: StaticString? = nil) {
+        self = TXNative.translate(localizationValue: keyAndValue,
+                                  options: options, table: table,
+                                  bundle: bundle, locale: locale,
+                                  extractionType: .reflection)
+    }
+}
+**/

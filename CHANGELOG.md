@@ -145,7 +145,7 @@ logic now normalizes the locale name to match the format that iOS accepts.
 
 * Minor documentation updates.
 
-## Transifex iOS SDK 2.0.6
+## Transifex iOS SDK 2.0.7
 
 *February 19, 2025*
 
@@ -154,3 +154,13 @@ logic now normalizes the locale name to match the format that iOS accepts.
 * Logging improvements.
 * `TXCDSError` enum improvements.
 * Addresses issue with attributed string creation.
+
+## Transifex iOS SDK 2.0.8
+
+*March 11, 2025*
+
+* `String(localized:...)` support.
+* Updates `README.md` by adding a 'Supported localization methods' section and
+updating the 'Limitations' section.
+* Refactors `BypassLocalizer` class.
+* Updates `TXNativeExtensions.swift`.
