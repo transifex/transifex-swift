@@ -277,7 +277,7 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock()
+        let urlSession = URLSessionMock(configuration: URLSessionConfiguration.default)
         urlSession.mockResponses = [
             mockResponse1,
             mockResponse2
@@ -1163,6 +1163,68 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual(argsReflection[2] as! String, argsRegex[2] as! String)
     }
 
+    func testCustomBundleGeneration() {
+        let existingTranslations: TXTranslations = [
+            "en": [
+                "test string": [ "string": "test string" ],
+                "Powerful you have become, the dark side I sense in you.": [ "string": "Powerful you have become, the dark side I sense in you." ],
+                "I find your lack of faith disturbing.": [ "string": "I find your lack of faith disturbing." ],
+                "simple": [ "string": "<cds-root><cds-unit id=\"device.iphone\">Device has %1$#@token@</cds-unit><cds-unit id=\"device.other\">Device has %ld users</cds-unit><cds-unit id=\"substitutions.token.plural.one\">%ld user</cds-unit><cds-unit id=\"substitutions.token.plural.other\">%ld users</cds-unit></cds-root>" ],
+                "simple_plural": [ "string": "{???, plural, one {%ld user found} other {%ld users found}}" ],
+                "simpler": [ "string": "<cds-root><cds-unit id=\"substitutions\">Device has %1$#@token@ with %2$ld phones</cds-unit><cds-unit id=\"substitutions.token.plural.one\">%ld user</cds-unit><cds-unit id=\"substitutions.token.plural.other\">%ld users</cds-unit></cds-root>" ]
+            ],
+            "el": [
+                "test string": [ "string": "δοκιμαστικό κείμενο" ],
+                "Powerful you have become, the dark side I sense in you.": [ "string": "Δυνατός έχεις γίνει, η σκοτεινή πλευρά που νιώθω μέσα σου." ],
+                "I find your lack of faith disturbing.": [ "string": "Βρίσκω ενοχλητική την έλλειψη πίστης σου." ],
+                "simple": [ "string": "<cds-root><cds-unit id=\"device.iphone\">Η συσκευή έχει %1$#@token@</cds-unit><cds-unit id=\"device.other\">Η συσκευή έχει %ld χρήστες</cds-unit><cds-unit id=\"substitutions.token.plural.one\">%ld χρήστη</cds-unit><cds-unit id=\"substitutions.token.plural.other\">%ld χρήστες</cds-unit></cds-root>" ],
+                "simple_plural": [ "string": "{???, plural, one {%ld χρήστης βρέθηκε} other {%ld χρήστες βρέθηκαν}}" ],
+                "simpler": [ "string": "<cds-root><cds-unit id=\"substitutions\">Η συσκευή έχει %1$#@token@ με %2$ld τηλέφωνα</cds-unit><cds-unit id=\"substitutions.token.plural.one\">%ld χρήστη</cds-unit><cds-unit id=\"substitutions.token.plural.other\">%ld χρήστες</cds-unit></cds-root>" ]
+            ]
+        ]
+
+        let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory(),
+                                isDirectory: true)
+
+        let url = try! TXBundle.generateCustomBundle(with: existingTranslations,
+                                                     at: tempDirectory,
+                                                     isMacOS: false)
+
+        let elLprojURL = url?.appendingPathComponent("el.lproj", isDirectory: true)
+        XCTAssertNotNil(elLprojURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: elLprojURL!.path()))
+
+        let localizableElStringsURL = elLprojURL!.appendingPathComponent("Localizable.strings")
+        XCTAssertNotNil(localizableElStringsURL)
+        
+        let localizableElStringsContents = try! String(contentsOfFile: localizableElStringsURL.path())
+
+        let expectedLocalizableElStringsContents = """
+"I find your lack of faith disturbing." = "Βρίσκω ενοχλητική την έλλειψη πίστης σου.";
+"Powerful you have become, the dark side I sense in you." = "Δυνατός έχεις γίνει, η σκοτεινή πλευρά που νιώθω μέσα σου.";
+"test string" = "δοκιμαστικό κείμενο";
+"""
+        XCTAssertEqual(localizableElStringsContents,
+                       expectedLocalizableElStringsContents)
+
+        let enLprojURL = url?.appendingPathComponent("en.lproj", isDirectory: true)
+        XCTAssertNotNil(enLprojURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: enLprojURL!.path()))
+
+        let localizableEnStringsURL = enLprojURL!.appendingPathComponent("Localizable.strings")
+        XCTAssertNotNil(localizableEnStringsURL)
+        
+        let localizableEnStringsContents = try! String(contentsOfFile: localizableEnStringsURL.path())
+
+        let expectedLocalizableEnStringsContents = """
+"I find your lack of faith disturbing." = "I find your lack of faith disturbing.";
+"Powerful you have become, the dark side I sense in you." = "Powerful you have become, the dark side I sense in you.";
+"test string" = "test string";
+"""
+        XCTAssertEqual(localizableEnStringsContents,
+                       expectedLocalizableEnStringsContents)
+    }
+
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
         ("testCurrentLocaleProvider", testCurrentLocaleProvider),
@@ -1202,5 +1264,6 @@ final class TransifexTests: XCTestCase {
         ("testXMLPluralParserDeviceAndSubstitutions", testXMLPluralParserDeviceAndSubstitutions),
         ("testXMLDeviceSubstitutionSpecial", testXMLDeviceSubstitutionSpecial),
         ("testLocalizationValueExtraction", testLocalizationValueExtraction),
+        ("testCustomBundleGeneration", testCustomBundleGeneration),
     ]
 }

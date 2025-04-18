@@ -241,10 +241,8 @@ open class TXDecoratorCache: NSObject, TXCache {
 /// constructor.
 public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     let fileURL: URL?
-    
-    /// Dispatch queue that ensures that the downloaded strings are written to a file in a serial fashion.
-    let cacheQueue = DispatchQueue(label: "com.transifex.native.fileoutput")
-    
+    let queue: DispatchQueue
+
     /// Initializes the decorator with a specific file url for storing the translations to the disk and an internal
     /// cache.
     ///
@@ -252,10 +250,13 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     ///   - fileURL: The file url
     ///   - internalCache: The internal cache
     @objc
-    public init(fileURL: URL?,
-                internalCache: TXCache) {
-        self.fileURL = fileURL
-        super.init(internalCache: internalCache)
+    public init(
+        queue: DispatchQueue,
+        fileURL: URL?,
+        internalCache: TXCache) {
+            self.fileURL = fileURL
+            self.queue = queue
+            super.init(internalCache: internalCache)
     }
     
     /// Encodes the provided translations to a JSON string and writes the string to a file using the `fileURL`
@@ -264,8 +265,8 @@ public final class TXFileOutputCacheDecorator: TXDecoratorCache {
     /// - Parameter translations: The provided translations
     public override func update(translations: TXTranslations) {
         super.update(translations: translations)
-        
-        cacheQueue.async { [weak self] in
+
+        queue.async { [weak self] in
             guard let self = self else {
                 return
             }
@@ -437,8 +438,10 @@ public final class TXStandardCache: NSObject {
     ///   - groupIdentifier: The group identifier of the app, if the app makes use of the app groups
     /// entitlement. Defaults to nil.
     @objc
-    public static func getCache(updatePolicy: TXCacheUpdatePolicy = .replaceAll,
-                                groupIdentifier: String? = nil) -> TXCache {
+    public static func getCache(
+        queue: DispatchQueue,
+        updatePolicy: TXCacheUpdatePolicy = .replaceAll,
+        groupIdentifier: String? = nil) -> TXCache {
         var providers: [TXCacheProvider] = []
         
         if let bundleURL = TXStandardCache.bundleURL() {
@@ -454,6 +457,7 @@ public final class TXStandardCache: NSObject {
         }
  
         return TXFileOutputCacheDecorator(
+            queue: queue,
             fileURL: downloadURL,
             internalCache: TXReadonlyCacheDecorator(
                 internalCache: TXProviderBasedCache(
@@ -473,41 +477,18 @@ public final class TXStandardCache: NSObject {
     /// - Returns: The URL of the translations file in the main bundle of the app
     private static func bundleURL() -> URL? {
         let resourceComps = TXNative.STRINGS_FILENAME.split(separator: ".")
-        
+
         guard resourceComps.count == 2 else {
             return nil
         }
-        
+
         let resourceName = String(resourceComps[0])
         let resourceExtension = String(resourceComps[1])
-        
-        var bundle = Bundle.main
-        
-        // In case the SDK is executed by an app extension, the main bundle does
-        // not return the main app bundle, but the extension one. In order to
-        // retrieve the main app bundle, we would need to peel off two directory
-        // levels - APP.app/PlugIns/APP_EXTENSION.appex
-        //
-        // Ref: https://stackoverflow.com/a/27849695/60949
-        if bundle.bundleURL.pathExtension == "appex" {
-            let mainAppBundleURL = bundle.bundleURL
-                .deletingLastPathComponent()
-                .deletingLastPathComponent()
-            if let mainAppBundle = Bundle(url: mainAppBundleURL) {
-                bundle = mainAppBundle
-            }
-        }
-        
-        guard let url = bundle.url(forResource: resourceName,
-                                   withExtension: resourceExtension) else {
-            return nil
-        }
 
-        return url
+        return Bundle.application.url(forResource: resourceName,
+                                      withExtension: resourceExtension)
     }
-    
-    private static let DOWNLOADED_FOLDER_NAME = "txnative"
-    
+
     /// Constructs the file URL of the translations file found in the sandbox directory of the app that can be
     /// found either in the caches subdirectory of the sandbox directory of the main app, or in the app
     /// groups directory based on whether the `groupIdentifier` argument has been provided or not.
@@ -523,28 +504,8 @@ public final class TXStandardCache: NSObject {
     ///   - groupIdentifier: The group identifier of the app group of the app (if available)
     /// - Returns: The URL of the translations file in the caches or the app group directory of the app.
     private static func downloadURL(groupIdentifier: String?) -> URL? {
-        let fileManager = FileManager.default
-
-        var baseURL: URL? = nil
-        
-        if let groupIdentifier = groupIdentifier,
-           let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) {
-            baseURL = groupURL
-        }
-        else {
-            let cacheURLs = fileManager.urls(for: .cachesDirectory,
-                                             in: .userDomainMask)
-            
-            if cacheURLs.count > 0 {
-                baseURL = cacheURLs[0]
-            }
-        }
-        
-        guard let folderURL = baseURL?.appendingPathComponent(TXStandardCache.DOWNLOADED_FOLDER_NAME) else {
-            return nil
-        }
-        
-        return folderURL.appendingPathComponent(TXNative.STRINGS_FILENAME)
+        return .downloadFolderURL(groupIdentifier: groupIdentifier)?
+            .appendingPathComponent(TXNative.STRINGS_FILENAME)
     }
 }
 

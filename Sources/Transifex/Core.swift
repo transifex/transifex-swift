@@ -145,14 +145,46 @@ final class BypassLocalizer {
 
 /// The main class of the framework, responsible for orchestrating all functionality.
 class NativeCore : TranslationProvider {
-    var cache: TXCache
+    var cache: TXCache?
     var locales: TXLocaleState
     var cdsHandler: CDSHandler
-    var missingPolicy: TXMissingPolicy
-    var errorPolicy: TXErrorPolicy
-    var renderingStrategy : TXRenderingStategy
-    var bypassLocalizer : BypassLocalizer
-    
+    var missingPolicy: TXMissingPolicy?
+    var errorPolicy: TXErrorPolicy?
+    var renderingStrategy : TXRenderingStategy?
+    var bypassLocalizer : BypassLocalizer?
+    var customBundle: TXBundle?
+
+    /// Dispatch queue that ensures that the downloaded strings are written to a file in a serial fashion.
+    let fileOutputQueue = DispatchQueue(label: "com.transifex.native.fileoutput")
+
+    init(sourceLocale: String? = nil,
+         appLocales: [String] = [],
+         token: String,
+         secret: String?,
+         cdsHost: String?,
+         session: URLSession? = nil,
+         groupIdentifier: String? = nil,
+         filterTags: [String] = [],
+         filterStatus: String? = nil
+    ) {
+        self.locales = TXLocaleState(sourceLocale: sourceLocale,
+                                     appLocales: appLocales)
+        let cdsConfiguration = CDSConfiguration(
+            localeCodes: self.locales.appLocales,
+            token: token,
+            secret: secret,
+            cdsHost: cdsHost ?? CDSHandler.CDS_HOST,
+            filterTags: filterTags,
+            filterStatus: filterStatus
+        )
+        self.cdsHandler = CDSHandler(
+            configuration: cdsConfiguration,
+            session: session
+        )
+        self.customBundle = TXBundle(groupIdentifier: groupIdentifier,
+                                     sourceLocale: locales.sourceLocale)
+    }
+
     /// Create an instance of the core framework class.
     ///
     /// - Parameters:
@@ -198,7 +230,7 @@ class NativeCore : TranslationProvider {
             configuration: cdsConfiguration,
             session: session
         )
-        self.cache = cache ?? TXStandardCache.getCache()
+        self.cache = cache ?? TXStandardCache.getCache(queue: fileOutputQueue)
         self.missingPolicy = missingPolicy ?? TXSourceStringPolicy()
         self.errorPolicy = errorPolicy ?? TXRenderedSourceErrorPolicy()
         self.renderingStrategy = renderingStrategy
@@ -245,7 +277,18 @@ class NativeCore : TranslationProvider {
                 // to ensure proper cache updates for custom implemented caching
                 // solutions.
                 DispatchQueue.main.async {
-                    self.cache.update(translations: translations)
+                    self.cache?.update(translations: translations)
+                }
+
+                if let customBundle = customBundle {
+                    self.fileOutputQueue.async {
+                        do {
+                            try customBundle.generateDownloaded(with: translations)
+                        }
+                        catch {
+                            Logger.error("Error generating custom bundle: \(error)")
+                        }
+                    }
                 }
             }
 
@@ -336,7 +379,7 @@ class NativeCore : TranslationProvider {
         var translationTemplate: String?
         let localeToRender = localeCode ?? locales.currentLocale
         
-        translationTemplate = cache.get(key: sourceString,
+        translationTemplate = cache?.get(key: sourceString,
                                         localeCode: localeToRender)
 
         // If the source string cannot be found in the cache, try looking up
@@ -347,7 +390,7 @@ class NativeCore : TranslationProvider {
             let key = txGenerateKey(sourceString: sourceString,
                                     context: context)
 
-            translationTemplate = cache.get(key: key,
+            translationTemplate = cache?.get(key: key,
                                             localeCode: localeToRender)
         }
             
@@ -357,7 +400,7 @@ class NativeCore : TranslationProvider {
         /// application bundle, which returns either the bundled translation if found, or the provided
         /// source string.
         if !String.containsTranslation(translationTemplate) {
-            translationTemplate = bypassLocalizer.get(sourceString: sourceString,
+            translationTemplate = bypassLocalizer?.get(sourceString: sourceString,
                                                       params: params)
         
             /// For source locale, we treat the return value of the bypass localizer as the ground truth
@@ -378,7 +421,7 @@ class NativeCore : TranslationProvider {
         )
         
         if applyMissingPolicy {
-            return missingPolicy.get(sourceString: renderedString)
+            return missingPolicy?.get(sourceString: renderedString) ?? renderedString
         }
         else {
             return renderedString
@@ -414,6 +457,8 @@ class NativeCore : TranslationProvider {
                 return try PlatformFormat.format(stringToRender: stringToRender,
                                                  localeCode: localeCode,
                                                  params: params)
+            case .none:
+                return NativeCore.ERROR_FALLBACK
             }
         }
         catch {
@@ -421,6 +466,10 @@ class NativeCore : TranslationProvider {
 Error rendering source string '\(sourceString)' with string to render '\(stringToRender)'
  locale code: \(localeCode) params: \(params). Error: \(error)
 """)
+            guard let errorPolicy = errorPolicy else {
+                return NativeCore.ERROR_FALLBACK
+            }
+
             do {
                 return try errorPolicy.get(sourceString: sourceString,
                                            stringToRender: stringToRender,
@@ -443,8 +492,11 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.8"
+    internal static let version = "2.0.9-alpha"
     
+    /// The folder name that contains the downloaded `txstrings.json` file.
+    public static let DOWNLOADED_FOLDER_NAME = "txnative"
+
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
 
@@ -461,8 +513,8 @@ public final class TXNative : NSObject {
     public static let CDS_XML_ID_ATTRIBUTE = "id"
 
     /// An instance of the core class that handles all the work
-    private static var tx : NativeCore?
-    
+    fileprivate static var tx : NativeCore?
+
     /// The available and current locales
     @objc
     public static var locales: TXLocaleState? {
@@ -560,6 +612,55 @@ Initializing TXNative(
                    renderingStrategy: .platform)
     }
     
+    /// Designated initializer of the Transifex SDK using the custom bundle configuration.
+    ///
+    /// - Parameters:
+    ///   - sourceLocale: The source locale.
+    ///   - appLocales: The application locales (optional).
+    ///   - token: The Transifex token that can be used for retrieving translations from CDS.
+    ///   - secret: The Transifex secret that can be used for pushing source strings to CDS (optional).
+    ///   - cdsHost: The host of the CDS service; defaults to a production CDS service hosted by
+    ///   Transifex (optional).
+    ///   - session: The URLSession to be used for all the requests made to the CDS service. If
+    ///   no session is provided, an ephemeral URLSession with no cache will be created and used
+    ///   (optional).
+    ///   - groupIdentifier: The group identifier of the app, if the app makes use of the app groups
+    /// entitlement (optional).
+    @objc
+    public static func initializeWithCustomBundle(
+        sourceLocale: String,
+        appLocales: [String] = [],
+        token: String,
+        secret: String? = nil,
+        cdsHost: String? = nil,
+        session: URLSession? = nil,
+        groupIdentifier: String? = nil) {
+            guard tx == nil else {
+                Logger.warning("Transifex Native is already initialized")
+                return
+            }
+
+            Logger.verbose("""
+Initializing TXNative(
+  sourceLocale: \(sourceLocale)
+  appLocales: \(appLocales)
+  token: \(token)
+  secret: \(secret ?? "<NONE>")
+  cdsHost: \(cdsHost ?? "<DEFAULT>")
+  session: \(session != nil ? session.debugDescription : "<DEFAULT>")
+  groupIdentifier: \(groupIdentifier ?? "<NONE>")
+)
+""")
+
+            tx = NativeCore(sourceLocale: sourceLocale,
+                            appLocales: appLocales,
+                            token: token,
+                            secret: secret,
+                            cdsHost: cdsHost,
+                            session: session,
+                            groupIdentifier: groupIdentifier)
+    }
+
     /// Activate the SDK for a certain Bundle. Use this method to activate the SDK for a Swift package in
     /// case multiple Swift packages are used as modules for an application.
     ///
@@ -1004,5 +1105,20 @@ Initializing TXNative(
     public static func dispose() {
         Swizzler.deactivate()
         tx = nil
+    }
+}
+
+public extension Bundle {
+    /// The custom Transifex bundle, if the SDK has been initialized with the custom bundle configuration or
+    /// the main application bundle.
+    ///
+    /// The value can return the following bundles (in order of priority):
+    /// * The custom bundle containing the downloaded translations from CDS from the previous
+    /// application execution,
+    /// * The custom bundle added by developer to the Xcode project.
+    /// * The main application bundle if none of the above are available by the time the getter is called.
+    @objc
+    static var tfx: Bundle {
+        TXNative.tx?.customBundle?.underlyingBundle ?? .main
     }
 }

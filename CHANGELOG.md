@@ -164,3 +164,9 @@ logic now normalizes the locale name to match the format that iOS accepts.
 updating the 'Limitations' section.
 * Refactors `BypassLocalizer` class.
 * Updates `TXNativeExtensions.swift`.
+
+## Transifex iOS SDK 2.0.9-alpha
+
+*May 2, 2025*
+
+* First experimental (alpha) release of the Custom Bundle approach

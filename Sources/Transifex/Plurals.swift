@@ -165,16 +165,29 @@ final class XMLPluralParser: NSObject {
         self.parser.delegate = self
     }
 
+    /// Parses the plural string using the XML parser and returns the parsed result dictionary, if parsing
+    /// was successful, or `nil` otherwise.
+    ///
+    /// - Returns: The parsed result dictionary, or `nil` in case of an unsuccessful parsing.
+    private func parse() -> [String: String]? {
+        if !parser.parse() {
+            return nil
+        }
+        
+        return parsedResults
+    }
+
     /// Parses the provided plural string XML and generates the final rule.
     ///
     /// - Parameter deviceName: The device name.
     /// - Returns: The final rule to be used.
     private func extract(_ deviceName: String) -> String? {
-        if !parser.parse() {
+        guard let parsedResults = parse() else {
             return nil
         }
 
-        return processParsedResults(deviceName)
+        return Self.process(parsedResults: parsedResults,
+                            deviceName: deviceName)
     }
 
     /// - Parameter deviceName: The device name, nil for the general device rule `device.`
@@ -221,7 +234,8 @@ final class XMLPluralParser: NSObject {
     ///
     /// - Parameter deviceName: The device name.
     /// - Returns: The final rule to be used.
-    private func processParsedResults(_ deviceName: String) -> String? {
+    private static func process(parsedResults: [String: String],
+                                deviceName: String) -> String? {
         guard parsedResults.count > 0 else {
             return nil
         }
@@ -553,6 +567,15 @@ final class XMLPluralParser: NSObject {
     public class func extract(pluralString: String,
                               deviceName: String = currentDeviceName()) -> String? {
         return self.init(pluralString: pluralString)?.extract(deviceName)
+    }
+
+    /// Parses the rules included in the provided XML plural string and returns the parsed rules without
+    /// processing.
+    ///
+    /// - Parameter pluralString: The plural string containing a number of XML plural tags.
+    /// - Returns: The parsed rules as a dictionary, nil if there was an error.
+    public class func parse(pluralString: String) -> [String: String]? {
+        return self.init(pluralString: pluralString)?.parse()
     }
 }
 

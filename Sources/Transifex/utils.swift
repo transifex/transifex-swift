@@ -405,3 +405,132 @@ extension Bundle {
         }
     }
 }
+
+extension URL {
+    /// Constructs the download folder url where the downloaded strings will be stored, depending on the
+    /// SDK configuration (`txstrings.json` or `tx.bundle`).
+    ///
+    /// - Parameter groupIdentifier: The optional group identifier provided by the developer.
+    /// - Returns: The download folder url, or `nil` in case on error.
+    internal static func downloadFolderURL(groupIdentifier: String?) -> URL? {
+        let fileManager = FileManager.default
+
+        var baseURL: URL? = nil
+
+        if let groupIdentifier = groupIdentifier,
+           let groupURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) {
+            baseURL = groupURL
+        }
+        else {
+            baseURL = fileManager.urls(for: .cachesDirectory,
+                                       in: .userDomainMask).first
+        }
+        
+        return baseURL?.appendingPathComponent(TXNative.DOWNLOADED_FOLDER_NAME)
+    }
+}
+
+extension Bundle {
+    /// Returns the main application bundle regardless of whether the current runtime process in the main
+    /// one or an application extension.
+    internal static var application: Bundle {
+        var bundle = Bundle.main
+
+        /// In case the SDK is executed by an app extension, the `.main` bundle does not return
+        /// the main application bundle but the extenson one. In order to retrieve the main application
+        /// bundle, we would need to peel off two directory levels:
+        /// - `APP.app/PlugIns/APP_EXTENSION.appex`
+        ///
+        /// Ref: https://stackoverflow.com/a/27849695/60949
+        if bundle.bundleURL.pathExtension == "appex" {
+            let mainAppBundleURL = bundle.bundleURL
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            if let mainAppBundle = Bundle(url: mainAppBundleURL) {
+                bundle = mainAppBundle
+            }
+        }
+
+        return bundle
+    }
+}
+
+extension TXNative {
+    struct DummyStringUnit: Encodable {
+        let state: String
+        let value: String
+    }
+
+    struct DummyLocalization: Encodable {
+        let stringUnit: DummyStringUnit
+    }
+    
+    struct DummyString: Encodable {
+        let extractionState: String
+        let localizations: [String: DummyLocalization]
+        let shouldTranslate: Bool
+    }
+
+    struct DummyStringsCatalog: Encodable {
+        let sourceLanguage: String
+        let strings: [String: DummyString]
+        let version: String
+    }
+
+    private static let kDummyKey = "tx.key.dummy"
+    private static let kVersion = "1.0"
+    private static let kExtractionStateManual = "manual"
+    private static let kStateTranslated = "translated"
+
+    /// Generates a dummy `.xcstrings` file on the specified URL given a specific source and app
+    /// locales.
+    ///
+    /// For more information look under the "SwiftUI-only applications" section of `README.md`.
+    ///
+    /// - Parameters:
+    ///   - url: The file URL to store the generated `.xcstrings` file.
+    ///   - sourceLocale: The source locale.
+    ///   - appLocales: The application supported locales.
+    public static func generateDummyStringsFile(at url: URL,
+                                                sourceLocale: String,
+                                                appLocales: [String]) throws {
+        var dummyLocalizations: [String: DummyLocalization] = [:]
+        
+        for appLocale in appLocales {
+            guard appLocale != sourceLocale else {
+                continue
+            }
+            dummyLocalizations[appLocale] = DummyLocalization(
+                stringUnit: DummyStringUnit(
+                    state: kStateTranslated,
+                    value: kDummyKey
+                )
+            )
+        }
+        let dummyStringsContents = DummyStringsCatalog(
+            sourceLanguage: sourceLocale,
+            strings: [
+                kDummyKey : DummyString(
+                    extractionState: kExtractionStateManual,
+                    localizations: dummyLocalizations,
+                    shouldTranslate: false
+                )
+            ],
+            version: kVersion
+        )
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [
+            .prettyPrinted, .sortedKeys
+        ]
+
+        let jsonData = try encoder.encode(dummyStringsContents)
+
+        let serializedTranslations = String(data: jsonData,
+                                            encoding: .utf8)
+
+        try serializedTranslations?.write(to: url,
+                                         atomically: true,
+                                         encoding: .utf8)
+    }
+}
