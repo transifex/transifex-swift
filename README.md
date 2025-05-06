@@ -536,9 +536,9 @@ let nsLocalizedString = NSLocalizedString("Fly you fools", bundle: .tfx,
 Developers can also use the `Bundle.localizedString(forKey: ...)` method:
 
 ```swift
- Bundle.tfx.localizedString(forKey: "Go back to the abyss!",
-                            value: nil,
-                            table: nil)
+Bundle.tfx.localizedString(forKey: "Go back to the abyss!",
+                           value: nil,
+                           table: nil)
 ```
 
 ### Custom SwiftLint rule
@@ -546,12 +546,12 @@ Developers can also use the `Bundle.localizedString(forKey: ...)` method:
 For developers using [SwiftLint](https://github.com/realm/SwiftLint/) to enforce
 Swift rules, the following rule can be added to the `.swiftlint.yml` configuration
 file, which will highlight all `NSLocalizedString()`, `String(localized: ...)`
-and `Text()` calls that lack the `bundle: .tfx` argument:
+and `Text()` (non-`verbatim:`) calls that lack the `bundle: .tfx` argument:
 
 ```yml
   custom_transifex_bundle:
     name: "Transifex Custom Bundle"
-    regex: "(?-s)\\b(NSLocalizedString\\(|String\\(localized|Text\\()(?!.*bundle:\\s*\\.tfx)"
+    regex: "(?-s)\\b(NSLocalizedString\\s*\\(|String\\s*\\(localized|Text\\s*\\((?!\\s*verbatim\\s*:))(?!.*bundle:\\s*\\.tfx)"
     message: "Please provide a `bundle: .tfx` argument"
     included:
       - ".*\\.swift"
@@ -589,8 +589,8 @@ development.
 We have noticed that the iOS localization engine behaves differently for
 SwiftUI-only applications.
 
-In order for the correct preferred localization to be loaded using the custom
-bundle approach, a SwiftUI project must include either:
+For the correct preferred localization to be loaded using the custom bundle
+approach, a SwiftUI project must include either:
 
 * a String Catalog (e.g. `Localizable.xcstrings`, `InfoPlist.xcstrings`, etc)
   with at least one localized string for every supported language of the app, or
@@ -599,14 +599,14 @@ bundle approach, a SwiftUI project must include either:
   the app.
 
 The above files can even include a dummy string with the same translation in
-each language, even marked as 'Do not translate'. As long as there is at least
-one string localized in each language, this is enough for the iOS localization
-engine to use the correct language as the custom bundle's preferred
-localization.
+each language (even marked as 'Do not translate' in case of the String Catalog).
 
-Chances are your application already contains one of the aforementioned files
-with at least one localized string in every supported language, so no extra
-steps are required.
+If there is at least one string localized in each language, this is enough for
+the iOS localization engine to use the correct language as the custom bundle's
+preferred localization.
+
+Chances are your application already contains one of those files with at least
+one localized string in every supported language, so no extra steps are required.
 
 If you are facing issues even after adding those files, make sure you clean and
 rebuild the project.
@@ -620,7 +620,7 @@ If you want a fast and easy workaround for the above issue, you can use the
 The Transifex SDK CLI tool also contains an experimental option in its `pull`
 command.
 
-By default the tool will genearate the `txstrings.json` file for use with the
+By default, the tool will generate the `txstrings.json` file for use with the
 default initialization of the SDK. If the `--export-type bundle` option is
 provided to the `pull` command, then the tool will instead generate a `tx.bundle`
 container that developers can bundle together in their app, in the same way as

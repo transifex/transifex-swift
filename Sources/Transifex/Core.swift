@@ -1108,6 +1108,8 @@ Initializing TXNative(
     }
 }
 
+// MARK: - Helper properties
+
 public extension Bundle {
     /// The custom Transifex bundle, if the SDK has been initialized with the custom bundle configuration or
     /// the main application bundle.
@@ -1120,5 +1122,14 @@ public extension Bundle {
     @objc
     static var tfx: Bundle {
         TXNative.tx?.customBundle?.underlyingBundle ?? .main
+    }
+}
+
+@available(iOS 16, *)
+public extension LocalizedStringResource.BundleDescription {
+    /// Helper property that expose the custom Transifex bundle (see `Bundle.tfx`) as a
+    /// `BundleDescription` structure.
+    static var tfx: LocalizedStringResource.BundleDescription {
+        .atURL(Bundle.tfx.bundleURL)
     }
 }
