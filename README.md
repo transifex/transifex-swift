@@ -582,6 +582,33 @@ localization tables, which means that only strings found in the initial
 `Localizable.strings` file will be displayed. This feature is under active
 development.
 
+#### SwiftUI view initializers
+
+Even though the `Text()` SwiftUI view is supported by the SDK due to its
+initializer accepting a `bundle` argument, the rest of the SwiftUI view
+initializers (e.g. `Toggle()`, `Button()` etc) do not behave the same.
+
+For those views, the initializer must be changed to use the `label` argument,
+so that a `Text()` element can be provided instead of a `LocalizedStringKey`.
+
+So the following:
+
+```swift
+Button("test string") {
+    print("Button pressed")
+}
+```
+
+becomes:
+
+```swift
+Button {
+    print("Button pressed")
+} label: {
+    Text("test string", bundle: .tfx)
+}
+```
+
 ### Known issues
 
 #### SwiftUI-only applications
