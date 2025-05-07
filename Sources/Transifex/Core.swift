@@ -1125,7 +1125,7 @@ public extension Bundle {
     }
 }
 
-@available(iOS 16, *)
+@available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
 public extension LocalizedStringResource.BundleDescription {
     /// Helper property that expose the custom Transifex bundle (see `Bundle.tfx`) as a
     /// `BundleDescription` structure.
