@@ -500,9 +500,6 @@ such option**.
 * The default SDK initialization can be used with `.storyboard` and `.xib`
 interface files. The custom bundle approach **only supports user interfaces that
 have been generated programmatically (e.g. SwiftUI)**.
-* The default SDK initialization supports both non-pluralized and pluralized
-strings, device variations and substitutions. **In its initial experimental
-release, the custom bundle approach only supports non-pluralized strings**.
 * The default SDK initialization requires constant tracking of the changes and
 the new APIs introduced by Apple to ensure that the existing logic does not
 break and any new methods/APIs are supported. The custom bundle approach
@@ -571,12 +568,6 @@ call, for the rule to be considered enforced.
 [^1]: https://github.com/transifex/transifex-swift-macro/
 
 ### Limitations
-
-#### Pluralization
-
-The first iteration of the custom bundle approach does not support pluralization,
-device variation rules or substitutions. Those features are under active
-development.
 
 #### Custom Localization Tables
 

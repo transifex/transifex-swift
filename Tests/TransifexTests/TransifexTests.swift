@@ -277,7 +277,7 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock(configuration: URLSessionConfiguration.default)
+        let urlSession = URLSessionMock()
         urlSession.mockResponses = [
             mockResponse1,
             mockResponse2
@@ -1187,6 +1187,7 @@ final class TransifexTests: XCTestCase {
                                 isDirectory: true)
 
         let url = try! TXBundle.generateCustomBundle(with: existingTranslations,
+                                                     sourceLocale: "en",
                                                      at: tempDirectory,
                                                      isMacOS: false)
 
@@ -1207,6 +1208,82 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual(localizableElStringsContents,
                        expectedLocalizableElStringsContents)
 
+        let localizableElStringsDictURL = elLprojURL!.appendingPathComponent("Localizable.stringsdict")
+        XCTAssertNotNil(localizableElStringsDictURL)
+        
+        let localizableElStringsDictContents = try! String(contentsOfFile: localizableElStringsDictURL.path())
+
+        let expectedLocalizableElStringsDictContents = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>simple</key>
+        <dict>
+            <key>NSStringDeviceSpecificRuleType</key>
+            <dict>
+                <key>iphone</key>
+                <dict>
+                    <key>NSStringLocalizedFormatKey</key>
+                    <string>Η συσκευή έχει %1$#@token@</string>
+                    <key>token</key>
+                    <dict>
+                        <key>NSStringFormatSpecTypeKey</key>
+                        <string>NSStringPluralRuleType</string>
+                        <key>NSStringFormatValueTypeKey</key>
+                        <string>ld</string>
+                        <key>one</key>
+                        <string>%1$ld χρήστη</string>
+                        <key>other</key>
+                        <string>%1$ld χρήστες</string>
+                    </dict>
+                </dict>
+                <key>other</key>
+                <string>Η συσκευή έχει %ld χρήστες</string>
+            </dict>
+        </dict>
+        <key>simple_plural</key>
+        <dict>
+            <key>NSStringLocalizedFormatKey</key>
+            <string>%#@value@</string>
+            <key>value</key>
+            <dict>
+                <key>NSStringFormatSpecTypeKey</key>
+                <string>NSStringPluralRuleType</string>
+                <key>NSStringFormatValueTypeKey</key>
+                <string>ld</string>
+                <key>one</key>
+                <string>%ld χρήστης βρέθηκε</string>
+                <key>other</key>
+                <string>%ld χρήστες βρέθηκαν</string>
+            </dict>
+        </dict>
+        <key>simpler</key>
+        <dict>
+            <key>NSStringLocalizedFormatKey</key>
+            <string>Η συσκευή έχει %1$#@token@ με %2$ld τηλέφωνα</string>
+            <key>token</key>
+            <dict>
+                <key>NSStringFormatSpecTypeKey</key>
+                <string>NSStringPluralRuleType</string>
+                <key>NSStringFormatValueTypeKey</key>
+                <string>ld</string>
+                <key>one</key>
+                <string>%1$ld χρήστη</string>
+                <key>other</key>
+                <string>%1$ld χρήστες</string>
+            </dict>
+        </dict>
+    </dict>
+</plist>
+"""
+        XCTAssertEqual(localizableElStringsDictContents
+            .replacingOccurrences(of: "\t", with: "")
+            .replacingOccurrences(of: "\n", with: ""),
+                       expectedLocalizableElStringsDictContents
+            .replacingOccurrences(of: "    ", with: "")
+            .replacingOccurrences(of: "\n", with: ""))
+
         let enLprojURL = url?.appendingPathComponent("en.lproj", isDirectory: true)
         XCTAssertNotNil(enLprojURL)
         XCTAssertTrue(FileManager.default.fileExists(atPath: enLprojURL!.path()))
@@ -1223,6 +1300,82 @@ final class TransifexTests: XCTestCase {
 """
         XCTAssertEqual(localizableEnStringsContents,
                        expectedLocalizableEnStringsContents)
+
+        let localizableEnStringsDictURL = enLprojURL!.appendingPathComponent("Localizable.stringsdict")
+        XCTAssertNotNil(localizableEnStringsDictURL)
+        
+        let localizableEnStringsDictContents = try! String(contentsOfFile: localizableEnStringsDictURL.path())
+
+        let expectedLocalizableEnStringsDictContents = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>simple</key>
+        <dict>
+            <key>NSStringDeviceSpecificRuleType</key>
+            <dict>
+                <key>iphone</key>
+                <dict>
+                    <key>NSStringLocalizedFormatKey</key>
+                    <string>Device has %1$#@token@</string>
+                    <key>token</key>
+                    <dict>
+                        <key>NSStringFormatSpecTypeKey</key>
+                        <string>NSStringPluralRuleType</string>
+                        <key>NSStringFormatValueTypeKey</key>
+                        <string>ld</string>
+                        <key>one</key>
+                        <string>%1$ld user</string>
+                        <key>other</key>
+                        <string>%1$ld users</string>
+                    </dict>
+                </dict>
+                <key>other</key>
+                <string>Device has %ld users</string>
+            </dict>
+        </dict>
+        <key>simple_plural</key>
+        <dict>
+            <key>NSStringLocalizedFormatKey</key>
+            <string>%#@value@</string>
+            <key>value</key>
+            <dict>
+                <key>NSStringFormatSpecTypeKey</key>
+                <string>NSStringPluralRuleType</string>
+                <key>NSStringFormatValueTypeKey</key>
+                <string>ld</string>
+                <key>one</key>
+                <string>%ld user found</string>
+                <key>other</key>
+                <string>%ld users found</string>
+            </dict>
+        </dict>
+        <key>simpler</key>
+        <dict>
+            <key>NSStringLocalizedFormatKey</key>
+            <string>Device has %1$#@token@ with %2$ld phones</string>
+            <key>token</key>
+            <dict>
+                <key>NSStringFormatSpecTypeKey</key>
+                <string>NSStringPluralRuleType</string>
+                <key>NSStringFormatValueTypeKey</key>
+                <string>ld</string>
+                <key>one</key>
+                <string>%1$ld user</string>
+                <key>other</key>
+                <string>%1$ld users</string>
+            </dict>
+        </dict>
+    </dict>
+</plist>
+"""
+        XCTAssertEqual(localizableEnStringsDictContents
+            .replacingOccurrences(of: "\t", with: "")
+            .replacingOccurrences(of: "\n", with: ""),
+                       expectedLocalizableEnStringsDictContents
+            .replacingOccurrences(of: "    ", with: "")
+            .replacingOccurrences(of: "\n", with: ""))
     }
 
     static var allTests = [

@@ -534,3 +534,33 @@ extension TXNative {
                                          encoding: .utf8)
     }
 }
+
+/// Helper extension for plist file generation
+extension Dictionary<String, Any> {
+    private static let LOCALIZED_FORMAT_KEY         = "NSStringLocalizedFormatKey"
+    private static let FORMAT_SPEC_TYPE_KEY         = "NSStringFormatSpecTypeKey"
+    private static let PLURAL_RULE_TYPE             = "NSStringPluralRuleType"
+    private static let FORMAT_VALUE_TYPE_KEY        = "NSStringFormatValueTypeKey"
+    private static let DEVICE_SPECIFIC_RULE_TYPE    = "NSStringDeviceSpecificRuleType"
+
+    mutating func addDeviceSpecificRule(_ dict: [String: Any]) {
+        self[Self.DEVICE_SPECIFIC_RULE_TYPE] = dict
+    }
+
+    mutating func addLocalizedFormatKey(_ value: String) {
+        self[Self.LOCALIZED_FORMAT_KEY] = value
+    }
+
+    mutating func addFormatSpecPlural() {
+        self[Self.FORMAT_SPEC_TYPE_KEY] = Self.PLURAL_RULE_TYPE
+    }
+
+    mutating func addFormatValueType(_ type: String) {
+        self[Self.FORMAT_VALUE_TYPE_KEY] = type
+    }
+
+    subscript(key: PluralizationRule) -> Any? {
+        set { self[key.rawValue] = newValue }
+        get { self[key.rawValue] }
+    }
+}

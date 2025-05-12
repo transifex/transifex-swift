@@ -125,19 +125,44 @@ extension String {
 
         return matchingICURules
     }
+
+    // Excludes for now: %a %e %g and specifiers in capital letters
+    private static let FORMAT_SPECIFIER_RULE_PATTERN = #"%(?!%)(?:\d+\$)?(lld|llu|llx|ld|li|lu|lx|lo|zd|zu|td|tu|jd|ju|hhd|hhi|hhu|hd|hi|hu|[@diufscxXp])"#
+
+    func extractFormatSpecifierType() -> String? {
+        var regex: NSRegularExpression
+
+        do {
+            regex = try NSRegularExpression(pattern: Self.FORMAT_SPECIFIER_RULE_PATTERN,
+                                            options: [])
+        }
+        catch {
+            return nil
+        }
+
+        guard let match = regex.firstMatch(in: self,
+                                           options: [],
+                                           range: NSRange(location: 0,
+                                                          length: count)),
+                let range = Range(match.range(at: 1), in: self) else {
+                return nil
+            }
+        
+        return String(self[range])
+    }
 }
 
 /// Class responsible for parsing the collection of CDS XML elements, filtering the proper rules for the device
 /// and generating (if needed) the final ICU string to be used by the SDK.
 final class XMLPluralParser: NSObject {
-    private static let CDS_XML_ID_ATTRIBUTE_DEVICE_TOKEN = "device"
-    private static let CDS_XML_ID_ATTRIBUTE_SUBSTITUTIONS_TOKEN = "substitutions"
+    internal static let CDS_XML_ID_ATTRIBUTE_DEVICE_TOKEN = "device"
+    internal static let CDS_XML_ID_ATTRIBUTE_SUBSTITUTIONS_TOKEN = "substitutions"
 
     private static let ICU_RULE_MISSING_TOKEN = "???"
     private static let ICU_RULE_PLURAL_TOKEN = "plural"
 
-    private static let CDS_XML_ID_ATTRIBUTE_PLURAL_TOKEN = "plural"
-    private static let CDS_XML_ID_ATTRIBUTE_DELIMITER = "."
+    internal static let CDS_XML_ID_ATTRIBUTE_PLURAL_TOKEN = "plural"
+    internal static let CDS_XML_ID_ATTRIBUTE_DELIMITER = "."
 
     private static let FIRST_POSITIONAL_SPECIFIER = "%1$"
     private static let VARIABLE_PREFIX: Character = "%"
@@ -192,13 +217,13 @@ final class XMLPluralParser: NSObject {
 
     /// - Parameter deviceName: The device name, nil for the general device rule `device.`
     /// - Returns: The synthesized device rule
-    private static func deviceRule(with deviceName: String? = nil) -> String {
+    internal static func deviceRule(with deviceName: String? = nil) -> String {
         return "\(CDS_XML_ID_ATTRIBUTE_DEVICE_TOKEN)\(CDS_XML_ID_ATTRIBUTE_DELIMITER)\(deviceName ?? "")"
     }
 
     /// - Parameter results: The parsed XML results
     /// - Returns: True if the provided results contain at least one device rule, false otherwise.
-    private static func containsDeviceRules(_ results: [String: String]) -> Bool {
+    internal static func containsDeviceRules(_ results: [String: String]) -> Bool {
         return containsRules(withPrefix: deviceRule(),
                              results: results)
     }
@@ -469,14 +494,16 @@ final class XMLPluralParser: NSObject {
     }
 
     /// Validate and parse plural rules.
-    ///
+    /// 
     /// - Parameter parsedResults: The parsed results
     /// - Parameter firstExpectedComponent: The first expected component of the key.
     /// - Parameter secondExpectedComponent: The second expected component of the key.
+    /// - Parameter cleanValueCharacters: Remove any of the provided characters from the
+    /// final plural string.
     /// - Returns: An array containing tuples with the plural rule as the first element and the string as
     /// the second one. The array is sorted in respect to the order each key must appear on the final ICU
     /// rule.
-    private class func parsePluralRules(_ parsedResults: [String:String],
+    internal static func parsePluralRules(_ parsedResults: [String:String],
                                         firstExpectedComponent: String,
                                         secondExpectedComponent: String,
                                         cleanValueCharacters: String? = nil) -> [(PluralizationRule,String)] {
@@ -615,6 +642,12 @@ public final class PluralUtils {
     private static let SUBSTITUTION_TOKEN_PATTERN = #"%\d*\$*#@[^@]+@"#
     private static let CDS_XML_TOKEN_DELIMITER = "@"
 
+    /// A tuple of three elements:
+    /// * The first one is the original token
+    /// * The second one is the exported prefix (positional specifier)
+    /// * The third one is the cleaned up version of the token without the specifiers and the delimiters.
+    public typealias TXToken = (String, String, String)
+
     /// For a given substitutions phrase, it returns an array with the parsed tokens.
     ///
     /// ## String Catalogs (`.xcstrings`)
@@ -634,10 +667,8 @@ public final class PluralUtils {
     /// * `("%#@token2@", "", "token2")`
     ///
     /// - Parameter substitutionsPhrase: The substitutions phrase
-    /// - Returns: The array of extracted token tuples. A tuple of three elements: The first one is the
-    /// original token, the second is the exported prefix (positional specifier) and the cleaned up version of
-    /// the token without the specifiers and the delimiters.
-    public class func extractTokens(from substitutionsPhrase: String) -> [(String, String, String)] {
+    /// - Returns: The array of extracted TXTokens.
+    public class func extractTokens(from substitutionsPhrase: String) -> [TXToken] {
         // Bail fast if no token prefix is found.
         guard substitutionsPhrase.contains("#@") else {
             return []

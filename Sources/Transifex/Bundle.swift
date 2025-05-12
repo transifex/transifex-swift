@@ -15,6 +15,9 @@ public class TXBundle {
     /// The filename of the constructed transifex bundle
     private static let BUNDLE_FILENAME = "tx.bundle"
 
+    private static let VALUE_PLACEHOLDER = "value"
+    private static let VALUE_FORMAT_PLACEHOLDER = "%#@\(VALUE_PLACEHOLDER)@"
+
     private var groupIdentifier: String?
     private var sourceLocale: String
 
@@ -36,6 +39,33 @@ public class TXBundle {
         self.underlyingBundle = Self.downloaded(groupIdentifier: groupIdentifier) ?? Self.bundled
     }
 
+    /// Generates the custom transifex bundle container from the provided translations, overriding the
+    /// existing bundle, if it already exists.
+    ///
+    /// - Parameters:
+    ///   - translations: Translations structure
+    ///   - groupIdentifier: Optional group identifier of the application so that the bundle container
+    ///   is stored in a folder accessible from all different application extensions.
+    internal func generateDownloaded(with translations: TXTranslations) throws {
+        guard let downloadedFolderURL = URL
+            .downloadFolderURL(groupIdentifier: groupIdentifier) else {
+            throw TXBundleErrors.invalidBundleURL
+        }
+
+#if os(macOS)
+        let isMacOS = true
+#else
+        let isMacOS = false
+#endif
+
+        _ = try Self.generateCustomBundle(with: translations,
+                                          sourceLocale: sourceLocale,
+                                          at: downloadedFolderURL,
+                                          isMacOS: isMacOS)
+    }
+
+    // MARK: - Public
+
     /// Generates the custom bundle with the provided translations to the specified file URL.
     /// 
     /// - Parameters:
@@ -52,7 +82,7 @@ public class TXBundle {
             .appendingPathComponent("\(UUID().uuidString).bundle",
                                     isDirectory: true)
 
-        Logger.verbose("Generating custom bundle at \(tempURL)")
+        Logger.verbose("Generating custom bundle at \(tempURL.path)")
 
         let fileManager = FileManager.default
 
@@ -62,37 +92,19 @@ public class TXBundle {
                                         withIntermediateDirectories: true)
 
         // Generate an Info.plist for the bundle
-        var bundleLocalizations: [String] = []
-        translations.forEach { (localeKey, strings) in
-            bundleLocalizations.append("\t<string>\(localeKey)</string>")
-        }
+        var plistDict: [String: Any] = [:]
+        plistDict["CFBundleIdentifier"] = "com.transifex.tx.custombundle"
+        plistDict["CFBundleName"] = "TX Custom Bundle"
+        plistDict["CFBundleDevelopmentRegion"] = sourceLocale
+        plistDict["CFBundlePackageType"] = "BNDL"
+        plistDict["CFBundleVersion"] = "6.0"
+        plistDict["CFBundleLocalizations"] = translations.map { $0.key }
 
-        let infoPlistContents = """
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleIdentifier</key>
-    <string>com.transifex.tx.custombundle</string>
-    <key>CFBundleName</key>
-    <string>TX Custom Bundle</string>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>\(sourceLocale)</string>
-    <key>CFBundlePackageType</key>
-    <string>BNDL</string>
-    <key>CFBundleVersion</key>
-    <string>6.0</string>
-    <key>CFBundleLocalizations</key>
-    <array>
-\(bundleLocalizations.joined(separator: "\n"))
-    </array>
-</dict>
-</plist>
-"""
-        let infoPlistPath = tempURL.appendingPathComponent("Info.plist")
-        try infoPlistContents.write(to: infoPlistPath,
-                                    atomically: true,
-                                    encoding: .utf8)
+        let plistData = try PropertyListSerialization.data(fromPropertyList: plistDict,
+                                                           format: .xml,
+                                                           options: 0)
+        let infoPlistURL = tempURL.appendingPathComponent("Info.plist")
+        try plistData.write(to: infoPlistURL)
 
         var lProjParentDirectory = tempURL
 
@@ -123,8 +135,8 @@ public class TXBundle {
             // correct `tableName` below.
 
             var nonPlurals: [String: String] = [:]
-            var xmlPlurals: [String: [String: String]] = [:]
             var icuPlurals: [String: [String: ICUPluralResult]] = [:]
+            var xmlPlurals: [String: [String: String]] = [:]
 
             strings.forEach { (stringKey, stringInfo) in
                 guard let sourceString = stringInfo[TXDecoratorCache.STRING_KEY] else {
@@ -152,67 +164,246 @@ public class TXBundle {
             }
 
             // Generate `.strings` file(s)
-            if nonPlurals.count > 0 {
-                let tableName = "Localizable"
-                let stringsPath = lProj.appendingPathComponent("\(tableName).strings")
-
-                let stringsContent = nonPlurals
-                    .sorted { $0.key < $1.key }
-                    .map { "\"\($0)\" = \"\($1)\";" }
-                    .joined(separator: "\n")
-
-                try stringsContent.write(to: stringsPath,
-                                         atomically: true,
-                                         encoding: .utf8)
-            }
+            try generateStrings(nonPlurals: nonPlurals,
+                                in: lProj)
 
             // Generate `.stringsdict` file(s)
             //
-            // TODO: Pluralization / Device Variations / Substitutions
-            //
             // Process ICU and XML plurals and create the respective
             // pluralization `.stringsdict` file.
-            if icuPlurals.count > 0 {
-                Logger.verbose("icuPlurals: \(icuPlurals)")
-            }
-            if xmlPlurals.count > 0 {
-                Logger.verbose("xmlPlurals: \(xmlPlurals)")
-            }
+            try generateStringsDict(icuPlurals: icuPlurals,
+                                    xmlPlurals: xmlPlurals,
+                                    in: lProj)
         }
 
         let finalURL = directoryURL
             .appendingPathComponent(Self.BUNDLE_FILENAME,
                                     isDirectory: true)
 
-        Logger.verbose("Replacing \(finalURL) contents with contents from \(tempURL)")
+        Logger.verbose("Replacing \(finalURL.path) contents with contents from \(tempURL.path)")
 
         return try fileManager.replaceItemAt(finalURL,
                                              withItemAt: tempURL)
     }
 
-    /// Generates the custom transifex bundle container from the provided translations, overriding the
-    /// existing bundle, if it already exists.
+    // MARK: - Private
+
+    /// Generate the `.strings` file from the provided non-pluralized localized strings.
     ///
     /// - Parameters:
-    ///   - translations: Translations structure
-    ///   - groupIdentifier: Optional group identifier of the application so that the bundle container
-    ///   is stored in a folder accessible from all different application extensions.
-    internal func generateDownloaded(with translations: TXTranslations) throws {
-        guard let downloadedFolderURL = URL
-            .downloadFolderURL(groupIdentifier: groupIdentifier) else {
-            throw TXBundleErrors.invalidBundleURL
+    ///   - nonPlurals: The dictionary containing the non-pluralized strings.
+    ///   - directory: The directory to store the generated `.strings` file.
+    private static func generateStrings(nonPlurals: [String: String],
+                                        in directory: URL) throws {
+        guard nonPlurals.count > 0 else {
+            return
         }
 
-#if os(macOS)
-        let isMacOS = true
-#else
-        let isMacOS = false
-#endif
+        let tableName = "Localizable"
+        let stringsPath = directory.appendingPathComponent("\(tableName).strings")
 
-        _ = try Self.generateCustomBundle(with: translations,
-                                          sourceLocale: sourceLocale,
-                                          at: downloadedFolderURL,
-                                          isMacOS: isMacOS)
+        let stringsContent = nonPlurals
+            .sorted { $0.key < $1.key }
+            .map { "\"\($0)\" = \"\($1)\";" }
+            .joined(separator: "\n")
+
+        try stringsContent.write(to: stringsPath,
+                                 atomically: true,
+                                 encoding: .utf8)
+    }
+
+    /// Generate the `.stringsdict` file from the provided pluralized localized strings (both ICU and
+    /// XML formats).
+    ///
+    /// - Parameters:
+    ///   - icuPlurals: The dictionary containing the ICU pluralized strings (simple pluralization).
+    ///   - xmlPlurals: The dictionary containing the XML pluralized strings (device variations,
+    ///   substitutions, complex rules).
+    ///   - directory: The directory to store the generated `.strings` file.
+    private static func generateStringsDict(icuPlurals: [String: [String: ICUPluralResult]],
+                                            xmlPlurals: [String: [String: String]],
+                                            in directory: URL) throws {
+        guard icuPlurals.count > 0 || xmlPlurals.count > 0 else {
+            return
+        }
+
+        let tableName = "Localizable"
+        let stringsDictURL = directory.appendingPathComponent("\(tableName).stringsdict")
+
+        var stringsDict: [String: Any] = [:]
+
+        icuPlurals
+            .sorted { $0.key < $1.key }
+            .forEach { (key, value) in
+            // Multiple ICU plurals are not supported. For that we use
+            // the XML plurals (substitutions)
+            guard let icuPluralResult = value.first?.value else {
+                return
+            }
+
+            guard let extractedType = icuPluralResult.extractedPlurals
+                .compactMap({ $1.extractFormatSpecifierType() }).first else {
+                return
+            }
+
+            var icuPluralOuterDict: [String: Any] = [:]
+            icuPluralOuterDict.addLocalizedFormatKey(VALUE_FORMAT_PLACEHOLDER)
+
+            var icuPluralInnerDict: [String: Any] = [:]
+            icuPluralInnerDict.addFormatSpecPlural()
+            icuPluralInnerDict.addFormatValueType(extractedType)
+
+            icuPluralResult.extractedPlurals
+                .sorted { $0.key.rawValue < $1.key.rawValue }
+                .forEach { (key, value) in
+                icuPluralInnerDict[key] = value
+            }
+
+            icuPluralOuterDict[VALUE_PLACEHOLDER] = icuPluralInnerDict
+
+            stringsDict[key] = icuPluralOuterDict
+        }
+
+        xmlPlurals
+            .sorted { $0.key < $1.key }
+            .forEach { (key: String, value: [String : String]) in
+            var xmlPluralOuterDict: [String: Any] = [:]
+
+            if let mainPhrase = value[XMLPluralParser.CDS_XML_ID_ATTRIBUTE_SUBSTITUTIONS_TOKEN] {
+                xmlPluralOuterDict.addLocalizedFormatKey(mainPhrase)
+
+                let tokens = PluralUtils.extractTokens(from: mainPhrase)
+
+                Self.generateSubstitutionsXMLRepresentation(tokens: tokens,
+                                                            with: value,
+                                                            in: &xmlPluralOuterDict)
+            }
+            else if XMLPluralParser.containsDeviceRules(value) {
+                // Filter only the rules that begin with "device."
+                let deviceRulePrefix = XMLPluralParser.deviceRule()
+                let deviceRules = value.keys.filter {
+                    $0.starts(with: deviceRulePrefix)
+                }
+                // Collect all unique device names from the filtered rules
+                let deviceNames = Set(deviceRules.compactMap {
+                    $0.components(separatedBy: XMLPluralParser.CDS_XML_ID_ATTRIBUTE_DELIMITER)[1]
+                })
+
+                if deviceNames.count > 0 {
+                    var xmlPluralInnerDict: [String: Any] = [:]
+
+                    deviceNames
+                        .sorted()
+                        .forEach { deviceName in
+                        if let deviceValue = value[deviceRulePrefix + deviceName] {
+                            let tokens = PluralUtils.extractTokens(from: deviceValue)
+
+                            // Substitutions inside a device rule
+                            if tokens.count > 0 {
+                                var xmlDeviceOuterDict: [String: Any] = [:]
+                                xmlDeviceOuterDict.addLocalizedFormatKey(deviceValue)
+
+                                Self.generateSubstitutionsXMLRepresentation(tokens: tokens,
+                                                                            with: value,
+                                                                            in: &xmlDeviceOuterDict)
+
+                                xmlPluralInnerDict[deviceName] = xmlDeviceOuterDict
+                            }
+                            // Simple device rule
+                            else {
+                                xmlPluralInnerDict[deviceName] = deviceValue
+                            }
+                        }
+                        else {
+                            // Plurals inside a device rule
+                            var xmlDeviceOuterDict: [String: Any] = [:]
+
+                            let pluralRules = XMLPluralParser.parsePluralRules(value,
+                                firstExpectedComponent: XMLPluralParser.CDS_XML_ID_ATTRIBUTE_DEVICE_TOKEN,
+                                secondExpectedComponent: deviceName)
+
+                            guard let extractedType = pluralRules
+                                .compactMap({ $1.extractFormatSpecifierType() }).first else {
+                                return
+                            }
+
+                            xmlDeviceOuterDict.addLocalizedFormatKey(VALUE_FORMAT_PLACEHOLDER)
+
+                            var xmlDeviceInnerDict: [String: Any] = [:]
+                            xmlDeviceInnerDict.addFormatSpecPlural()
+                            xmlDeviceInnerDict.addFormatValueType(extractedType)
+
+                            pluralRules.forEach { (key, value) in
+                                xmlDeviceInnerDict[key] = value
+                            }
+
+                            xmlDeviceOuterDict[VALUE_PLACEHOLDER] = xmlDeviceInnerDict
+
+                            xmlPluralInnerDict[deviceName] = xmlDeviceOuterDict
+                        }
+                    }
+
+                    xmlPluralOuterDict.addDeviceSpecificRule(xmlPluralInnerDict)
+                }
+            }
+
+            stringsDict[key] = xmlPluralOuterDict
+        }
+
+        let plistData = try PropertyListSerialization.data(fromPropertyList: stringsDict,
+                                                           format: .xml,
+                                                           options: 0)
+        try plistData.write(to: stringsDictURL)
+    }
+
+    /// Generates the `.stringsdict` XML representation of the plural rules for a substitution either
+    /// for a specific device or generally
+    ///
+    /// - Parameters:
+    ///   - tokens: The array containing all the extracted token representations
+    ///   - pluralRules: The dictionary containing the plural rules for the substitution
+    ///   - dict: The dictionary that will contain the generated plural rules
+    private static func generateSubstitutionsXMLRepresentation(tokens: [PluralUtils.TXToken],
+                                                               with pluralRules: [String : String],
+                                                               in dict: inout [String: Any]) {
+        tokens.forEach { processedTokenResult in
+            // Token prefix should be: "1$", "2$", ...
+            let tokenPrefix = processedTokenResult.1
+            // Cleaned tokens should be: "token1", "token2", ...
+            let cleanedToken = processedTokenResult.2
+            let pluralRules = XMLPluralParser.parsePluralRules(pluralRules,
+                firstExpectedComponent: XMLPluralParser.CDS_XML_ID_ATTRIBUTE_SUBSTITUTIONS_TOKEN,
+                secondExpectedComponent: cleanedToken)
+
+            guard let extractedType = pluralRules
+                .compactMap({ $1.extractFormatSpecifierType() }).first else {
+                return
+            }
+
+            var xmlPluralInnerDict: [String: Any] = [:]
+            xmlPluralInnerDict.addFormatSpecPlural()
+            xmlPluralInnerDict.addFormatValueType(extractedType)
+
+            pluralRules .forEach { (key, value) in
+                // Ensure that the pluralized value will include the positional
+                // specifier
+                let normalizedValue = value.replacingOccurrences(of: "%\(extractedType)",
+                                                                 with: "%\(tokenPrefix)\(extractedType)")
+                xmlPluralInnerDict[key] = normalizedValue
+            }
+
+            dict[cleanedToken] = xmlPluralInnerDict
+        }
+    }
+
+    /// Points to the custom Transifex bundle generated after downloading the translations from CDS.
+    private static func downloaded(groupIdentifier: String?) -> Bundle? {
+        guard let url = URL.downloadFolderURL(groupIdentifier: groupIdentifier)?
+            .appendingPathComponent(BUNDLE_FILENAME, isDirectory: true) else {
+            return nil
+        }
+
+        return Bundle(url: url)
     }
 
     /// Points to the custom Transifex bundle provided by the developer within the app.
@@ -228,16 +419,6 @@ public class TXBundle {
 
         guard let url = Bundle.application.url(forResource: resourceName,
                                                withExtension: resourceExtension) else {
-            return nil
-        }
-
-        return Bundle(url: url)
-    }
-
-    /// Points to the custom Transifex bundle generated after downloading the translations from CDS.
-    private static func downloaded(groupIdentifier: String?) -> Bundle? {
-        guard let url = URL.downloadFolderURL(groupIdentifier: groupIdentifier)?
-            .appendingPathComponent(BUNDLE_FILENAME, isDirectory: true) else {
             return nil
         }
 
