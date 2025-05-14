@@ -551,7 +551,7 @@ and `Text()` (non-`verbatim:`) calls that lack the `bundle: .tfx` argument:
 ```yml
   custom_transifex_bundle:
     name: "Transifex Custom Bundle"
-    regex: "(?-s)\\b(NSLocalizedString\\s*\\(|String\\s*\\(localized|Text\\s*\\((?!\\s*verbatim\\s*:))(?!.*bundle:\\s*\\.tfx)"
+    regex: "(?-s)\\b(NSLocalizedString\\s*\\(|String\\s*\\(localized|Text\\s*\\((?!\\s*(verbatim\\s*:|#Localized)))(?!.*bundle:\\s*\\.tfx)"
     message: "Please provide a `bundle: .tfx` argument"
     included:
       - ".*\\.swift"
