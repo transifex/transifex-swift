@@ -546,7 +546,8 @@ Bundle.tfx.localizedString(forKey: "Go back to the abyss!",
 For developers using [SwiftLint](https://github.com/realm/SwiftLint/) to enforce
 Swift rules, the following rule can be added to the `.swiftlint.yml` configuration
 file, which will highlight all `NSLocalizedString()`, `String(localized: ...)`
-and `Text()` (non-`verbatim:`) calls that lack the `bundle: .tfx` argument:
+and `Text()` (non-`verbatim:` / non-`#Localized` [^1]) calls that lack the
+`bundle: .tfx` argument:
 
 ```yml
   custom_transifex_bundle:
@@ -566,6 +567,8 @@ stricter (e.g. `error`) or more relaxed (e.g. `warning`).
 
 **NOTE:** The `bundle: .tfx` argument must be on the same line as the function
 call, for the rule to be considered enforced.
+
+[^1]: https://github.com/transifex/transifex-swift-macro/
 
 ### Limitations
 
