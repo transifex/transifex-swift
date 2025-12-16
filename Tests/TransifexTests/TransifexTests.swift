@@ -285,10 +285,12 @@ final class TransifexTests: XCTestCase {
 
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["en"])
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            session: urlSession,
-                            filterStatus: "translated")
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setSession(urlSession)
+            .setFilterStatus("translated")
+            .build()
 
         let expectation1 = self.expectation(description: "Waiting for translated translations to be fetched")
         var translationErrors : [Error]? = nil
@@ -344,10 +346,12 @@ final class TransifexTests: XCTestCase {
 
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["en"])
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            session: urlSession,
-                            filterTags: ["ios"])
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setSession(urlSession)
+            .setFilterTags(["ios"])
+            .build()
 
         let expectation1 = self.expectation(description: "Waiting for iOS translations to be fetched")
         var translationErrors : [Error]? = nil
@@ -703,10 +707,11 @@ final class TransifexTests: XCTestCase {
         let memoryCache =  TXMemoryCache()
         memoryCache.update(translations: existingTranslations)
 
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            cache: memoryCache,
-                            renderingStrategy: .platform)
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .build()
         
         XCTAssertEqual(NSLocalizedString("a", comment: ""), "α")
     }
@@ -834,10 +839,11 @@ final class TransifexTests: XCTestCase {
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["fr"])
 
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            renderingStrategy: .platform)
-        
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .build()
+
         let result = TXNative.localizedString(format: "test", arguments: [1,2] as [CVarArg])
         
         XCTAssertNotNil(result)
@@ -848,10 +854,12 @@ final class TransifexTests: XCTestCase {
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["fr"])
         
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            errorPolicy: MockErrorPolicy(),
-                            renderingStrategy: .icu)
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setErrorPolicy(MockErrorPolicy())
+            .setRenderingStrategy(.icu)
+            .build()
         
         let result = TXNative.translate(sourceString: "source string", params: [:], context: nil)
 
@@ -863,10 +871,12 @@ final class TransifexTests: XCTestCase {
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["fr"])
         
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            errorPolicy: MockErrorPolicyException(),
-                            renderingStrategy: .icu)
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setErrorPolicy(MockErrorPolicyException())
+            .setRenderingStrategy(.icu)
+            .build()
         
         let result = TXNative.translate(sourceString: "source string", params: [:], context: nil)
 
@@ -943,9 +953,11 @@ final class TransifexTests: XCTestCase {
         let memoryCache =  TXMemoryCache()
         memoryCache.update(translations: existingTranslations)
         
-        TXNative.initialize(locales: localeState,
-                            token: Self.testToken,
-                            cache: memoryCache)
+        TXNativeBuilder()
+            .setLocales(localeState)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .build()
         
         let result = TXNative.translate(sourceString: sourceStringTest,
                                         params: [:],
@@ -1163,6 +1175,24 @@ final class TransifexTests: XCTestCase {
         XCTAssertEqual(argsReflection[2] as! String, argsRegex[2] as! String)
     }
 
+    func testBuilder() {
+        let locales = TXLocaleState(sourceLocale: "en",
+                                    appLocales: ["en"])
+
+        XCTAssertFalse(TXNativeBuilder()
+            .setLocales(locales)
+            .build())
+
+        XCTAssertFalse(TXNativeBuilder()
+            .setToken("token")
+            .build())
+
+        XCTAssertTrue(TXNativeBuilder()
+            .setLocales(locales)
+            .setToken("token")
+            .build())
+    }
+
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
         ("testCurrentLocaleProvider", testCurrentLocaleProvider),
@@ -1202,5 +1232,6 @@ final class TransifexTests: XCTestCase {
         ("testXMLPluralParserDeviceAndSubstitutions", testXMLPluralParserDeviceAndSubstitutions),
         ("testXMLDeviceSubstitutionSpecial", testXMLDeviceSubstitutionSpecial),
         ("testLocalizationValueExtraction", testLocalizationValueExtraction),
+        ("testBuilder", testBuilder)
     ]
 }

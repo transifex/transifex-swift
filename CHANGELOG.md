@@ -164,3 +164,13 @@ logic now normalizes the locale name to match the format that iOS accepts.
 updating the 'Limitations' section.
 * Refactors `BypassLocalizer` class.
 * Updates `TXNativeExtensions.swift`.
+
+## Transifex iOS SDK 2.0.9
+
+*December 12, 2025*
+
+* Allows SDK to be initialized using a builder pattern (`TXNativeBuilder`).
+* Deprecates existing SDK initialization methods in favor of the builder
+approach.
+* Supports overriding the authorization HTTP header key using the builder
+pattern.

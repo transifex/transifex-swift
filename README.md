@@ -56,11 +56,11 @@ import Transifex
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        TXNative.initialize(
-            locales: TXLocaleState(sourceLocale: "en",
-                                   appLocales: ["en", "el", "fr"]),
-            token: "<transifex_token>"
-        )
+        TXNativeBuilder()
+            .setLocales(TXLocaleState(sourceLocale: "en",
+                                      appLocales: ["en", "el", "fr"]))
+            .setToken("<transifex_token>")
+            .build()
 
         return true
     }
@@ -76,16 +76,16 @@ import Transifex
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        TXNative.initialize(
-            locales: TXLocaleState(sourceLocale: "en",
-                                   appLocales: ["en", "el", "fr"]),
-            token: "<transifex_token>",
-            secret: "<transifex_secret>",
-            missingPolicy: TXCompositePolicy(
+        TXNativeBuilder()
+            .setLocales(TXLocaleState(sourceLocale: "en",
+                                   appLocales: ["en", "el", "fr"]))
+            .setToken("<transifex_token>")
+            .setSecret("<transifex_secret>")
+            .setMissingPolicy(TXCompositePolicy(
                 TXPseudoTranslationPolicy(),
                 TXWrappedStringPolicy(start: "[", end: "]")
-            )
-        )
+            ))
+            .build()
 
         /// Optional: Fetch translations on launch
         TXNative.fetchTranslations()
@@ -134,18 +134,12 @@ If you are interested in setting up the SDK for your application extensions as w
         wrappedStringPolicy
     ]];
 
-    [TXNative initializeWithLocales:localeState
-                              token:@"<transifex_token>"
-                             secret:@"<transifex_secret>"
-                            cdsHost:nil
-                            session:nil
-                              cache:nil
-                      missingPolicy:compositePolicy
-                        errorPolicy:nil
-                  renderingStrategy:TXRenderingStategyPlatform
-                             logger:nil
-                         filterTags:nil
-                       filterStatus:nil];
+    [[[[[TXNativeBuilder.new
+         setLocales:localeState]
+         setToken:@"<transifex_token>"]
+         setSecret:@"<transifex_secret>"]
+         setMissingPolicy:compositePolicy]
+         build];
 
     /// Optional: Fetch translations on launch
     [TXNative fetchTranslations:nil
@@ -155,26 +149,6 @@ If you are interested in setting up the SDK for your application extensions as w
 
     return YES;
 }
-```
-
-### Alternative initialization
-
-If you want your application to make use of the default behavior, you can initialize the
-SDK using a simpler initilization method:
-
-#### Swift
-
-```swift
-TXNative.initialize(
-    locales: localeState,
-    token: "<transifex_token>"
-)
-```
-#### Objective-C
-
-```objc
-[TXNative initializeWithLocales:localeState
-                          token:@"<transifex_token>"];
 ```
 
 ### Supported localization methods
@@ -281,8 +255,10 @@ let locales = TXLocaleState(sourceLocale: "en",
                             appLocales: ["en", "el"],
                             currentLocaleProvider: CustomLocaleProvider())
 
-TXNative.initialize(locales: locales,
-                    token: "<token>")
+TXNativeBuilder()
+    .setLocales(locales)
+    .setToken("<token>")
+    .build()
 ```
 
 Objective-C example:
@@ -306,8 +282,10 @@ TXLocaleState *locales = [[TXLocaleState alloc] initWithSourceLocale:@"en"
                                                           appLocales:@[@"en", @"el"]
                                                currentLocaleProvider:customLocale];
 
-[TXNative initializeWithLocales:locales
-                          token:@"<token>"];
+[[[TXNativeBuilder.new
+   setLocales:locales]
+   setToken:@"<token>"]
+   build];
 ```
 
 It is worth noting that the iOS SDK manages an internal cache of translations in the file system of the translations fetched over-the-air.

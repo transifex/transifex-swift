@@ -161,6 +161,8 @@ class NativeCore : TranslationProvider {
     ///   - secret: the additional secret to use for pushing source content
     ///   - cdsHost: an optional host for the Content Delivery Service, defaults to the host provided by
     ///   Transifex
+    ///   - customAuthorizationHeaderKey: an optional value used for passing the `token` and the
+    ///   `secret` to the `cdsHost`. If `nil`, the `Authorization` key will be used.
     ///   - cache: the translation cache that holds the translations from the CDS
     ///   - session: Optional URLSession to be used for all the requests made to the CDS service. If
     ///   no session is provided, an ephemeral URLSession with no cache will be created and used
@@ -177,6 +179,7 @@ class NativeCore : TranslationProvider {
         token: String,
         secret: String?,
         cdsHost: String?,
+        customAuthorizationHeaderKey: String?,
         cache: TXCache?,
         session: URLSession? = nil,
         missingPolicy: TXMissingPolicy? = nil,
@@ -192,7 +195,8 @@ class NativeCore : TranslationProvider {
             secret: secret,
             cdsHost: cdsHost ?? CDSHandler.CDS_HOST,
             filterTags: filterTags,
-            filterStatus: filterStatus
+            filterStatus: filterStatus,
+            customAuthorizationHeaderKey: customAuthorizationHeaderKey
         )
         self.cdsHandler = CDSHandler(
             configuration: cdsConfiguration,
@@ -443,7 +447,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.8"
+    internal static let version = "2.0.9"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -461,7 +465,7 @@ public final class TXNative : NSObject {
     public static let CDS_XML_ID_ATTRIBUTE = "id"
 
     /// An instance of the core class that handles all the work
-    private static var tx : NativeCore?
+   fileprivate static var tx : NativeCore?
     
     /// The available and current locales
     @objc
@@ -475,6 +479,8 @@ public final class TXNative : NSObject {
     ///
     /// Do not call initialize() twice without calling dispose() first to deconstruct the previous singleton
     /// instance.
+    ///
+    /// Deprecated: Please use `TXNativeBuilder` pattern instead.
     ///
     /// - Parameters:
     ///   - locales: keeps track of the available and current locales
@@ -495,6 +501,7 @@ public final class TXNative : NSObject {
     ///   fetched.
     ///   - filterStatus: An optional status so that only strings matching translation status are
     ///   fetched.
+    @available(*, deprecated, message: "Use TXNativeBuilder() instead")
     @objc
     public static func initialize(
         locales: TXLocaleState,
@@ -525,6 +532,7 @@ Initializing TXNative(
                         token: token,
                         secret: secret,
                         cdsHost: cdsHost,
+                        customAuthorizationHeaderKey: nil,
                         cache: cache,
                         session: session,
                         missingPolicy: missingPolicy,
@@ -541,9 +549,12 @@ Initializing TXNative(
     /// `initialize(locales:token:secret:cdsHost:session:cache:missingPolicy:errorPolicy:renderingStrategy:)`
     /// method.
     ///
+    /// Deprecated: Please use `TXNativeBuilder` pattern instead.
+    ///
     /// - Parameters:
     ///   - locales: keeps track of the available and current locales
     ///   - token: the Transifex token that can be used for retrieving translations from CDS
+    @available(*, deprecated, message: "Use TXNativeBuilder() instead")
     @objc
     public static func initialize(
         locales: TXLocaleState,
@@ -1004,5 +1015,159 @@ Initializing TXNative(
     public static func dispose() {
         Swizzler.deactivate()
         tx = nil
+    }
+}
+
+/// Builder class for passing only the properties necessary for the SDK initialization based on the developer
+/// needs and initializing the SDK.
+///
+/// Example:
+/// ```
+/// TXNativeBuilder()
+///     .setLocales(TXLocaleState(sourceLocale: "en",
+///                               appLocales: ["en"]))
+///     .setToken(token)
+///     .build()
+/// ```
+public final class TXNativeBuilder: NSObject {
+    private var locales: TXLocaleState?
+    private var token: String?
+    private var secret: String?
+    private var cdsHost: String?
+    private var customAuthorizationHeaderKey: String?
+    private var session: URLSession?
+    private var filterTags: [String] = []
+    private var filterStatus: String?
+    private var cache: TXCache?
+    private var missingPolicy: TXMissingPolicy?
+    private var errorPolicy: TXErrorPolicy?
+    private var renderingStrategy = TXRenderingStategy.platform
+
+    /// - Parameter locales: List of locale codes for the languages configured in the application.
+    /// - Returns: The builder instance
+    @objc
+    public func setLocales(_ locales: TXLocaleState) -> TXNativeBuilder {
+        self.locales = locales
+        return self
+    }
+
+    /// - Parameter token: API token to use for connecting to the CDS.
+    /// - Returns: The builder instance
+    @objc
+    public func setToken(_ token: String) -> TXNativeBuilder {
+        self.token = token
+        return self
+    }
+
+    /// - Parameter secret: Secret to use for pushing source content.
+    /// - Returns: The builder instance
+    @objc
+    public func setSecret(_ secret: String) -> TXNativeBuilder {
+        self.secret = secret
+        return self
+    }
+
+    /// - Parameter cdsHost: Host for the Content Delivery Service.
+    /// - Returns: The builder instance
+    @objc
+    public func setCDSHost(_ cdsHost: String) -> TXNativeBuilder {
+        self.cdsHost = cdsHost
+        return self
+    }
+    
+    /// - Parameter customAuthorizationHeaderKey: Value for the HTTP Header key used for
+    /// passing the `token` and the `secret` to the `cdsHost`.
+    /// - Returns: The builder instance
+    @objc
+    public func setCustomAuthorizationHeaderKey(_ customAuthorizationHeaderKey: String) -> TXNativeBuilder {
+        self.customAuthorizationHeaderKey = customAuthorizationHeaderKey
+        return self
+    }
+    
+    /// - Parameter session: URLSession to be used for all the requests made to the CDS service.
+    /// - Returns: The builder instance
+    @objc
+    public func setSession(_ session: URLSession) -> TXNativeBuilder {
+        self.session = session
+        return self
+    }
+
+    /// - Parameter filterTags: List of tags so that only strings that have all of the given tags are
+    ///   fetched.
+    /// - Returns: The builder instance
+    @objc
+    public func setFilterTags(_ filterTags: [String]) -> TXNativeBuilder {
+        self.filterTags = filterTags
+        return self
+    }
+
+    /// - Parameter filterStatus: Status so that only strings matching translation status are
+    ///   fetched.
+    /// - Returns: The builder instance
+    @objc
+    public func setFilterStatus(_ filterStatus: String) -> TXNativeBuilder {
+        self.filterStatus = filterStatus
+        return self
+    }
+
+    /// - Parameter cache: Translation cache that holds the translations from the CDS.
+    /// - Returns: The builder instance
+    @objc
+    public func setCache(_ cache: TXCache) -> TXNativeBuilder {
+        self.cache = cache
+        return self
+    }
+
+    /// - Parameter missingPolicy: Policy to use for returning strings when a translation is missing.
+    /// - Returns: The builder instance
+    @objc
+    public func setMissingPolicy(_ missingPolicy: TXMissingPolicy) -> TXNativeBuilder {
+        self.missingPolicy = missingPolicy
+        return self
+    }
+
+    /// - Parameter errorPolicy: Policy to determine how to handle rendering errors.
+    /// - Returns: The builder instance
+    @objc
+    public func setErrorPolicy(_ errorPolicy: TXErrorPolicy) -> TXNativeBuilder {
+        self.errorPolicy = errorPolicy
+        return self
+    }
+
+    /// - Parameter renderingStrategy: Strategy to be used when rendering the final string.
+    /// - Returns: The builder instance
+    @objc
+    public func setRenderingStrategy(_ renderingStrategy: TXRenderingStategy) -> TXNativeBuilder {
+        self.renderingStrategy = renderingStrategy
+        return self
+    }
+
+    /// Initializes the SDK based on the properties that were passed to the builder's setter methods before
+    /// hand.
+    ///
+    /// - Returns: True if the initialization was successful, false if either the `locales` or `token`
+    /// properties are missing or if the SDK has been already initialized.
+    @objc
+    @discardableResult
+    public func build() -> Bool {
+        guard let locales = locales,
+              let token = token,
+              TXNative.tx == nil else {
+            return false
+        }
+
+        TXNative.tx = NativeCore(locales: locales,
+                                 token: token,
+                                 secret: secret,
+                                 cdsHost: cdsHost,
+                                 customAuthorizationHeaderKey: customAuthorizationHeaderKey,
+                                 cache: cache,
+                                 session: session,
+                                 missingPolicy: missingPolicy,
+                                 errorPolicy: errorPolicy,
+                                 renderingStrategy: renderingStrategy,
+                                 filterTags: filterTags,
+                                 filterStatus: filterStatus)
+        return true
     }
 }

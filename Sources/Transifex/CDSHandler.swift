@@ -179,6 +179,9 @@ struct CDSConfiguration {
     var filterTags: [String] = []
     /// Fetch only strings matching translation status: reviewed,proofread,finalized
     var filterStatus: String? = nil
+    /// Optional value used for the HTTP header key that passes the `token` and the `secret` to
+    /// the `cdsHost`. If `nil`, the `Authorization` key will be used.
+    var customAuthorizationHeaderKey: String? = nil
 }
 
 /// Handles communication with the Content Delivery Service.
@@ -821,12 +824,13 @@ failed: \(details.failed)
             "X-NATIVE-SDK": "mobile/ios/\(TXNative.version)",
             "Accept-version": "v2"
         ]
+        let authorizationKey = configuration.customAuthorizationHeaderKey ?? "Authorization"
         if withSecret == true,
            let secret = configuration.secret {
-            headers["Authorization"] = "Bearer \(configuration.token):\(secret)"
+            headers[authorizationKey] = "Bearer \(configuration.token):\(secret)"
         }
         else {
-            headers["Authorization"] = "Bearer \(configuration.token)"
+            headers[authorizationKey] = "Bearer \(configuration.token)"
         }
         if let etag = etag {
             headers["If-None-Match"] = etag

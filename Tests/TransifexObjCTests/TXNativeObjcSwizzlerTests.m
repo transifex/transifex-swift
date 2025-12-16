@@ -97,22 +97,40 @@
                                                                 appLocales:@[ @"el" ]
                                                      currentLocaleProvider:mockLocaleProvider];
 
-    [TXNative initializeWithLocales:localeState
-                              token:@"<token>"
-                             secret:nil
-                            cdsHost:nil
-                            session:nil
-                              cache:memoryCache
-                      missingPolicy:nil
-                        errorPolicy:nil
-                  renderingStrategy:TXRenderingStategyPlatform
-                         filterTags:nil
-                       filterStatus:nil];
+    [[[[TXNativeBuilder.new
+        setLocales:localeState]
+        setToken:@"<token>"]
+        setCache:memoryCache]
+        build];
 
     NSString *string = [NSBundle.mainBundle localizedAttributedStringForKey:@"a"
                                                                       value:nil
                                                                       table:nil].string;
     XCTAssertEqualObjects(string, @"α");
+
+    [TXNative dispose];
+}
+
+- (void)testBuilder {
+    MockLocaleProvider *mockLocaleProvider = [MockLocaleProvider.alloc initWithMockLocaleCode:@"el"];
+    TXLocaleState *locales = [TXLocaleState.alloc initWithSourceLocale:@"en"
+                                                            appLocales:@[ @"el" ]
+                                                 currentLocaleProvider:mockLocaleProvider];
+
+    XCTAssertFalse([TXNativeBuilder.new build]);
+
+    XCTAssertFalse([[TXNativeBuilder.new
+                     setToken:@"token"]
+                     build]);
+
+    XCTAssertFalse([[TXNativeBuilder.new
+                     setLocales:locales]
+                     build]);
+
+    XCTAssertTrue([[[TXNativeBuilder.new
+                     setLocales:locales]
+                     setToken:@"token"]
+                     build]);
 
     [TXNative dispose];
 }
