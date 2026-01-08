@@ -294,6 +294,8 @@ class CDSHandler {
 
     private typealias CDSPullRequestResult = Result<TXLocaleStrings, TXCDSError>
 
+    private let aggregationQueue = DispatchQueue(label: "com.transifex.native.cds")
+
     /// The url session to be used for the requests to the CDS, defaults to an ephemeral URLSession with
     /// a disabled URL cache.
     let session: URLSession
@@ -379,21 +381,19 @@ class CDSHandler {
             performFetch(retryCount: 0,
                          code: code,
                          request: requestByLocale) { [weak self] result in
-                guard let _ = self else {
-                    return
-                }
+                self?.aggregationQueue.async {
+                    requestsFinished += 1
 
-                requestsFinished += 1
+                    switch result {
+                    case .success(let localeStrings):
+                        translationsByLocale[code] = localeStrings
+                    case .failure(let error):
+                        errors.append(error)
+                    }
 
-                switch result {
-                case .success(let localeStrings):
-                    translationsByLocale[code] = localeStrings
-                case .failure(let error):
-                    errors.append(error)
-                }
-
-                if requestsFinished == totalRequests {
-                    completionHandler(translationsByLocale, errors)
+                    if requestsFinished == totalRequests {
+                        completionHandler(translationsByLocale, errors)
+                    }
                 }
             }
         }
