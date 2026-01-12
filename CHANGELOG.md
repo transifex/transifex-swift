@@ -174,3 +174,12 @@ updating the 'Limitations' section.
 approach.
 * Supports overriding the authorization HTTP header key using the builder
 pattern.
+
+## Transifex iOS SDK 2.0.10
+
+*January 12, 2025*
+
+* Improves unit test suite.
+* Bumps supported macOS version from 10.13 to 10.14.
+* Improves `fetchTranslations` threading logic.
+* Introduces `disableSwizzling()` method in `TXNativeBuilder`.
