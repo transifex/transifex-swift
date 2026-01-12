@@ -1196,6 +1196,45 @@ final class TransifexTests: XCTestCase {
             .setToken("token")
             .build())
     }
+    
+    func testDisabledSwizzling() {
+        let existingTranslations: TXTranslations = [
+            "en": [
+                "a": [ "string": "a" ],
+            ],
+            "el": [
+                "a": [ "string": "α" ],
+            ]
+        ]
+
+        let locales = TXLocaleState(sourceLocale: "en",
+                                    appLocales: ["el"],
+                                    currentLocaleProvider: MockLocaleProvider("el"))
+
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: existingTranslations)
+
+        TXNativeBuilder()
+            .setLocales(locales)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .build()
+
+        XCTAssertEqual(NSLocalizedString("a", comment: ""), "α")
+
+        TXNative.dispose()
+
+        TXNativeBuilder()
+            .setLocales(locales)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .disableSwizzling()
+            .build()
+
+        XCTAssertNotEqual(NSLocalizedString("a", comment: ""), "α")
+        XCTAssertEqual(TXNative.t("a"), "α")
+        XCTAssertEqual(TXNative.translate(sourceString: "a", params: [:], context: nil), "α")
+    }
 
     static var allTests = [
         ("testDuplicateLocaleFiltering", testDuplicateLocaleFiltering),
