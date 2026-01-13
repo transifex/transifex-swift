@@ -25,7 +25,7 @@ The full SDK documentation is available at [https://transifex.github.io/transife
 
 | Swift           | Xcode            | Platforms                                            |
 |-----------------|------------------|------------------------------------------------------|
-| Swift 5.3       | Xcode 15.4       | iOS 12.0, watchOS 4.0, tvOS 12.0, macOS 10.13        |
+| Swift 5.3       | Xcode 15.4       | iOS 12.0, watchOS 4.0, tvOS 12.0, macOS 10.14        |
 
 ## Usage
 

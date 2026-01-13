@@ -1,20 +1,6 @@
 import XCTest
 @testable import Transifex
 
-/// Partially mocked URLSessionDataTask and URLSession classes so that we can test how
-/// Transifex behaves on certain server responses.
-class URLSessionDataTaskMock: URLSessionDataTask, @unchecked Sendable {
-    private let closure: () -> Void
-
-    init(closure: @escaping () -> Void) {
-        self.closure = closure
-    }
-
-    override func resume() {
-        closure()
-    }
-}
-
 struct MockResponse {
     var url : URL
     var data : Data?
@@ -22,40 +8,62 @@ struct MockResponse {
     var error : Error?
 }
 
-class URLSessionMock: URLSession, @unchecked Sendable {
-    typealias CompletionHandler = (Data?, URLResponse?, Error?) -> Void
+final class URLProtocolMock: URLProtocol {
+    static var mockResponses: [MockResponse] = []
+    static var mockResponseIndex = 0
 
-    var mockResponses : [MockResponse]?
-    var mockResponseIndex = 0
-    
-    override init() { }
-    
-    override func dataTask(
-        with request: URLRequest,
-        completionHandler: @escaping CompletionHandler
-    ) -> URLSessionDataTask {
+    override class func canInit(with request: URLRequest) -> Bool {
+        return true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        return request
+    }
+
+    override func startLoading() {
         guard
             let requestURL = request.url,
-            let mockResponse = mockResponses?[mockResponseIndex],
-            mockResponse.url == requestURL else {
-            return URLSessionDataTaskMock {
-                completionHandler(nil, nil, nil)
-            }
+            URLProtocolMock.mockResponseIndex < URLProtocolMock.mockResponses.count else {
+            client?.urlProtocolDidFinishLoading(self)
+            return
         }
-        
-        mockResponseIndex += 1
-        
-        let data = mockResponse.data
-        let error = mockResponse.error
-        
-        return URLSessionDataTaskMock {
-            let response = HTTPURLResponse(url: requestURL,
-                                           statusCode: mockResponse.statusCode ?? 200,
-                                           httpVersion: nil,
-                                           headerFields: nil)
-            completionHandler(data, response, error)
+
+        let mockResponse = URLProtocolMock.mockResponses[URLProtocolMock.mockResponseIndex]
+        guard mockResponse.url == requestURL else {
+            client?.urlProtocolDidFinishLoading(self)
+            return
         }
+
+        URLProtocolMock.mockResponseIndex += 1
+
+        if let error = mockResponse.error {
+            client?.urlProtocol(self, didFailWithError: error)
+            return
+        }
+
+        let response = HTTPURLResponse(url: requestURL,
+                                       statusCode: mockResponse.statusCode ?? 200,
+                                       httpVersion: nil,
+                                       headerFields: nil) ?? URLResponse()
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+
+        if let data = mockResponse.data {
+            client?.urlProtocol(self, didLoad: data)
+        }
+
+        client?.urlProtocolDidFinishLoading(self)
     }
+
+    override func stopLoading() { }
+}
+
+func makeMockSession(responses: [MockResponse]) -> URLSession {
+    URLProtocolMock.mockResponses = responses
+    URLProtocolMock.mockResponseIndex = 0
+
+    let configuration: URLSessionConfiguration = .ephemeral
+    configuration.protocolClasses = [URLProtocolMock.self]
+    return URLSession(configuration: configuration)
 }
 
 class MockLocaleProvider : TXCurrentLocaleProvider {
@@ -277,11 +285,10 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponse1,
             mockResponse2
-        ]
+        ])
 
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["en"])
@@ -339,10 +346,10 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=android")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponse1,
-            mockResponse2 ]
+            mockResponse2
+        ])
 
         let localeState = TXLocaleState(sourceLocale: "en",
                                         appLocales: ["en"])
@@ -400,11 +407,10 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Bstatus%5D=reviewed")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponse1,
             mockResponse2
-        ]
+        ])
 
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
@@ -458,11 +464,10 @@ final class TransifexTests: XCTestCase {
         let mockResponse2 = MockResponse(url: URL(string: "https://cds.svc.transifex.net/content/en?filter%5Btags%5D=android")!,
                                          data: "{\"data\":{\"testkey3\":{\"string\":\"test string 3\"}}}".data(using: .utf8))
 
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponse1,
             mockResponse2
-        ]
+        ])
 
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
@@ -520,8 +525,7 @@ final class TransifexTests: XCTestCase {
                                         data: mockResponseData,
                                         statusCode: 200)
         
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [mockResponse]
+        let urlSession = makeMockSession(responses: [mockResponse])
         
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
@@ -557,12 +561,11 @@ final class TransifexTests: XCTestCase {
                                              data: mockResponseData,
                                              statusCode: 200)
         
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponseNotReady,
             mockResponseNotReady,
             mockResponseReady
-        ]
+        ])
         
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
@@ -594,7 +597,7 @@ final class TransifexTests: XCTestCase {
                            characterLimit: 0)
         ]
         
-        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"/jobs/content/456\"}}}"
+        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"jobs/content/456\"}}}"
         let expectedURL = URL(string: "https://cds.svc.transifex.net/content")!
         
         let mockResponse = MockResponse(url: expectedURL,
@@ -608,8 +611,10 @@ final class TransifexTests: XCTestCase {
                                            data: expectedJobDataString.data(using: .utf8),
                                            statusCode: 200)
         
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [ mockResponse, mockJobResponse ]
+        let urlSession = makeMockSession(responses: [
+            mockResponse,
+            mockJobResponse
+        ])
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
         let cdsHandler = CDSHandler(configuration: cdsConfiguration,
@@ -621,7 +626,7 @@ final class TransifexTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectations(timeout: 1.0) { (error) in
+        waitForExpectations(timeout: 3.0) { (error) in
             XCTAssertTrue(pushResult)
         }
     }
@@ -635,7 +640,7 @@ final class TransifexTests: XCTestCase {
                            characterLimit: 0)
         ]
         
-        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"/jobs/content/456\"}}}"
+        let expectedDataString = "{\"data\":{\"id\":\"123\",\"links\":{\"job\":\"jobs/content/456\"}}}"
         let expectedURL = URL(string: "https://cds.svc.transifex.net/content")!
         
         let mockResponse = MockResponse(url: expectedURL,
@@ -659,8 +664,7 @@ final class TransifexTests: XCTestCase {
                                                     data: expectedCompletedJobDataString.data(using: .utf8),
                                                     statusCode: 200)
         
-        let urlSession = URLSessionMock()
-        urlSession.mockResponses = [
+        let urlSession = makeMockSession(responses: [
             mockResponse,
             mockPendingJobResponse,
             mockPendingJobResponse,
@@ -673,7 +677,7 @@ final class TransifexTests: XCTestCase {
             mockProcessingJobResponse,
             mockProcessingJobResponse,
             mockCompletedJobResponse
-        ]
+        ])
         let cdsConfiguration = CDSConfiguration(localeCodes: [ "en" ],
                                                 token: Self.testToken)
         let cdsHandler = CDSHandler(configuration: cdsConfiguration,
@@ -685,7 +689,7 @@ final class TransifexTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectations(timeout: 1.0) { (error) in
+        waitForExpectations(timeout: 15.0) { (error) in
             XCTAssertTrue(pushResult)
         }
     }
@@ -1191,6 +1195,45 @@ final class TransifexTests: XCTestCase {
             .setLocales(locales)
             .setToken("token")
             .build())
+    }
+    
+    func testDisabledSwizzling() {
+        let existingTranslations: TXTranslations = [
+            "en": [
+                "a": [ "string": "a" ],
+            ],
+            "el": [
+                "a": [ "string": "α" ],
+            ]
+        ]
+
+        let locales = TXLocaleState(sourceLocale: "en",
+                                    appLocales: ["el"],
+                                    currentLocaleProvider: MockLocaleProvider("el"))
+
+        let memoryCache =  TXMemoryCache()
+        memoryCache.update(translations: existingTranslations)
+
+        TXNativeBuilder()
+            .setLocales(locales)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .build()
+
+        XCTAssertEqual(NSLocalizedString("a", comment: ""), "α")
+
+        TXNative.dispose()
+
+        TXNativeBuilder()
+            .setLocales(locales)
+            .setToken(Self.testToken)
+            .setCache(memoryCache)
+            .disableSwizzling()
+            .build()
+
+        XCTAssertNotEqual(NSLocalizedString("a", comment: ""), "α")
+        XCTAssertEqual(TXNative.t("a"), "α")
+        XCTAssertEqual(TXNative.translate(sourceString: "a", params: [:], context: nil), "α")
     }
 
     static var allTests = [

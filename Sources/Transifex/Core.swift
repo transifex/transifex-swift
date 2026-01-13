@@ -174,6 +174,7 @@ class NativeCore : TranslationProvider {
     ///   fetched.
     ///   - filterStatus: An optional status so that only strings matching translation status are
     ///   fetched.
+    ///   - swizzling: Control whether the internal swizzling logic will be activated or not (default: true).
     init(
         locales: TXLocaleState,
         token: String,
@@ -186,7 +187,8 @@ class NativeCore : TranslationProvider {
         errorPolicy: TXErrorPolicy? = nil,
         renderingStrategy : TXRenderingStategy,
         filterTags: [String] = [],
-        filterStatus: String? = nil
+        filterStatus: String? = nil,
+        swizzling: Bool = true
     ) {
         self.locales = locales
         let cdsConfiguration = CDSConfiguration(
@@ -207,8 +209,9 @@ class NativeCore : TranslationProvider {
         self.errorPolicy = errorPolicy ?? TXRenderedSourceErrorPolicy()
         self.renderingStrategy = renderingStrategy
         self.bypassLocalizer = BypassLocalizer(with: locales.sourceLocale)
-        
-        Swizzler.activate(translationProvider: self)
+        if swizzling {
+            Swizzler.activate(translationProvider: self)
+        }
     }
     
     /// Fetch translations from CDS and store them in the cache.
@@ -447,7 +450,7 @@ render '\(stringToRender)' locale code: \(localeCode) params: \(params). Error:
 /// A static class that is the main point of entry for all the functionality of Transifex Native throughout the SDK.
 public final class TXNative : NSObject {
     /// The SDK version
-    internal static let version = "2.0.9"
+    internal static let version = "2.0.10"
     
     /// The filename of the file that holds the translated strings and it's bundled inside the app.
     public static let STRINGS_FILENAME = "txstrings.json"
@@ -1042,6 +1045,7 @@ public final class TXNativeBuilder: NSObject {
     private var missingPolicy: TXMissingPolicy?
     private var errorPolicy: TXErrorPolicy?
     private var renderingStrategy = TXRenderingStategy.platform
+    private var swizzling = true
 
     /// - Parameter locales: List of locale codes for the languages configured in the application.
     /// - Returns: The builder instance
@@ -1142,6 +1146,15 @@ public final class TXNativeBuilder: NSObject {
         return self
     }
 
+    /// Disables swizzling (enabled by default).
+    ///
+    /// - Returns: The builder instance
+    @objc
+    public func disableSwizzling() -> TXNativeBuilder {
+        self.swizzling = false
+        return self
+    }
+
     /// Initializes the SDK based on the properties that were passed to the builder's setter methods before
     /// hand.
     ///
@@ -1167,7 +1180,8 @@ public final class TXNativeBuilder: NSObject {
                                  errorPolicy: errorPolicy,
                                  renderingStrategy: renderingStrategy,
                                  filterTags: filterTags,
-                                 filterStatus: filterStatus)
+                                 filterStatus: filterStatus,
+                                 swizzling: swizzling)
         return true
     }
 }
