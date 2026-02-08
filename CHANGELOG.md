@@ -177,9 +177,17 @@ pattern.
 
 ## Transifex iOS SDK 2.0.10
 
-*January 12, 2025*
+*January 12, 2026*
 
 * Improves unit test suite.
 * Bumps supported macOS version from 10.13 to 10.14.
 * Improves `fetchTranslations` threading logic.
 * Introduces `disableSwizzling()` method in `TXNativeBuilder`.
+
+## Transifex iOS SDK 2.0.11
+
+*February 8, 2026
+
+* Improves Objective-C swizzling method, ensuring it does not crash when parsing
+the argument list (`swizzledLocalizedStringWithFormat:`).
+* Adds more unit tests.
