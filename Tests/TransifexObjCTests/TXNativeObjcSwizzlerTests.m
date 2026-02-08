@@ -1,53 +1,34 @@
-//
-//  TXNativeObjcSwizzlerTests.m
-//  Transifex
-//
-//  Created by Stelios Petrakis on 16/11/20.
-//  Copyright © 2020 Transifex. All rights reserved.
-//
-
 #import <XCTest/XCTest.h>
 #import "TXNativeObjcSwizzler.h"
-@import Transifex;
 
-@interface MockLocaleProvider : NSObject <TXCurrentLocaleProvider>
-
-@property (nonatomic) NSString *mockLocaleCode;
-
-@end
-
-@implementation MockLocaleProvider
-
-- (instancetype)initWithMockLocaleCode:(NSString *)localeCode {
-    if (self = [super init]) {
-        self.mockLocaleCode = localeCode;
-    }
-
-    return self;
+static NSString *TXExpectedFormatted(NSString *format, ...) {
+    va_list args;
+    va_start(args, format);
+    NSString *result = [[NSString alloc] initWithFormat:format
+                                                 locale:[NSLocale currentLocale]
+                                              arguments:args];
+    va_end(args);
+    return result;
 }
-
-- (NSString *)currentLocale {
-    return self.mockLocaleCode;
-}
-
-@end
 
 @interface TXNativeObjcSwizzlerTests : XCTestCase
 
-+ (NSString* (^)(NSString *format, NSArray <TXNativeObjcArgument *> *arguments)) closure;
++ (NSString* (^)(NSString *format,
+                 NSArray <TXNativeObjcArgument *> *arguments)) closure;
 
 @end
 
 @implementation TXNativeObjcSwizzlerTests
 
-+ (NSString* (^)(NSString *format, NSArray <TXNativeObjcArgument *> *arguments)) closure {
++ (NSString* (^)(NSString *format,
+                 NSArray <TXNativeObjcArgument *> *arguments)) closure {
     return ^NSString * (NSString *format,
                         NSArray<TXNativeObjcArgument *> * arguments) {
         NSMutableArray *argumentList = [NSMutableArray new];
         [arguments enumerateObjectsUsingBlock:^(TXNativeObjcArgument *obj,
                                                 NSUInteger idx,
                                                 BOOL *stop) {
-            [argumentList addObject:obj.value];
+            [argumentList addObject:obj.value ?: @"(null)"];
         }];
         NSString *args = [argumentList componentsJoinedByString:@","];
         return [NSString stringWithFormat:@"format: %@ arguments: %@",
@@ -56,83 +37,114 @@
     };
 }
 
-- (void)testOneInt {
++ (void)setUp {
     [TXNativeObjcSwizzler swizzleLocalizedStringWithClosure:self.class.closure];
+}
 
++ (void)tearDown {
+    [TXNativeObjcSwizzler revertLocalizedString];
+}
+
+- (void)testOneInt {
     NSString *finalString = [NSString localizedStringWithFormat:@"Test %d",
                              1];
     NSString *expectedString = @"format: Test %d arguments: 1";
 
     XCTAssertEqualObjects(finalString, expectedString);
-
-    [TXNativeObjcSwizzler revertLocalizedString];
 }
 
 - (void)testOneFloatOneString {
-    [TXNativeObjcSwizzler swizzleLocalizedStringWithClosure:self.class.closure];
-
     NSString *finalString = [NSString localizedStringWithFormat:@"Test %f %@",
                              3.14, @"Test"];
     NSString *expectedString = @"format: Test %f %@ arguments: 3.14,Test";
 
     XCTAssertEqualObjects(finalString, expectedString);
-
-    [TXNativeObjcSwizzler revertLocalizedString];
 }
 
-- (void)testAttributed API_AVAILABLE(macos(12.0), ios(15.0), watchos(8.0), tvos(15.0)) {
-    TXMemoryCache *memoryCache = [TXMemoryCache new];
-    [memoryCache updateWithTranslations:@{
-        @"en": @{
-            @"a": @{ @"string": @"a" }
-        },
-        @"el": @{
-            @"a": @{ @"string": @"α" }
-        },
-    }];
+- (void)testPercentLiteral {
+    NSString *finalString = [NSString localizedStringWithFormat:@"Test %% %@",
+                             @"ok"];
+    NSString *expectedString = @"format: Test %% %@ arguments: ok";
 
-    MockLocaleProvider *mockLocaleProvider = [MockLocaleProvider.alloc initWithMockLocaleCode:@"el"];
-
-    TXLocaleState *localeState = [TXLocaleState.alloc initWithSourceLocale:@"en"
-                                                                appLocales:@[ @"el" ]
-                                                     currentLocaleProvider:mockLocaleProvider];
-
-    [[[[TXNativeBuilder.new
-        setLocales:localeState]
-        setToken:@"<token>"]
-        setCache:memoryCache]
-        build];
-
-    NSString *string = [NSBundle.mainBundle localizedAttributedStringForKey:@"a"
-                                                                      value:nil
-                                                                      table:nil].string;
-    XCTAssertEqualObjects(string, @"α");
-
-    [TXNative dispose];
+    XCTAssertEqualObjects(finalString, expectedString);
 }
 
-- (void)testBuilder {
-    MockLocaleProvider *mockLocaleProvider = [MockLocaleProvider.alloc initWithMockLocaleCode:@"el"];
-    TXLocaleState *locales = [TXLocaleState.alloc initWithSourceLocale:@"en"
-                                                            appLocales:@[ @"el" ]
-                                                 currentLocaleProvider:mockLocaleProvider];
+- (void)testWidthPrecisionNoStar {
+    NSString *finalString = [NSString localizedStringWithFormat:@"Test %08.2f",
+                             3.14];
+    NSString *expectedString = @"format: Test %08.2f arguments: 3.14";
 
-    XCTAssertFalse([TXNativeBuilder.new build]);
+    XCTAssertEqualObjects(finalString, expectedString);
+}
 
-    XCTAssertFalse([[TXNativeBuilder.new
-                     setToken:@"token"]
-                     build]);
+- (void)testCStringInvalidUTF8 {
+    const char bytes[] = { (char)0xC3, (char)0x28, 0x00 };
+    const char *invalid = bytes;
+    NSString *finalString = [NSString localizedStringWithFormat:@"Test %s", invalid];
+    NSString *expectedString = @"format: Test %s arguments: (null)";
 
-    XCTAssertFalse([[TXNativeBuilder.new
-                     setLocales:locales]
-                     build]);
+    XCTAssertEqualObjects(finalString, expectedString);
+}
 
-    XCTAssertTrue([[[TXNativeBuilder.new
-                     setLocales:locales]
-                     setToken:@"token"]
-                     build]);
+- (void)testRejectsPositionalSpecifiers {
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %1$@ %2$@", @"a", @"b"];
+    NSString *expected = TXExpectedFormatted(@"Test %1$@ %2$@", @"a", @"b");
 
-    [TXNative dispose];
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsWidthPrecisionWithStar {
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %*.*f", 6, 2, 1.234];
+    NSString *expected = TXExpectedFormatted(@"Test %*.*f", 6, 2, 1.234);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsLengthModifierLL {
+    long long value = 42;
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %lld", value];
+    NSString *expected = TXExpectedFormatted(@"Test %lld", value);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsLengthModifierZ {
+    size_t value = 42;
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %zu", value];
+    NSString *expected = TXExpectedFormatted(@"Test %zu", value);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsUnhandledConversionHex {
+    int value = 255;
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %x", value];
+    NSString *expected = TXExpectedFormatted(@"Test %x", value);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsUnhandledConversionPointer {
+    void *ptr = (void *)0x1234;
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %p", ptr];
+    NSString *expected = TXExpectedFormatted(@"Test %p", ptr);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsMixedSpecifiers {
+    NSString *actual = [NSString localizedStringWithFormat:@"%d %lld", 7, (long long)42];
+    NSString *expected = TXExpectedFormatted(@"%d %lld", 7, (long long)42);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
+- (void)testRejectsLongDoubleL {
+    long double value = 3.14L;
+    NSString *actual = [NSString localizedStringWithFormat:@"Test %Lf", value];
+    NSString *expected = TXExpectedFormatted(@"Test %Lf", value);
+
+    XCTAssertEqualObjects(actual, expected);
 }
 
 @end

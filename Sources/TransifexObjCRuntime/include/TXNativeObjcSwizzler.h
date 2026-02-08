@@ -12,14 +12,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// The type of the extracted argument
 typedef NS_ENUM(NSInteger, TXNativeObjcArgumentType) {
-    TXNativeObjcArgumentTypeInvalid = -1,
     TXNativeObjcArgumentTypeInt,
     TXNativeObjcArgumentTypeUnsigned,
     TXNativeObjcArgumentTypeDouble,
     TXNativeObjcArgumentTypeChar,
     TXNativeObjcArgumentTypeCString,
-    TXNativeObjcArgumentTypeObject,
-    TXNativeObjcArgumentTypePercent
+    TXNativeObjcArgumentTypeObject
 };
 
 /// Wrapper class that contains the information about the extracted argument value and its type
