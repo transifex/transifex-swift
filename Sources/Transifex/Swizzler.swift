@@ -289,14 +289,7 @@ class Swizzler {
                 }
             case .char,
                  .cString,
-                 .object,
-                 .percent:
-                if let string = argument.value as? String {
-                    args.append(string)
-                }
-            // We include the invalid case, so that the error is visible in the
-            // UI.
-            case .invalid:
+                 .object:
                 if let string = argument.value as? String {
                     args.append(string)
                 }

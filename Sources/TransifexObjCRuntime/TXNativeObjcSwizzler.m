@@ -9,127 +9,201 @@
 #import <objc/runtime.h>
 #import "TXNativeObjcSwizzler.h"
 
-static const NSString *kInvalidConversionSpecifier = @"INVALID";
-
 static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
 
 @implementation NSString (TXNativeObjcSwizzler)
 
 + (instancetype)swizzledLocalizedStringWithFormat:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) {
-    // Match all %{something} specifiers in the format string via a regular
-    // expression.
-    //
-    // The regular expression matches any character combinations that start with
-    // the character '%' followed by at least one non-whitespace character (\S+)
-    NSString *regExPattern = @"\%\\S+";
-    NSError *error = nil;
-    NSRegularExpression *regex = [NSRegularExpression
-        regularExpressionWithPattern:regExPattern
-        options:0
-        error:&error];
-    
-    if (error) {
-        NSLog(@"%s Error: %@",
-              __PRETTY_FUNCTION__,
-              error);
-        
-        return TXNativeObjcSwizzlerClosure(format,
-                                           @[]);
-    }
-    
     va_list argumentList;
     va_start(argumentList, format);
-    
-    NSRange totalRange = NSMakeRange(0, format.length);
-    NSMutableArray <TXNativeObjcArgument *> *arguments = [NSMutableArray new];
-    
-    for (NSTextCheckingResult *match in [regex matchesInString:format
-                                                       options:0
-                                                         range:totalRange]) {
-        NSRange matchRange = match.range;
-        NSString *originalMatchString = [format substringWithRange:matchRange];
+    va_list originalArgs;
+    va_copy(originalArgs, argumentList);
 
-        // Look into what's after the % character
-        NSRange matchRangePlusOne = NSMakeRange(matchRange.location + 1,
-                                                matchRange.length - 1);
-        NSString *matchString = [format substringWithRange:matchRangePlusOne].lowercaseString;
+    // Strictly match conversion specs like: %[flags][width][.precision][length]conv
+    NSString *regExPattern = @"%(%|(?:[#+\\-0 ]*)(?:\\d+)?(?:\\.\\d+)?(?:hh|h|ll|l|j|z|t|L)?[@aAcCdDeEfFgGiIoOsSpuxX])";
+    NSRegularExpression *regex = [NSRegularExpression
+                                  regularExpressionWithPattern:regExPattern
+                                  options:0
+                                  error:nil];
+
+    if (!regex) {
+        NSString *original =
+            [self tx_originalLocalizedStringWithFormat:format
+                                                vaList:originalArgs];
+        va_end(originalArgs);
+        va_end(argumentList);
+        return original;
+    }
+
+    NSArray<NSTextCheckingResult *> *matches =
+        [regex matchesInString:format
+                       options:0
+                         range:NSMakeRange(0, format.length)];
+
+    // Sanity check: Ensure all % tokens are matched by the regex.
+    NSInteger percentCount = 0;
+    for (NSUInteger i = 0; i < format.length; i++) {
+        if ([format characterAtIndex:i] != '%') {
+            continue;
+        }
+        percentCount++;
+        if (i + 1 < format.length
+            && [format characterAtIndex:i + 1] == '%') { // skip second '%'
+            i++;
+        }
+    }
+
+    if (percentCount != matches.count) {
+        NSString *original =
+            [self tx_originalLocalizedStringWithFormat:format
+                                                vaList:originalArgs];
+        va_end(originalArgs);
+        va_end(argumentList);
+        return original;
+    }
+
+    NSMutableArray <TXNativeObjcArgument *> *arguments = [NSMutableArray new];
+    BOOL shouldFallback = NO;
+
+    for (NSTextCheckingResult *match in matches) {
+        NSString *originalMatchString = [format substringWithRange:match.range];
+
+        // Reject positional arguments and width/precision star.
+        if ([originalMatchString rangeOfString:@"$"].location != NSNotFound ||
+            [originalMatchString rangeOfString:@"*"].location != NSNotFound) {
+            shouldFallback = YES;
+            break;
+        }
+
+        // Extract the conversion character (last char)
+        unichar conv =
+            [originalMatchString characterAtIndex:originalMatchString.length - 1];
 
         TXNativeObjcArgument *arg = [TXNativeObjcArgument new];
 
-        // Integer (%d, %D)
-        if ([matchString containsString:@"d"]) {
-            int intObject = va_arg(argumentList, int);
-            arg.value = @(intObject);
-            arg.type = TXNativeObjcArgumentTypeInt;
+        switch (conv) {
+            // Integer (%d, %i)
+            case 'd': case 'i': {
+                // Reject length modifiers
+                if ([originalMatchString rangeOfString:@"h"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"l"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"j"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"z"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"t"].location != NSNotFound) {
+                    shouldFallback = YES;
+                    break;
+                }
+                int intObject = va_arg(argumentList, int);
+                arg.value = @(intObject);
+                arg.type = TXNativeObjcArgumentTypeInt;
+                break;
+            }
+            // Unsigned (%u)
+            case 'u': {
+                // Reject length modifiers
+                if ([originalMatchString rangeOfString:@"h"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"l"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"j"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"z"].location != NSNotFound ||
+                    [originalMatchString rangeOfString:@"t"].location != NSNotFound) {
+                    shouldFallback = YES;
+                    break;
+                }
+                unsigned unsignedObject = va_arg(argumentList, unsigned);
+                arg.value = @(unsignedObject);
+                arg.type = TXNativeObjcArgumentTypeUnsigned;
+                break;
+            }
+            // Double (%e, %E, %g, %G, %a, %A, %f, %F)
+            case 'e': case 'E':
+            case 'g': case 'G':
+            case 'a': case 'A':
+            case 'f': case 'F': {
+                // Reject length modifiers except L (long double)
+                if ([originalMatchString rangeOfString:@"L"].location != NSNotFound) {
+                    shouldFallback = YES;
+                    break;
+                }
+                double doubleObject = va_arg(argumentList, double);
+                arg.value = @(doubleObject);
+                arg.type = TXNativeObjcArgumentTypeDouble;
+                break;
+            }
+            // Character (%c)
+            case 'c': {
+                int charObject = va_arg(argumentList, int);
+                arg.value = [NSString stringWithFormat:@"%c", charObject];
+                arg.type = TXNativeObjcArgumentTypeChar;
+                break;
+            }
+            // C String (%s)
+            case 's': {
+                char *charObject = va_arg(argumentList, char *);
+                if (!charObject) {
+                    arg.value = @"(null)";
+                }
+                else {
+                    arg.value = [NSString stringWithUTF8String:charObject];
+                }
+                arg.type = TXNativeObjcArgumentTypeCString;
+                break;
+            }
+            // Objective-C object (%@)
+            case '@': {
+                id obj = va_arg(argumentList, id);
+                arg.value = obj;
+                arg.type = TXNativeObjcArgumentTypeObject;
+                break;
+            }
+            // '%' character (%%)
+            case '%': {
+                // Percent literal has no argument to pass through.
+                continue;
+            }
+            default:
+                shouldFallback = YES;
+                break;
         }
-        // Unsigned (%u, %U)
-        else if ([matchString containsString:@"u"]) {
-            unsigned unsignedObject = va_arg(argumentList, unsigned);
-            arg.value = @(unsignedObject);
-            arg.type = TXNativeObjcArgumentTypeUnsigned;
+
+        if (shouldFallback) {
+            break;
         }
-        // Double (%e, %E, %g, %G, %a, %A, %f, %F)
-        else if ([matchString containsString:@"e"]
-                 || [matchString containsString:@"g"]
-                 || [matchString containsString:@"a"]
-                 || [matchString containsString:@"f"]) {
-            double doubleObject = va_arg(argumentList, double);
-            arg.value = @(doubleObject);
-            arg.type = TXNativeObjcArgumentTypeDouble;
-        }
-        // Character (%c, %C)
-        else if ([matchString containsString:@"c"]) {
-            int charObject = va_arg(argumentList, int);
-            NSString *stringObject = [NSString stringWithFormat:originalMatchString,
-                                      charObject];
-            arg.value = stringObject;
-            arg.type = TXNativeObjcArgumentTypeChar;
-        }
-        // C String (%s, %S)
-        else if ([matchString containsString:@"s"]) {
-            char *charObject = va_arg(argumentList, char *);
-            NSString *stringObject = [NSString stringWithUTF8String:charObject];
-            arg.value = stringObject;
-            arg.type = TXNativeObjcArgumentTypeCString;
-        }
-        // Objective-C object (%@)
-        else if ([matchString isEqualToString:@"@"]) {
-            NSString *stringObject = (NSString *)va_arg(argumentList, id);
-            arg.value = stringObject;
-            arg.type = TXNativeObjcArgumentTypeObject;
-        }
-        // '%' character (%%)
-        else if ([matchString isEqualToString:@"%"]){
-            arg.value = @"%";
-            arg.type = TXNativeObjcArgumentTypePercent;
-        }
-        // If there's a conversion specifier that the logic isn't handling yet,
-        // fallbak to an invalid string constant.
-        else {
-            arg.value = kInvalidConversionSpecifier;
-            arg.type = TXNativeObjcArgumentTypeInvalid;
-        }
-        
+
         [arguments addObject:arg];
-        
-        // Ignored conversion specifiers:
-        // %x, %X (hexademical)
-        // %o, %O (octal)
-        // %p (pointer)
-        //
-        // Other specifiers / modifiers that need to be tested:
-        // * Positional specifiers (e.g. %1$@, %2%s etc)
-        // * Length modifiers (e.g. %llu, %ld etc)
-        //
-        // Ref:
-        // * https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFStrings/formatSpecifiers.html
-        // * https://pubs.opengroup.org/onlinepubs/009695399/functions/printf.html
     }
-    
+
+    // Perform a local-capture of the closure to avoid race conditions.
+    NSString *(^closure)(NSString *, NSArray<id> *) = TXNativeObjcSwizzlerClosure;
+
+    if (shouldFallback || closure == nil) {
+        NSString *original =
+            [self tx_originalLocalizedStringWithFormat:format
+                                                vaList:originalArgs];
+        va_end(originalArgs);
+        va_end(argumentList);
+        return original;
+    }
+
+    va_end(originalArgs);
     va_end(argumentList);
-    
-    return TXNativeObjcSwizzlerClosure(format,
-                                       arguments);
+    return closure(format,
+                   arguments);
+}
+
+/// Returns the original Foundation formatting result for a format string and va_list.
+/// This bypasses swizzled parsing/translation and avoids variadic swizzle recursion.
+/// Safe to use as a fallback when we cannot parse the format specifiers reliably.
++ (instancetype)tx_originalLocalizedStringWithFormat:(NSString *)format
+                                              vaList:(va_list)args {
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+
+    NSString *result = [[NSString alloc] initWithFormat:format
+                                                 locale:NSLocale.currentLocale
+                                              arguments:argsCopy];
+
+    va_end(argsCopy);
+    return result;
 }
 
 @end
