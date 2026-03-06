@@ -147,4 +147,15 @@ static NSString *TXExpectedFormatted(NSString *format, ...) {
     XCTAssertEqualObjects(actual, expected);
 }
 
+- (void)testRejectsStringsdictPluralSpecifier {
+    // %#@varname@ is Apple's stringsdict plural variable specifier.
+    // Its argument is a numeric count, not an ObjC object. Reading it as `id`
+    // causes ARC to retain an invalid pointer (EXC_BAD_ACCESS). Must fall back.
+    NSUInteger count = 1;
+    NSString *actual = [NSString localizedStringWithFormat:@"%#@num_images@", count];
+    NSString *expected = TXExpectedFormatted(@"%#@num_images@", count);
+
+    XCTAssertEqualObjects(actual, expected);
+}
+
 @end

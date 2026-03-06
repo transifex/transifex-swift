@@ -150,6 +150,14 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
             }
             // Objective-C object (%@)
             case '@': {
+                // %#@ is Apple's stringsdict plural variable specifier — its
+                // argument is a numeric count, not an ObjC object pointer.
+                // Reading it as `id` causes ARC to retain an invalid pointer,
+                // resulting in EXC_BAD_ACCESS. Fall back for any %#@ match.
+                if ([originalMatchString rangeOfString:@"#"].location != NSNotFound) {
+                    shouldFallback = YES;
+                    break;
+                }
                 id obj = va_arg(argumentList, id);
                 arg.value = obj;
                 arg.type = TXNativeObjcArgumentTypeObject;
