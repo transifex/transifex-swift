@@ -191,3 +191,12 @@ pattern.
 * Improves Objective-C swizzling method, ensuring it does not crash when parsing
 the argument list (`swizzledLocalizedStringWithFormat:`).
 * Adds more unit tests.
+
+## Transifex iOS SDK 2.0.12
+
+*March 6, 2026
+
+* Fix crash regression on swizzled method regarding stringsdict plural format
+specifier.
+* Improves swizzling logic.
+* Adds specialized unit test.

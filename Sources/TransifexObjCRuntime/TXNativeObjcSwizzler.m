@@ -85,11 +85,7 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
             // Integer (%d, %i)
             case 'd': case 'i': {
                 // Reject length modifiers
-                if ([originalMatchString rangeOfString:@"h"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"l"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"j"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"z"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"t"].location != NSNotFound) {
+                if ([NSString tx_containsLengthModifier:originalMatchString]) {
                     shouldFallback = YES;
                     break;
                 }
@@ -101,11 +97,7 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
             // Unsigned (%u)
             case 'u': {
                 // Reject length modifiers
-                if ([originalMatchString rangeOfString:@"h"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"l"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"j"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"z"].location != NSNotFound ||
-                    [originalMatchString rangeOfString:@"t"].location != NSNotFound) {
+                if ([NSString tx_containsLengthModifier:originalMatchString]) {
                     shouldFallback = YES;
                     break;
                 }
@@ -119,7 +111,7 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
             case 'g': case 'G':
             case 'a': case 'A':
             case 'f': case 'F': {
-                // Reject length modifiers except L (long double)
+                // Only fall back for L (long double)
                 if ([originalMatchString rangeOfString:@"L"].location != NSNotFound) {
                     shouldFallback = YES;
                     break;
@@ -150,6 +142,14 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
             }
             // Objective-C object (%@)
             case '@': {
+                // %#@ is Apple's stringsdict plural variable specifier so its
+                // argument is a numeric count, not an ObjC object pointer.
+                // Reading it as `id` causes ARC to retain an invalid pointer,
+                // resulting in EXC_BAD_ACCESS. Fall back for any %#@ match.
+                if ([originalMatchString rangeOfString:@"#"].location != NSNotFound) {
+                    shouldFallback = YES;
+                    break;
+                }
                 id obj = va_arg(argumentList, id);
                 arg.value = obj;
                 arg.type = TXNativeObjcArgumentTypeObject;
@@ -204,6 +204,18 @@ static NSString *(^TXNativeObjcSwizzlerClosure)(NSString *, NSArray <id> *);
 
     va_end(argsCopy);
     return result;
+}
+
+#pragma mark - Helper
+
+/// Returns YES if the format specifier string contains a length modifier that changes the integer argument
+/// type away from plain int/unsigned int (i.e. h, hh, l, ll, j, z, t).
++ (BOOL)tx_containsLengthModifier:(NSString *)specifier {
+    return [specifier rangeOfString:@"h"].location != NSNotFound ||
+           [specifier rangeOfString:@"l"].location != NSNotFound ||
+           [specifier rangeOfString:@"j"].location != NSNotFound ||
+           [specifier rangeOfString:@"z"].location != NSNotFound ||
+           [specifier rangeOfString:@"t"].location != NSNotFound;
 }
 
 @end
